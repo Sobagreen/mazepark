@@ -1,0 +1,43 @@
+body {
+  background: #222;
+  color: #eee;
+  font-family: sans-serif;
+  text-align: center;
+}
+#board {
+  margin: 20px auto;
+  position: relative;
+  background: #444;
+  display: grid;
+  grid-template: repeat(5, 60px) / repeat(5, 60px);
+}
+.cell {
+  border: 1px solid #333;
+  width: 60px;
+  height: 60px;
+}
+.cell.start { background: #0a0; }
+.cell.finish { background: #a00; }
+.cell.lit { background: #ffd700; }
+#player {
+  position: absolute;
+  width: 60px;
+  height: 60px;
+  background: rgba(0,255,0,0.5);
+  transition: top 0.3s, left 0.3s;
+  pointer-events: none;
+}
+#controls button {
+  margin: 4px;
+  padding: 8px;
+}
+#sequence {
+  min-height: 20px;
+  margin-top: 10px;
+}
+#status {
+  min-height: 20px;
+  margin-top: 10px;
+  font-weight: bold;
+}
+
