@@ -40,4 +40,22 @@ body {
   margin-top: 10px;
   font-weight: bold;
 }
-
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.overlay.hidden {
+  display: none;
+}
+.overlay .content {
+  background: #333;
+  padding: 20px;
+  border: 1px solid #555;
+}
