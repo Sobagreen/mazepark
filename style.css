@@ -1,44 +1,100 @@
+* {
+  box-sizing: border-box;
+}
+
 body {
-  background: #222;
-  color: #eee;
-  font-family: sans-serif;
+  margin: 0;
+  min-height: 100vh;
+  font-family: "Segoe UI", "Roboto", "Helvetica Neue", sans-serif;
+  color: #f5f7ff;
+  background: radial-gradient(circle at top, #182742 0%, #0c1324 55%, #05070f 100%);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 24px;
+}
+
+.layout {
+  width: min(480px, 100%);
+  display: grid;
+  gap: 16px;
   text-align: center;
 }
-#board {
-  margin: 20px auto;
-  position: relative;
-  background: #444;
-  display: grid;
-  grid-template: repeat(5, 60px) / repeat(5, 60px);
+
+.header h1 {
+  margin: 0;
+  font-size: 2.4rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
-.cell {
-  border: 1px solid #333;
-  width: 60px;
-  height: 60px;
+
+.subtitle {
+  margin: 8px 0 0;
+  color: #aab6d6;
+  font-size: 0.95rem;
 }
-.cell.start { background: #0a0; }
-.cell.finish { background: #a00; }
-.cell.lit { background: #ffd700; }
-#player {
-  position: absolute;
-  width: 60px;
-  height: 60px;
-  background: rgba(0,255,0,0.5);
-  transition: top 0.3s, left 0.3s;
-  pointer-events: none;
+
+.hud {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
 }
-#controls button {
-  margin: 4px;
-  padding: 8px;
+
+.scoreboard {
+  display: flex;
+  gap: 16px;
+  font-size: 1.1rem;
 }
-#sequence {
-  min-height: 20px;
-  margin-top: 10px;
+
+.scoreboard strong {
+  color: #ffe56c;
 }
-#status {
-  min-height: 20px;
-  margin-top: 10px;
-  font-weight: bold;
+
+.controls {
+  display: flex;
+  gap: 8px;
+}
+
+button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 999px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #0c1324;
+  background: linear-gradient(135deg, #ffe56c, #ffb347);
+  cursor: pointer;
+  transition: transform 0.15s ease, filter 0.2s ease;
+}
+
+button[disabled] {
+  cursor: not-allowed;
+  opacity: 0.55;
+  transform: none;
+}
+
+button:not([disabled]):hover {
+  filter: brightness(1.05);
+}
+
+button:not([disabled]):active {
+  transform: scale(0.96);
+}
+
+#game {
+  width: 100%;
+  height: auto;
+  border-radius: 24px;
+  background: linear-gradient(180deg, #0b1020 0%, #0c1f35 45%, #13294c 100%);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.6);
+}
+
+.hint {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #94a4cf;
 }
 .overlay {
   position: fixed;
@@ -58,4 +114,18 @@ body {
   background: #333;
   padding: 20px;
   border: 1px solid #555;
+
+@media (max-width: 520px) {
+  .layout {
+    gap: 12px;
+  }
+
+  .hud {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .controls {
+    justify-content: center;
+  }
 }
