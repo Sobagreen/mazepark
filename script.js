@@ -6,7 +6,7 @@
 
   const PLAYERS = {
     dawn: {
-      name: 'Орден Рассвеа',
+      name: 'Орден Рассвета',
       motto: 'Инициатива света',
       color: '#f6d47f'
     },
@@ -65,44 +65,21 @@
     }
   };
 
-  const boardEl = document.getElementById('board');
-  const statusPrimaryEl = document.getElementById('status-primary');
-  const statusSecondaryEl = document.getElementById('status-secondary');
-  const moveLogEl = document.getElementById('move-log');
-  const codexEl = document.getElementById('codex');
-  const newGameButton = document.getElementById('new-game');
-  const playAgainButton = document.getElementById('play-again');
-  const liveRegion = document.getElementById('live-region');
-  const endgameEl = document.getElementById('endgame');
-  const endgameTitleEl = document.getElementById('endgame-title');
-  const endgameSubtitleEl = document.getElementById('endgame-subtitle');
-
-  const playerCards = {
-    dawn: document.querySelector('.player-card[data-player="dawn"]'),
-    dusk: document.querySelector('.player-card[data-player="dusk"]')
-  };
-  const turnBadges = {
-    dawn: document.getElementById('turn-dawn'),
-    dusk: document.getElementById('turn-dusk')
-  };
-  const capturedEls = {
-    dawn: document.getElementById('captured-dawn'),
-    dusk: document.getElementById('captured-dusk')
-  };
-
-  const focusEls = {
-    card: document.getElementById('piece-focus'),
-    glyph: document.getElementById('focus-glyph'),
-    name: document.getElementById('focus-name'),
-    role: document.getElementById('focus-role'),
-    summary: document.getElementById('focus-summary'),
-    movement: document.getElementById('focus-movement'),
-    position: document.getElementById('focus-position'),
-    status: document.getElementById('focus-status'),
-    promotion: document.getElementById('focus-promotion'),
-    traits: document.getElementById('focus-traits'),
-    stats: document.getElementById('focus-stats')
-  };
+  let boardEl;
+  let statusPrimaryEl;
+  let statusSecondaryEl;
+  let moveLogEl;
+  let codexEl;
+  let newGameButton;
+  let playAgainButton;
+  let liveRegion;
+  let endgameEl;
+  let endgameTitleEl;
+  let endgameSubtitleEl;
+  let playerCards;
+  let turnBadges;
+  let capturedEls;
+  let focusEls;
 
   let board = [];
   let cellElements = [];
@@ -115,13 +92,64 @@
   let gameState = 'idle';
   let winner = null;
 
-  newGameButton.addEventListener('click', startNewGame);
-  playAgainButton.addEventListener('click', startNewGame);
+  function initialize() {
+    boardEl = document.getElementById('board');
+    statusPrimaryEl = document.getElementById('status-primary');
+    statusSecondaryEl = document.getElementById('status-secondary');
+    moveLogEl = document.getElementById('move-log');
+    codexEl = document.getElementById('codex');
+    newGameButton = document.getElementById('new-game');
+    playAgainButton = document.getElementById('play-again');
+    liveRegion = document.getElementById('live-region');
+    endgameEl = document.getElementById('endgame');
+    endgameTitleEl = document.getElementById('endgame-title');
+    endgameSubtitleEl = document.getElementById('endgame-subtitle');
 
-  function start() {
+    playerCards = {
+      dawn: document.querySelector('.player-card[data-player="dawn"]'),
+      dusk: document.querySelector('.player-card[data-player="dusk"]')
+    };
+    turnBadges = {
+      dawn: document.getElementById('turn-dawn'),
+      dusk: document.getElementById('turn-dusk')
+    };
+    capturedEls = {
+      dawn: document.getElementById('captured-dawn'),
+      dusk: document.getElementById('captured-dusk')
+    };
+
+    focusEls = {
+      card: document.getElementById('piece-focus'),
+      glyph: document.getElementById('focus-glyph'),
+      name: document.getElementById('focus-name'),
+      role: document.getElementById('focus-role'),
+      summary: document.getElementById('focus-summary'),
+      movement: document.getElementById('focus-movement'),
+      position: document.getElementById('focus-position'),
+      status: document.getElementById('focus-status'),
+      promotion: document.getElementById('focus-promotion'),
+      traits: document.getElementById('focus-traits'),
+      stats: document.getElementById('focus-stats')
+    };
+
+    if (!boardEl) {
+      return;
+    }
+
+    newGameButton?.addEventListener('click', handleNewGameRequest);
+    playAgainButton?.addEventListener('click', handleNewGameRequest);
+
     buildBoardSkeleton();
     populateCodex();
     startNewGame();
+  }
+
+  function handleNewGameRequest(event) {
+    event?.preventDefault();
+    startNewGame();
+    if (event?.currentTarget instanceof HTMLElement) {
+      event.currentTarget.blur();
+    }
   }
 
   function startNewGame() {
@@ -897,5 +925,13 @@
     return row >= 0 && row < BOARD_SIZE && col >= 0 && col < BOARD_SIZE;
   }
 
-  start();
+  whenReady(initialize);
+
+  function whenReady(fn) {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', fn, { once: true });
+    } else {
+      fn();
+    }
+  }
 })();
