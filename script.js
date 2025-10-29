@@ -1,330 +1,1089 @@
-const BOARD_WIDTH = 10;
-const BOARD_HEIGHT = 8;
-const FILES = "ABCDEFGHIJ";
-const PLAYERS = {
-  light: {
-    name: "Дружина Перуна",
-    glyph: "☼",
-    laserName: "Лучезар Перуна"
-  },
-  shadow: {
-    name: "Полк Чернобога",
-    glyph: "☽",
-    laserName: "Луч Чернобога"
-  }
-};
+(function () {
+  const BOARD_SIZE = 10;
+  const COLUMN_LETTERS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
+  const ROW_NUMBERS = [10, 9, 8, 7, 6, 5, 4, 3, 2, 1];
+  const directionByPlayer = { dawn: -1, dusk: 1 };
 
-const PIECE_DEFS = {
-  laser: {
-    name: "Лучезар",
-    glyph: "☼",
-    canRotate: true,
-    movement: () => []
-  },
-  volhv: {
-    name: "Волхв",
-    glyph: "✧",
-    canRotate: false,
-    movement: (board, x, y, piece) => orthogonalMoves(board, x, y, piece)
-  },
-  pyramid: {
-    name: "Зеркало",
-    glyph: "◒",
-    canRotate: true,
-    movement: (board, x, y, piece) => diagonalMoves(board, x, y, piece)
-  },
-  scarab: {
-    name: "Оберег",
-    glyph: "⛬",
-    canRotate: true,
-    movement: (board, x, y, piece) => scarabMoves(board, x, y, piece)
-  },
-  anubis: {
-    name: "Щитоносец",
-    glyph: "⛨",
-    canRotate: true,
-    movement: (board, x, y, piece) => orthogonalMoves(board, x, y, piece)
-  },
-  obelisk: {
-    name: "Тотем",
-    glyph: "▲",
-    canRotate: false,
-    movement: (board, x, y, piece) => orthogonalMoves(board, x, y, piece)
-  }
-};
-
-const DIRECTIONS = [
-  { dx: 0, dy: -1 }, // вверх
-  { dx: 1, dy: 0 },  // вправо
-  { dx: 0, dy: 1 },  // вниз
-  { dx: -1, dy: 0 }  // влево
-];
-
-const DIAGONALS = [
-  { dx: 1, dy: -1 },
-  { dx: 1, dy: 1 },
-  { dx: -1, dy: -1 },
-  { dx: -1, dy: 1 }
-];
-
-const INITIAL_LIGHT_SETUP = [
-  { x: 0, y: 7, type: "laser", orientation: 1 },
-  { x: 2, y: 7, type: "pyramid", orientation: 1 },
-  { x: 3, y: 7, type: "scarab", orientation: 0 },
-  { x: 4, y: 7, type: "volhv", orientation: 0 },
-  { x: 5, y: 7, type: "anubis", orientation: 0 },
-  { x: 6, y: 7, type: "scarab", orientation: 2 },
-  { x: 7, y: 7, type: "pyramid", orientation: 2 },
-  { x: 1, y: 6, type: "obelisk", orientation: 0 },
-  { x: 2, y: 6, type: "pyramid", orientation: 0 },
-  { x: 3, y: 6, type: "anubis", orientation: 3 },
-  { x: 4, y: 6, type: "pyramid", orientation: 1 },
-  { x: 5, y: 6, type: "pyramid", orientation: 2 },
-  { x: 6, y: 6, type: "anubis", orientation: 1 },
-  { x: 7, y: 6, type: "pyramid", orientation: 3 },
-  { x: 8, y: 6, type: "obelisk", orientation: 0 },
-  { x: 1, y: 5, type: "pyramid", orientation: 0 },
-  { x: 2, y: 5, type: "obelisk", orientation: 0 },
-  { x: 7, y: 5, type: "obelisk", orientation: 0 },
-  { x: 8, y: 5, type: "pyramid", orientation: 2 }
-];
-
-let board = createEmptyBoard();
-let currentPlayer = "light";
-let selectedCell = null;
-let currentOptions = [];
-let turnCounter = 1;
-let lastLaserPath = [];
-
-const elements = {
-  board: document.getElementById("board"),
-  status: document.getElementById("status"),
-  turn: document.getElementById("turn-indicator"),
-  rotateLeft: document.getElementById("rotate-left"),
-  rotateRight: document.getElementById("rotate-right"),
-  hint: document.getElementById("action-hint"),
-  log: document.getElementById("move-log"),
-  endgame: document.getElementById("endgame"),
-  endgameTitle: document.getElementById("endgame-title"),
-  endgameSubtitle: document.getElementById("endgame-subtitle"),
-  playAgain: document.getElementById("play-again")
-};
-
-const cells = [];
-
-initialiseBoardGrid();
-attachEventListeners();
-startNewGame();
-
-function startNewGame() {
-  board = createEmptyBoard();
-  placeInitialPieces();
-  currentPlayer = "light";
-  selectedCell = null;
-  currentOptions = [];
-  lastLaserPath = [];
-  turnCounter = 1;
-  clearLog();
-  updateTurnIndicator();
-  renderBoard();
-  setStatus("Выберите фигуру и передвиньте её либо поверните зеркало.");
-  elements.endgame.hidden = true;
-}
-
-function createEmptyBoard() {
-  return Array.from({ length: BOARD_HEIGHT }, () => Array(BOARD_WIDTH).fill(null));
-}
-
-function placeInitialPieces() {
-  for (const spec of INITIAL_LIGHT_SETUP) {
-    placePiece(spec, "light");
-    placePiece(mirrorSpec(spec), "shadow");
-  }
-}
-
-function placePiece(spec, player) {
-  const piece = {
-    type: spec.type,
-    player,
-    orientation: spec.orientation % 4
+  const PLAYERS = {
+    dawn: {
+      name: 'ОрденРассвета',
+      motto: 'Инициатива света',
+      color: '#f6d47f'
+    },
+    dusk: {
+      name: 'Клан Сумрака',
+      motto: 'Тактика тени',
+      color: '#7aa5ff'
+    }
   };
-  board[spec.y][spec.x] = piece;
-}
 
-function mirrorSpec(spec) {
-  return {
-    x: BOARD_WIDTH - 1 - spec.x,
-    y: BOARD_HEIGHT - 1 - spec.y,
-    type: spec.type,
-    orientation: (spec.orientation + 2) % 4
+  const PIECES = {
+    commander: {
+      name: 'Командор',
+      glyph: { dawn: '✶', dusk: '✹' },
+      role: 'Лидер',
+      description: 'Центр координации отряда. Командор обеспечивает связь и не может быть потерян.',
+      movement: 'Ходит на одну клетку в любом направлении.',
+      traits: ['Лидер', 'Тактическая аура'],
+      stats: { Манёвр: '★☆☆', Контроль: '★★★★★', Защита: '★★★★' },
+      abilities: [
+        {
+          id: 'radiant-step',
+          name: 'Радиантный шаг',
+          cost: 4,
+          description: 'Прорыв на две клетки по любой из восьми направлений. Пути должны быть свободны.'
+        },
+        {
+          id: 'astral-swap',
+          name: 'Астральный обмен',
+          cost: 6,
+          description: 'Меняется местами с союзной фигурой в радиусе трёх клеток, мгновенно перебрасывая силы.'
+        }
+      ]
+    },
+    sentinel: {
+      name: 'Страж',
+      glyph: { dawn: '⬢', dusk: '⬣' },
+      role: 'Линейный контроль',
+      description: 'Стражи держат прямые коридоры и отрезают пути отступления.',
+      movement: 'Любое количество клеток по горизонтали или вертикали без прыжков.',
+      traits: ['Линии давления', 'Гарнизон'],
+      stats: { Манёвр: '★★★', Контроль: '★★★★', Сложность: '★★' },
+      abilities: [
+        {
+          id: 'iron-diagonals',
+          name: 'Железные диагонали',
+          cost: 3,
+          description: 'Дает возможность сместиться по диагонали на одну или две клетки.'
+        },
+        {
+          id: 'siege-bolt',
+          name: 'Осадный импульс',
+          cost: 5,
+          description: 'Дистанционный удар по прямой до трёх клеток. Страж остаётся на месте.'
+        }
+      ]
+    },
+    strider: {
+      name: 'Странник',
+      glyph: { dawn: '◇', dusk: '◆' },
+      role: 'Диагональный манёвр',
+      description: 'Странники режут пространство по диагоналям и выстраивают дуги обхода.',
+      movement: 'Любое количество клеток по диагонали без прыжков.',
+      traits: ['Фланг', 'Позиционный прессинг'],
+      stats: { Манёвр: '★★★★', Контроль: '★★★', Сложность: '★★☆' },
+      abilities: [
+        {
+          id: 'horizon-drift',
+          name: 'Горизонтальный дрейф',
+          cost: 3,
+          description: 'Однократный ход на две клетки по горизонтали, раскрывающий новые углы атаки.'
+        },
+        {
+          id: 'prism-gate',
+          name: 'Призматический портал',
+          cost: 6,
+          description: 'Телепорт на диагональ через три клетки, если цель свободна.'
+        }
+      ]
+    },
+    lancer: {
+      name: 'Гонец',
+      glyph: { dawn: '⚚', dusk: '⚝' },
+      role: 'Манёвр через заслоны',
+      description: 'Гонец прыгает дугой, прорывается через заслоны и наносит внезапные удары.',
+      movement: 'Прыжок буквой «Г»: две клетки в одном направлении и одна в перпендикулярном.',
+      traits: ['Скачок', 'Атака из тыла'],
+      stats: { Манёвр: '★★★★★', Контроль: '★★', Сложность: '★★★' },
+      abilities: [
+        {
+          id: 'meteor-dash',
+          name: 'Метеорный разгон',
+          cost: 3,
+          description: 'Рывок по прямой до трёх клеток с возможностью срезать врага в конце пути.'
+        },
+        {
+          id: 'storm-reversal',
+          name: 'Штормовой переворот',
+          cost: 5,
+          description: 'Прыжок к цели по ходу коня с обменом позиций, выбивая врага с ключевой клетки.'
+        }
+      ]
+    },
+    squire: {
+      name: 'Рекрут',
+      glyph: { dawn: '◖', dusk: '◗' },
+      role: 'Линия фронта',
+      description: 'Рекруты выстраивают фронт. Врага берут по диагонали и могут сделать стартовый рывок.',
+      movement: 'На одну клетку вперёд (две при первом ходе). Захватывает по диагонали. На последней линии повышается до Странника.',
+      traits: ['Гарнизон', 'Повышение'],
+      stats: { Манёвр: '★★', Контроль: '★★', Сложность: '★' },
+      abilities: [
+        {
+          id: 'line-surge',
+          name: 'Фронтовой рывок',
+          cost: 2,
+          description: 'Повторный марш на две клетки вперёд даже после первых шагов, если путь свободен.'
+        },
+        {
+          id: 'hook-strike',
+          name: 'Крюковой удар',
+          cost: 3,
+          description: 'Лобовая атака на одну клетку вперёд, пробивая оборону противника.'
+        }
+      ]
+    }
   };
-}
 
-function initialiseBoardGrid() {
-  elements.board.innerHTML = "";
-  for (let y = 0; y < BOARD_HEIGHT; y++) {
-    cells[y] = [];
-    for (let x = 0; x < BOARD_WIDTH; x++) {
-      const cell = document.createElement("button");
-      cell.type = "button";
-      cell.className = "cell";
-      cell.dataset.x = x;
-      cell.dataset.y = y;
-      cell.setAttribute("role", "gridcell");
-      cell.setAttribute("aria-label", `${FILES[x]}${BOARD_HEIGHT - y}`);
-      elements.board.appendChild(cell);
-      cell.addEventListener("click", () => handleCellInteraction(x, y));
-      cells[y][x] = cell;
+  let boardEl;
+  let statusPrimaryEl;
+  let statusSecondaryEl;
+  let moveLogEl;
+  let codexEl;
+  let newGameButton;
+  let playAgainButton;
+  let liveRegion;
+  let endgameEl;
+  let endgameTitleEl;
+  let endgameSubtitleEl;
+  let playerCards;
+  let turnBadges;
+  let capturedEls;
+  let focusEls;
+
+  let boardEl;
+  let boardFrame;
+  let statusPrimaryEl;
+  let statusSecondaryEl;
+  let moveLogEl;
+  let codexEl;
+  let newGameButton;
+  let playAgainButton;
+  let liveRegion;
+  let endgameEl;
+  let endgameTitleEl;
+  let endgameSubtitleEl;
+  let playerCards;
+  let turnBadges;
+  let capturedEls;
+  let focusEls;
+
+  let activeAbility = null;
+  let abilitySource = null;
+
+  let board = [];
+  let cellElements = [];
+  let currentPlayer = 'dawn';
+  let selectedCell = null;
+  let legalMoves = [];
+  let legalMoveMap = new Map();
+  let capturedPieces = { dawn: [], dusk: [] };
+  let moveHistory = [];
+  let gameState = 'idle';
+  let winner = null;
+
+  function initialize() {
+    boardEl = document.getElementById('board');
+    statusPrimaryEl = document.getElementById('status-primary');
+    statusSecondaryEl = document.getElementById('status-secondary');
+    moveLogEl = document.getElementById('move-log');
+    codexEl = document.getElementById('codex');
+    newGameButton = document.getElementById('new-game');
+    playAgainButton = document.getElementById('play-again');
+    liveRegion = document.getElementById('live-region');
+    endgameEl = document.getElementById('endgame');
+    endgameTitleEl = document.getElementById('endgame-title');
+    endgameSubtitleEl = document.getElementById('endgame-subtitle');
+
+    playerCards = {
+      dawn: document.querySelector('.player-card[data-player="dawn"]'),
+      dusk: document.querySelector('.player-card[data-player="dusk"]')
+    };
+    turnBadges = {
+      dawn: document.getElementById('turn-dawn'),
+      dusk: document.getElementById('turn-dusk')
+    };
+    capturedEls = {
+      dawn: document.getElementById('captured-dawn'),
+      dusk: document.getElementById('captured-dusk')
+    };
+
+    focusEls = {
+      card: document.getElementById('piece-focus'),
+      glyph: document.getElementById('focus-glyph'),
+      name: document.getElementById('focus-name'),
+      role: document.getElementById('focus-role'),
+      summary: document.getElementById('focus-summary'),
+      movement: document.getElementById('focus-movement'),
+      position: document.getElementById('focus-position'),
+      status: document.getElementById('focus-status'),
+      promotion: document.getElementById('focus-promotion'),
+      traits: document.getElementById('focus-traits'),
+      stats: document.getElementById('focus-stats')
+    };
+
+    if (!boardEl) {
+      return;
+    }
+
+    newGameButton?.addEventListener('click', handleNewGameRequest);
+    playAgainButton?.addEventListener('click', handleNewGameRequest);
+
+    buildBoardSkeleton();
+    populateCodex();
+    startNewGame();
+    window.addEventListener('resize', updateBoardOrientation);
+  }
+
+  function handleNewGameRequest(event) {
+    event?.preventDefault();
+    startNewGame();
+    if (event?.currentTarget instanceof HTMLElement) {
+      event.currentTarget.blur();
     }
   }
-}
 
-function attachEventListeners() {
-  document.getElementById("new-game").addEventListener("click", startNewGame);
-  elements.rotateLeft.addEventListener("click", () => rotateSelected(-1));
-  elements.rotateRight.addEventListener("click", () => rotateSelected(1));
-  elements.playAgain.addEventListener("click", startNewGame);
-}
+  function handleNewGameRequest(event) {
+    event?.preventDefault();
+    startNewGame();
+    if (event?.currentTarget instanceof HTMLElement) {
+      event.currentTarget.blur();
+    }
+  }
 
-function renderBoard() {
-  clearLaserPath();
-  for (let y = 0; y < BOARD_HEIGHT; y++) {
-    for (let x = 0; x < BOARD_WIDTH; x++) {
-      const cell = cells[y][x];
-      const piece = board[y][x];
-      cell.classList.toggle("cell--selected", selectedCell && selectedCell.x === x && selectedCell.y === y);
-      cell.classList.remove("cell--option", "cell--capture");
-      if (piece) {
-        const def = PIECE_DEFS[piece.type];
-        const wrapper = document.createElement("div");
-        wrapper.className = `piece piece--${piece.player}`;
-        const glyph = document.createElement("span");
-        glyph.textContent = def.glyph;
-        glyph.className = "piece__glyph";
-        glyph.style.transform = `rotate(${piece.orientation * 90}deg)`;
+  function startNewGame() {
+    board = createInitialBoard();
+    currentPlayer = 'dawn';
+    selectedCell = null;
+    legalMoves = [];
+    legalMoveMap.clear();
+    capturedPieces = { dawn: [], dusk: [] };
+    moveHistory = [];
+    gameState = 'playing';
+    winner = null;
+    endgameEl.hidden = true;
+    clearAbilityState();
+    renderBoard();
+    updateBoardOrientation();
+    updateHighlights();
+    updateCaptured();
+    renderMoveLog();
+    updatePieceFocus(null);
+    updateTurnPanel();
+    updateStatus('Орден Рассвета начинает партию.', 'Выберите фигуру, чтобы совершить первый ход.');
+  }
+
+  function buildBoardSkeleton() {
+    boardEl.innerHTML = '';
+    boardEl.style.setProperty('--board-size', BOARD_SIZE);
+    cellElements = Array.from({ length: BOARD_SIZE }, () => []);
+
+    for (let row = 0; row < BOARD_SIZE; row += 1) {
+      for (let col = 0; col < BOARD_SIZE; col += 1) {
+        const cell = document.createElement('button');
+        cell.type = 'button';
+        cell.className = `cell ${(row + col) % 2 === 0 ? 'cell--light' : 'cell--dark'}`;
+        cell.dataset.row = row;
+        cell.dataset.col = col;
+        cell.dataset.coord = toNotation(row, col);
+        cell.setAttribute('aria-label', `Клетка ${toNotation(row, col)}`);
+        cell.addEventListener('click', handleCellClick);
+        boardEl.appendChild(cell);
+        cellElements[row][col] = cell;
+      }
+    }
+  }
+
+  function handleCellClick(event) {
+    if (gameState !== 'playing') {
+      return;
+    }
+
+    const cell = event.currentTarget;
+    const row = Number(cell.dataset.row);
+    const col = Number(cell.dataset.col);
+    const piece = board[row][col];
+
+    if (activeAbility && abilitySource) {
+      const key = `${row},${col}`;
+      const abilityMove = legalMoveMap.get(key);
+      if (abilityMove) {
+        executeMove(abilitySource.row, abilitySource.col, abilityMove);
+        return;
+      }
+      if (abilitySource.row === row && abilitySource.col === col) {
+        clearAbilityState();
+        setLegalMoves([]);
+        updateHighlights();
+        if (piece) {
+          updatePieceFocus(piece, row, col);
+        }
+        updateStatus('Способность отменена.', `${PLAYERS[currentPlayer].name} выбирает новое действие.`);
+        return;
+      }
+      clearAbilityState();
+    }
+
+    const key = `${row},${col}`;
+    const move = legalMoveMap.get(key);
+    if (move && selectedCell) {
+      executeMove(selectedCell.row, selectedCell.col, move);
+      return;
+    }
+
+    if (selectedCell && selectedCell.row === row && selectedCell.col === col) {
+      selectedCell = null;
+      setLegalMoves([]);
+      updateHighlights();
+      updatePieceFocus(null);
+      updateStatus(`${PLAYERS[currentPlayer].name} ожидает решения.`, 'Вы можете выбрать другую фигуру.');
+      return;
+    }
+
+    if (!piece) {
+      selectedCell = null;
+      setLegalMoves([]);
+      updateHighlights();
+      updatePieceFocus(null);
+      return;
+    }
+
+    updatePieceFocus(piece, row, col);
+
+    if (piece.owner !== currentPlayer) {
+      setLegalMoves([]);
+      selectedCell = null;
+      updateHighlights();
+      updateStatus(`${PLAYERS[currentPlayer].name} ходит.`, 'Вы можете только изучить фигуры соперника.');
+      return;
+    }
+
+    const moves = getLegalMoves(row, col);
+    selectedCell = { row, col };
+    setLegalMoves(moves);
+    updateHighlights();
+    if (moves.length === 0) {
+      updateStatus(`${PIECES[piece.type].name} заблокирован.`, 'Выберите другую фигуру для манёвра.');
+    } else {
+      const coords = moves.map((m) => toNotation(m.row, m.col)).join(', ');
+      updateStatus(`${PIECES[piece.type].name} готов к манёвру.`, `Доступные клетки: ${coords}.`);
+    }
+  }
+
+  function clearAbilityState() {
+    activeAbility = null;
+    abilitySource = null;
+  }
+
+  function handleAbilityActivation(row, col, abilityDef) {
+    if (gameState !== 'playing') {
+      return;
+    }
+    const piece = board[row][col];
+    if (!piece || piece.owner !== currentPlayer) {
+      return;
+    }
+    if (piece.energy < abilityDef.cost) {
+      updateStatus('Недостаточно силы для способности.', `Нужно ${abilityDef.cost}, доступно ${piece.energy}.`);
+      return;
+    }
+
+    if (
+      activeAbility &&
+      abilitySource &&
+      activeAbility.id === abilityDef.id &&
+      abilitySource.row === row &&
+      abilitySource.col === col
+    ) {
+      clearAbilityState();
+      setLegalMoves([]);
+      updateHighlights();
+      updatePieceFocus(piece, row, col);
+      updateStatus(`${abilityDef.name} отменена.`, `${PLAYERS[currentPlayer].name} выбирает новое действие.`, false);
+      return;
+    }
+
+    const moves = getAbilityMoves(board, row, col, piece, abilityDef);
+    if (moves.length === 0) {
+      clearAbilityState();
+      setLegalMoves([]);
+      updateHighlights();
+      updatePieceFocus(piece, row, col);
+      updateStatus(`${abilityDef.name} пока невозможна.`, 'Нет допустимых целей.', false);
+      return;
+    }
+
+    activeAbility = abilityDef;
+    abilitySource = { row, col };
+    selectedCell = { row, col };
+    setLegalMoves(moves);
+    updateHighlights();
+    updatePieceFocus(piece, row, col);
+    const coords = moves.map((move) => toNotation(move.row, move.col)).join(', ');
+    updateStatus(`${abilityDef.name} готова.`, `Доступные цели: ${coords}.`, false);
+  }
+
+  function getAbilityMoves(boardState, row, col, piece, abilityDef) {
+    const effect = ABILITY_EFFECTS[abilityDef.id];
+    if (!effect) {
+      return [];
+    }
+    const options = effect.generate(boardState, row, col, piece, abilityDef) || [];
+    const legal = [];
+    for (const option of options) {
+      const simulation = cloneBoard(boardState);
+      const simPiece = simulation[row][col];
+      if (!simPiece) {
+        continue;
+      }
+      const result = effect.apply(simulation, row, col, simPiece, option, abilityDef);
+      if (!result) {
+        continue;
+      }
+      const commander = findCommander(simulation, piece.owner);
+      if (!commander) {
+        continue;
+      }
+      if (isSquareUnderAttack(simulation, commander.row, commander.col, otherPlayer(piece.owner))) {
+        continue;
+      }
+      legal.push({
+        ...option,
+        abilityId: abilityDef.id,
+        abilityName: abilityDef.name,
+        capture:
+          option.capture !== undefined
+            ? option.capture
+            : Boolean(option.type === 'strike'
+                ? boardState[option.row][option.col] && boardState[option.row][option.col].owner !== piece.owner
+                : boardState[option.row]?.[option.col] && boardState[option.row][option.col].owner !== piece.owner),
+        promotion: option.promotion || null
+      });
+    }
+    return legal;
+  }
+
+  function executeMove(fromRow, fromCol, move) {
+    const piece = board[fromRow][fromCol];
+    if (!piece) {
+      return;
+    }
+
+    const originalType = piece.type;
+    const opponent = otherPlayer(piece.owner);
+    const abilityDef = move.abilityId ? getAbilityDefinition(originalType, move.abilityId) : null;
+    const effect = abilityDef ? ABILITY_EFFECTS[abilityDef.id] : null;
+
+    let target = board[move.row]?.[move.col] || null;
+    let captureOccurred = Boolean(target);
+    let promotionType = move.promotion || null;
+    let finalRow = move.row;
+    let finalCol = move.col;
+    let stayedInPlace = false;
+    let notationSymbol = null;
+
+    if (abilityDef) {
+      if (!effect) {
+        return;
+      }
+      const result = effect.apply(board, fromRow, fromCol, piece, move, abilityDef);
+      if (!result) {
+        return;
+      }
+      finalRow = result.finalRow;
+      finalCol = result.finalCol;
+      promotionType = result.promotion || promotionType;
+      captureOccurred = Boolean(result.capture);
+      target = result.capturedPiece || null;
+      stayedInPlace = Boolean(result.stayPut);
+      notationSymbol = result.notationSymbol || null;
+      if (captureOccurred && target) {
+        capturedPieces[piece.owner].push(target.type);
+      }
+    } else {
+      if (target) {
+        capturedPieces[piece.owner].push(target.type);
+      }
+      board[move.row][move.col] = piece;
+      board[fromRow][fromCol] = null;
+      piece.moved = true;
+      if (move.promotion) {
+        promotionType = move.promotion;
+        piece.promotedFrom = piece.promotedFrom || piece.type;
+        piece.type = promotionType;
+      }
+    }
+
+    const victoryByCapture = target && target.type === 'commander' && captureOccurred;
+
+    clearAbilityState();
+    selectedCell = null;
+    setLegalMoves([]);
+
+    const movedPiece = board[finalRow][finalCol] || board[fromRow][fromCol] || piece;
+    const distance = stayedInPlace ? 0 : calculateDistance(fromRow, fromCol, finalRow, finalCol);
+    let energyGain = distance;
+    if (captureOccurred && target) {
+      energyGain += CAPTURE_REWARD[target.type] || 0;
+    }
+    if (abilityDef) {
+      movedPiece.energy = Math.max(0, movedPiece.energy - abilityDef.cost);
+    }
+    movedPiece.energy = Math.min(MAX_ENERGY, movedPiece.energy + energyGain);
+    movedPiece.moved = true;
+
+    let notationFrom = toNotation(fromRow, fromCol);
+    let notationTo = toNotation(finalRow, finalCol);
+    let notation;
+    if (abilityDef) {
+      if (move.type === 'strike') {
+        notation = `${notationFrom} ⚡ ${toNotation(move.row, move.col)}`;
+      } else if (move.type === 'swap' || move.type === 'swap-enemy') {
+        notation = `${notationFrom} ⇄ ${notationTo}`;
+      } else {
+        notation = `${notationFrom} ⇢ ${notationTo}`;
+      }
+      if (notationSymbol) {
+        notation += ` ${notationSymbol}`;
+      }
+    } else {
+      notation = `${notationFrom} → ${notationTo}`;
+    }
+
+    const moveEntry = {
+      player: movedPiece.owner,
+      pieceType: originalType,
+      notation,
+      capture: captureOccurred,
+      promotion: promotionType,
+      ability: abilityDef ? abilityDef.name : null,
+      check: false,
+      checkmate: false,
+      stalemate: false
+    };
+
+    renderBoard();
+    updateCaptured();
+
+    if (victoryByCapture) {
+      moveEntry.checkmate = true;
+      moveHistory.push(moveEntry);
+      const action = abilityDef ? `способностью «${abilityDef.name}»` : 'точным манёвром';
+      finalizeGame(
+        movedPiece.owner,
+        `${PIECES[originalType].name} пленил Командора ${PLAYERS[opponent].name}.`,
+        `Решающее столкновение завершено, использована ${action}.`
+      );
+      return;
+    }
+
+    const opponentCommander = findCommander(board, opponent);
+    const givesCheck = opponentCommander
+      ? isSquareUnderAttack(board, opponentCommander.row, opponentCommander.col, movedPiece.owner)
+      : false;
+    moveEntry.check = givesCheck;
+    moveHistory.push(moveEntry);
+
+    currentPlayer = opponent;
+    updateBoardOrientation();
+
+    const opponentHasMoves = hasLegalMoves(board, opponent);
+    const opponentInCheck = isCommanderInCheck(board, opponent);
+
+    if (!opponentHasMoves) {
+      if (opponentInCheck) {
+        moveEntry.checkmate = true;
+        finalizeGame(
+          movedPiece.owner,
+          `${PLAYERS[movedPiece.owner].name} ставит мат.`,
+          `${PLAYERS[opponent].name} не может спасти Командора.`
+        );
+      } else {
+        moveEntry.stalemate = true;
+        finalizeGame(null, 'Перемирие — пат.', 'Оба ордена выдыхают и объявляют ничью.');
+      }
+      renderMoveLog();
+      return;
+    }
+
+    renderMoveLog();
+    updatePieceFocus(null);
+    updateTurnPanel();
+
+    const actorName = PLAYERS[movedPiece.owner].name;
+    const opponentName = PLAYERS[opponent].name;
+    let primary;
+    if (abilityDef) {
+      primary = `${actorName} задействует «${abilityDef.name}» у ${PIECES[originalType].name}.`;
+      if (captureOccurred && target) {
+        primary += ` Цель: ${PIECES[target.type].name}.`;
+      }
+      if (promotionType) {
+        primary += ` Повышение до ${PIECES[movedPiece.type].name}.`;
+      }
+    } else {
+      primary = `${actorName} перемещает ${PIECES[originalType].name} на ${notationTo}.`;
+      if (captureOccurred && target) {
+        primary += ` Взято: ${PIECES[target.type].name}.`;
+      }
+      if (promotionType) {
+        primary += ` Повышение до ${PIECES[movedPiece.type].name}.`;
+      }
+    }
+
+    let secondary;
+    if (givesCheck) {
+      secondary = `${opponentName}, ваш Командор под прицелом!`;
+    } else if (opponentInCheck) {
+      secondary = `${opponentName}, ваш Командор всё ещё под угрозой.`;
+    } else {
+      secondary = `${opponentName}, ваш ход.`;
+    }
+
+    updateStatus(primary, secondary);
+    updateHighlights();
+    updateCommanderAlerts();
+  }
+
+  function finalizeGame(winningPlayer, title, subtitle) {
+    gameState = 'ended';
+    winner = winningPlayer;
+    selectedCell = null;
+    setLegalMoves([]);
+    updateHighlights();
+    updateCommanderAlerts();
+    updateTurnPanel();
+
+    const heading = winningPlayer ? `${PLAYERS[winningPlayer].name} побеждает!` : title;
+    const detail = subtitle;
+
+    endgameTitleEl.textContent = heading;
+    endgameSubtitleEl.textContent = detail;
+    endgameEl.hidden = false;
+    updateStatus(heading, detail);
+    renderMoveLog();
+    updateBoardOrientation();
+  }
+
+  function setLegalMoves(moves) {
+    legalMoves = moves;
+    legalMoveMap = new Map();
+    moves.forEach((move) => {
+      legalMoveMap.set(`${move.row},${move.col}`, move);
+    });
+  }
+
+  function renderBoard() {
+    for (let row = 0; row < BOARD_SIZE; row += 1) {
+      for (let col = 0; col < BOARD_SIZE; col += 1) {
+        const cell = cellElements[row][col];
+        const piece = board[row][col];
+        cell.innerHTML = '';
+        cell.classList.remove('cell--alert');
+        if (!piece) {
+          cell.setAttribute('aria-label', `Пустая клетка ${toNotation(row, col)}`);
+          continue;
+        }
+        const def = PIECES[piece.type];
+        const wrapper = document.createElement('div');
+        wrapper.className = `piece piece--${piece.owner} piece--${piece.type}`;
+        const glyph = document.createElement('span');
+        glyph.className = 'piece__glyph';
+        glyph.setAttribute('aria-hidden', 'true');
+        glyph.textContent = def.glyph[piece.owner];
+        const sr = document.createElement('span');
+        sr.className = 'sr-only';
+        sr.textContent = `${def.name} игрока ${PLAYERS[piece.owner].name}`;
         wrapper.appendChild(glyph);
-        wrapper.setAttribute("aria-label", `${def.name} (${PLAYERS[piece.player].name})`);
-        cell.replaceChildren(wrapper);
+        wrapper.appendChild(sr);
+        if (piece.energy > 0) {
+          const energyBadge = document.createElement('span');
+          energyBadge.className = 'piece__energy';
+          energyBadge.textContent = piece.energy;
+          energyBadge.setAttribute('aria-hidden', 'true');
+          wrapper.appendChild(energyBadge);
+        }
+        cell.appendChild(wrapper);
+        let label = `${def.name} ${PLAYERS[piece.owner].name} на клетке ${toNotation(row, col)}`;
+        if (piece.energy > 0) {
+          label += `. Сила: ${piece.energy}.`;
+        }
+        cell.setAttribute('aria-label', label);
+      }
+    }
+    updateCommanderAlerts();
+  }
+
+  function updateHighlights() {
+    for (let row = 0; row < BOARD_SIZE; row += 1) {
+      for (let col = 0; col < BOARD_SIZE; col += 1) {
+        const cell = cellElements[row][col];
+        cell.classList.remove('cell--selected', 'cell--move', 'cell--capture', 'cell--ability');
+        if (selectedCell && selectedCell.row === row && selectedCell.col === col) {
+          cell.classList.add('cell--selected');
+        }
+        const key = `${row},${col}`;
+        if (legalMoveMap.has(key)) {
+          const move = legalMoveMap.get(key);
+          if (move.abilityId) {
+            cell.classList.add('cell--ability');
+          }
+          cell.classList.add(move.capture ? 'cell--capture' : 'cell--move');
+        }
+      }
+    }
+  }
+
+  function updateCommanderAlerts() {
+    for (let row = 0; row < BOARD_SIZE; row += 1) {
+      for (let col = 0; col < BOARD_SIZE; col += 1) {
+        cellElements[row][col].classList.remove('cell--alert');
+      }
+    }
+    const players = ['dawn', 'dusk'];
+    players.forEach((player) => {
+      const commander = findCommander(board, player);
+      if (!commander) {
+        return;
+      }
+      const cell = cellElements[commander.row][commander.col];
+      if (isCommanderInCheck(board, player)) {
+        cell.classList.add('cell--alert');
+      }
+    });
+  }
+
+  function updateBoardOrientation() {
+    if (!boardFrame) {
+      return;
+    }
+    const tabletopMode = window.matchMedia('(max-width: 720px)').matches;
+    let facingPlayer = currentPlayer;
+    if (gameState === 'ended') {
+      facingPlayer = winner !== null ? winner : 'dawn';
+    }
+    boardFrame.classList.toggle('board-frame--flipped', tabletopMode && facingPlayer === 'dusk');
+  }
+
+  function updateStatus(primary, secondary = '', announce = true) {
+    statusPrimaryEl.textContent = primary;
+    statusSecondaryEl.textContent = secondary;
+    if (announce) {
+      const combined = `${primary} ${secondary}`.trim();
+      liveRegion.textContent = combined;
+      window.setTimeout(() => {
+        liveRegion.textContent = '';
+      }, 1000);
+    }
+  }
+
+  function updateTurnPanel() {
+    const players = ['dawn', 'dusk'];
+    players.forEach((player) => {
+      const card = playerCards[player];
+      const badge = turnBadges[player];
+      card.classList.remove('player-card--active', 'player-card--alert');
+      if (gameState === 'ended') {
+        if (winner === player) {
+          badge.textContent = 'Победа';
+        } else if (winner === null) {
+          badge.textContent = 'Перемирие';
+        } else {
+          badge.textContent = 'Поражение';
+        }
+        return;
+      }
+      if (currentPlayer === player) {
+        badge.textContent = 'Ход';
+        card.classList.add('player-card--active');
       } else {
         cell.replaceChildren();
       }
     }
   }
-  for (const option of currentOptions) {
-    const cell = cells[option.y][option.x];
-    cell.classList.add("cell--option");
-    if (option.capture || option.swap) {
-      cell.classList.add("cell--capture");
+
+  function createMoveLogCell(entry) {
+    const cell = document.createElement('div');
+    cell.className = 'move-log__cell';
+    if (!entry) {
+      cell.classList.add('move-log__cell--empty');
+      cell.textContent = '…';
+      return cell;
     }
-  }
-}
-
-function handleCellInteraction(x, y) {
-  if (elements.endgame.hidden === false) return;
-
-  const piece = board[y][x];
-  const current = selectedCell ? board[selectedCell.y][selectedCell.x] : null;
-  const option = currentOptions.find((opt) => opt.x === x && opt.y === y);
-
-  if (option && current) {
-    executeMove(option, current, selectedCell);
-    return;
-  }
-
-  if (piece && piece.player === currentPlayer) {
-    selectCell(x, y);
-  } else if (piece && piece.player !== currentPlayer) {
-    setStatus(`${PLAYERS[currentPlayer].name}: нельзя управлять фигурой соперника.`);
-  } else {
-    clearSelection();
-  }
-}
-
-function selectCell(x, y) {
-  selectedCell = { x, y };
-  const piece = board[y][x];
-  const def = PIECE_DEFS[piece.type];
-  currentOptions = def.movement(board, x, y, piece);
-  renderBoard();
-  updateRotateControls(def.canRotate);
-  const movesText = currentOptions.length
-    ? `Доступно ходов: ${currentOptions.map((opt) => toNotation(opt.x, opt.y)).join(", ")}`
-    : def.canRotate
-      ? "Можно только повернуть выбранную фигуру."
-      : "Для этой фигуры доступных действий нет.";
-  elements.hint.textContent = `${def.name}: ${movesText}`;
-  setStatus(`${PLAYERS[currentPlayer].name}: выбрана фигура ${def.name} на ${toNotation(x, y)}.`);
-}
-
-function clearSelection() {
-  selectedCell = null;
-  currentOptions = [];
-  renderBoard();
-  updateRotateControls(false);
-  elements.hint.textContent = "Выберите свою фигуру, чтобы увидеть доступные ходы.";
-}
-
-function updateRotateControls(enabled) {
-  const piece = selectedCell ? board[selectedCell.y][selectedCell.x] : null;
-  const canRotate = Boolean(enabled && piece && piece.player === currentPlayer);
-  elements.rotateLeft.disabled = !canRotate;
-  elements.rotateRight.disabled = !canRotate;
-}
-
-function executeMove(option, piece, from) {
-  const fromNotation = toNotation(from.x, from.y);
-  const targetPiece = board[option.y][option.x];
-
-  if (option.swap && targetPiece) {
-    board[from.y][from.x] = targetPiece;
-    board[option.y][option.x] = piece;
-    setStatus(`${PLAYERS[currentPlayer].name}: ${PIECE_DEFS[piece.type].name} меняется местами с ${PIECE_DEFS[targetPiece.type].name} на ${toNotation(option.x, option.y)}.`);
-    logAction(`${PIECE_DEFS[piece.type].name} ${fromNotation} ↔ ${toNotation(option.x, option.y)}`);
-  } else {
-    board[from.y][from.x] = null;
-    board[option.y][option.x] = piece;
-    let actionText = `${PIECE_DEFS[piece.type].name} ${fromNotation} → ${toNotation(option.x, option.y)}`;
-    if (targetPiece) {
-      actionText += ` (захват ${PIECE_DEFS[targetPiece.type].name})`;
-      setStatus(`${PLAYERS[currentPlayer].name}: ${PIECE_DEFS[piece.type].name} захватывает ${PIECE_DEFS[targetPiece.type].name}.`);
-    } else {
-      setStatus(`${PLAYERS[currentPlayer].name}: ${PIECE_DEFS[piece.type].name} перемещён на ${toNotation(option.x, option.y)}.`);
+    const playerLabel = document.createElement('span');
+    playerLabel.className = 'move-log__player';
+    playerLabel.textContent = PLAYERS[entry.player].name;
+    const notation = document.createElement('span');
+    notation.className = 'move-log__notation';
+    notation.textContent = `${PIECES[entry.pieceType].glyph[entry.player]} ${entry.notation}`;
+    if (entry.ability) {
+      notation.textContent += ' ✦';
     }
-    logAction(actionText);
+    const detail = document.createElement('p');
+    detail.className = 'move-log__detail';
+    const flags = [];
+    if (entry.ability) {
+      flags.push(`приём: ${entry.ability}`);
+    }
+    if (entry.capture) {
+      flags.push('взято');
+    }
+    if (entry.promotion) {
+      flags.push(`повышение → ${PIECES[entry.promotion].name}`);
+    }
+    if (entry.checkmate) {
+      flags.push('мат');
+    } else if (entry.check) {
+      flags.push('шах');
+    }
+    if (entry.stalemate) {
+      flags.push('пат');
+    }
+    detail.textContent = flags.length ? flags.join(' · ') : 'манёвр';
+    cell.append(playerLabel, notation, detail);
+    return cell;
   }
 
-  endTurn();
-}
-
-function rotateSelected(delta) {
-  if (!selectedCell) return;
-  const piece = board[selectedCell.y][selectedCell.x];
-  const def = PIECE_DEFS[piece.type];
-  if (!def.canRotate || piece.player !== currentPlayer) return;
-
-  piece.orientation = mod4(piece.orientation + delta);
-  renderBoard();
-  const dirSymbol = delta > 0 ? "↻" : "↺";
-  setStatus(`${PLAYERS[currentPlayer].name}: ${def.name} на ${toNotation(selectedCell.x, selectedCell.y)} повёрнут ${delta > 0 ? "по" : "против"} часовой стрелки.`);
-  logAction(`${def.name} ${toNotation(selectedCell.x, selectedCell.y)} ${dirSymbol}`);
-  endTurn();
-}
-
-function endTurn() {
-  clearSelection();
-  const laserResult = fireLaser(currentPlayer);
-  renderBoard();
-  highlightLaserPath(laserResult.path);
-  if (laserResult.hit) {
-    const hitPiece = laserResult.hit.piece;
-    const owner = PLAYERS[hitPiece.player].name;
-    const pieceName = PIECE_DEFS[hitPiece.type].name;
-    const cell = toNotation(laserResult.hit.x, laserResult.hit.y);
-    logAction(`Лазер поражает ${pieceName} (${owner}) на ${cell}`);
-    setStatus(`${laserResult.firer} испепеляет ${pieceName} (${owner}) на ${cell}.`);
-    if (hitPiece.type === "volhv") {
-      finishGame(currentPlayer);
+  function updatePieceFocus(piece, row, col) {
+    focusEls.traits.innerHTML = '';
+    focusEls.stats.innerHTML = '';
+    focusEls.abilities.innerHTML = '';
+    focusEls.energy.textContent = '';
+    if (!piece) {
+      focusEls.card.classList.add('focus-card--empty');
+      focusEls.glyph.textContent = '☆';
+      focusEls.name.textContent = 'Выберите фигуру, чтобы узнать её сильные стороны';
+      focusEls.role.textContent = '';
+      focusEls.summary.textContent = '';
+      focusEls.movement.textContent = '';
+      focusEls.position.textContent = '';
+      focusEls.status.textContent = '';
+      focusEls.promotion.textContent = '';
+      const abilityPlaceholder = document.createElement('p');
+      abilityPlaceholder.className = 'focus-card__abilities-placeholder';
+      abilityPlaceholder.textContent = 'Способности появятся после выбора фигуры.';
+      focusEls.abilities.appendChild(abilityPlaceholder);
+      const placeholder = document.createElement('li');
+      placeholder.className = 'tag-list__placeholder';
+      placeholder.textContent = 'Тактическое досье появится здесь';
+      focusEls.traits.appendChild(placeholder);
       return;
+    }
+
+    const def = PIECES[piece.type];
+    focusEls.card.classList.remove('focus-card--empty');
+    focusEls.glyph.textContent = def.glyph[piece.owner];
+    focusEls.name.textContent = `${def.name} — ${PLAYERS[piece.owner].name}`;
+    focusEls.role.textContent = def.role;
+    focusEls.summary.textContent = def.description;
+    focusEls.movement.textContent = def.movement;
+    focusEls.position.textContent = `Позиция: ${toNotation(row, col)}`;
+    focusEls.status.textContent = piece.moved ? 'Уже участвовал в манёврах.' : 'Пока не двигался.';
+    focusEls.energy.textContent = `Сила: ${piece.energy}`;
+    if (piece.promotedFrom && piece.promotedFrom !== piece.type) {
+      focusEls.promotion.textContent = `Повышен из ${PIECES[piece.promotedFrom].name}.`;
+    } else {
+      focusEls.promotion.textContent = '';
+    }
+
+    def.traits.forEach((trait) => {
+      const li = document.createElement('li');
+      li.textContent = trait;
+      focusEls.traits.appendChild(li);
+    });
+
+    Object.entries(def.stats).forEach(([key, value]) => {
+      const dt = document.createElement('dt');
+      dt.textContent = key;
+      const dd = document.createElement('dd');
+      dd.textContent = value;
+      focusEls.stats.append(dt, dd);
+    });
+
+    if (def.abilities && def.abilities.length > 0) {
+      def.abilities.forEach((ability) => {
+        const item = document.createElement('div');
+        item.className = 'ability';
+        const header = document.createElement('div');
+        header.className = 'ability__header';
+        const title = document.createElement('h4');
+        title.className = 'ability__name';
+        title.textContent = ability.name;
+        const cost = document.createElement('span');
+        cost.className = 'ability__cost';
+        cost.textContent = `${ability.cost} ⚡`;
+        header.append(title, cost);
+        const description = document.createElement('p');
+        description.className = 'ability__description';
+        description.textContent = ability.description;
+        item.append(header, description);
+        if (piece.owner === currentPlayer && gameState === 'playing') {
+          const button = document.createElement('button');
+          button.type = 'button';
+          button.className = 'ability__button';
+          button.textContent = piece.energy >= ability.cost ? 'Активировать' : 'Недостаточно силы';
+          button.disabled = piece.energy < ability.cost;
+          if (
+            activeAbility &&
+            abilitySource &&
+            abilitySource.row === row &&
+            abilitySource.col === col &&
+            activeAbility.id === ability.id
+          ) {
+            button.classList.add('ability__button--active');
+            button.textContent = 'Выбор цели';
+          }
+          button.addEventListener('click', () => handleAbilityActivation(row, col, ability));
+          item.appendChild(button);
+        }
+        focusEls.abilities.appendChild(item);
+      });
+    } else {
+      const abilityPlaceholder = document.createElement('p');
+      abilityPlaceholder.className = 'focus-card__abilities-placeholder';
+      abilityPlaceholder.textContent = 'Особых приёмов не заявлено.';
+      focusEls.abilities.appendChild(abilityPlaceholder);
+    }
+  }
+
+  function populateCodex() {
+    codexEl.innerHTML = '';
+    Object.entries(PIECES).forEach(([type, def]) => {
+      const card = document.createElement('article');
+      card.className = `codex-card codex-card--${type}`;
+      const header = document.createElement('div');
+      header.className = 'codex-card__header';
+      const glyph = document.createElement('span');
+      glyph.className = 'codex-card__glyph';
+      glyph.textContent = def.glyph.dawn;
+      const titleWrap = document.createElement('div');
+      const title = document.createElement('h3');
+      title.className = 'codex-card__title';
+      title.textContent = def.name;
+      const role = document.createElement('p');
+      role.className = 'codex-card__role';
+      role.textContent = def.role;
+      titleWrap.append(title, role);
+      header.append(glyph, titleWrap);
+      const desc = document.createElement('p');
+      desc.className = 'codex-card__text';
+      desc.textContent = def.description;
+      const move = document.createElement('p');
+      move.className = 'codex-card__text';
+      move.textContent = def.movement;
+      const traits = document.createElement('ul');
+      traits.className = 'tag-list';
+      def.traits.forEach((trait) => {
+        const li = document.createElement('li');
+        li.textContent = trait;
+        traits.appendChild(li);
+      });
+      const stats = document.createElement('dl');
+      stats.className = 'stat-list';
+      Object.entries(def.stats).forEach(([key, value]) => {
+        const dt = document.createElement('dt');
+        dt.textContent = key;
+        const dd = document.createElement('dd');
+        dd.textContent = value;
+        stats.append(dt, dd);
+      });
+      card.append(header, desc, move, traits, stats);
+      if (def.abilities && def.abilities.length > 0) {
+        const abilityBlock = document.createElement('div');
+        abilityBlock.className = 'codex-card__abilities';
+        const abilityTitle = document.createElement('h4');
+        abilityTitle.textContent = 'Способности';
+        abilityBlock.appendChild(abilityTitle);
+        def.abilities.forEach((ability) => {
+          const abilityRow = document.createElement('div');
+          abilityRow.className = 'codex-card__ability';
+          const abilityName = document.createElement('strong');
+          abilityName.textContent = `${ability.name} — ${ability.cost}⚡`;
+          const abilityDesc = document.createElement('p');
+          abilityDesc.textContent = ability.description;
+          abilityRow.append(abilityName, abilityDesc);
+          abilityBlock.appendChild(abilityRow);
+        });
+        card.appendChild(abilityBlock);
+      }
+      codexEl.appendChild(card);
+    });
+  }
+
+  function toNotation(row, col) {
+    const letter = COLUMN_LETTERS[col] || '?';
+    const number = ROW_NUMBERS[row] || row + 1;
+    return `${letter}${number}`;
+  }
+
+  function otherPlayer(player) {
+    return player === 'dawn' ? 'dusk' : 'dawn';
+  }
+
+  function getAbilityDefinition(type, abilityId) {
+    const def = PIECES[type];
+    if (!def || !def.abilities) {
+      return null;
+    }
+    return def.abilities.find((ability) => ability.id === abilityId) || null;
+  }
+
+  function createInitialBoard() {
+    const backline = [
+      'sentinel',
+      'lancer',
+      'strider',
+      'sentinel',
+      'commander',
+      'strider',
+      'sentinel',
+      'strider',
+      'lancer',
+      'sentinel'
+    ];
+    const boardState = Array.from({ length: BOARD_SIZE }, () => Array(BOARD_SIZE).fill(null));
+    for (let col = 0; col < BOARD_SIZE; col += 1) {
+      const pieceType = backline[col % backline.length];
+      boardState[0][col] = createPiece(pieceType, 'dusk');
+      boardState[1][col] = createPiece('squire', 'dusk');
+      boardState[BOARD_SIZE - 2][col] = createPiece('squire', 'dawn');
+      boardState[BOARD_SIZE - 1][col] = createPiece(pieceType, 'dawn');
+    }
+    return boardState;
+  }
+
+  function createPiece(type, owner) {
+    return { type, owner, moved: false, energy: 0 };
+  }
+
+  function cloneBoard(boardState) {
+    return boardState.map((row) => row.map((cell) => (cell ? { ...cell } : null)));
+  }
+
+  function applyMoveOnBoard(boardState, fromRow, fromCol, toRow, toCol, options = {}) {
+    const clone = cloneBoard(boardState);
+    const piece = clone[fromRow][fromCol];
+    clone[fromRow][fromCol] = null;
+    if (!piece) {
+      return clone;
+    }
+    const movedPiece = { ...piece, moved: true };
+    if (options.promotion) {
+      movedPiece.promotedFrom = movedPiece.promotedFrom || movedPiece.type;
+      movedPiece.type = options.promotion;
+    }
+    clone[toRow][toCol] = movedPiece;
+    return clone;
+  }
+
+  function getLegalMoves(row, col) {
+    return getLegalMovesForBoard(board, row, col, currentPlayer);
+  }
+
+  function getLegalMovesForBoard(boardState, row, col, player) {
+    const piece = boardState[row][col];
+    if (!piece || piece.owner !== player) {
+      return [];
     }
   } else if (laserResult.blocked) {
     const blockPiece = laserResult.blocked.piece;
@@ -387,82 +1146,31 @@ function fireLaser(player) {
     direction = interaction.nextDirection;
   }
 
-  return {
-    path,
-    hit: null,
-    firer: PLAYERS[player].laserName
-  };
-}
-
-function resolveLaserInteraction(piece, incomingDirection) {
-  const face = mod4(incomingDirection + 2);
-  switch (piece.type) {
-    case "pyramid":
-      return pyramidInteraction(piece.orientation, face);
-    case "scarab":
-      return scarabInteraction(piece.orientation, face);
-    case "anubis":
-      return anubisInteraction(piece.orientation, face);
-    case "laser":
-      return { destroy: true, stop: true };
-    case "obelisk":
-    case "volhv":
-      return { destroy: true, stop: true };
-    default:
-      return { destroy: true, stop: true };
+  function calculateDistance(fromRow, fromCol, toRow, toCol) {
+    const dr = Math.abs(fromRow - toRow);
+    const dc = Math.abs(fromCol - toCol);
+    if ((dr === 2 && dc === 1) || (dr === 1 && dc === 2)) {
+      return 3;
+    }
+    if (dr === dc) {
+      return dr;
+    }
+    if (dr === 0 || dc === 0) {
+      return dr + dc;
+    }
+    return dr + dc;
   }
-}
 
-function pyramidInteraction(orientation, face) {
-  const baseMap = {
-    0: 1,
-    1: 0
-  };
-  const rotatedMap = rotateFaceMap(baseMap, orientation);
-  if (face in rotatedMap) {
-    return { destroy: false, stop: false, nextDirection: rotatedMap[face] };
-  }
-  return { destroy: true, stop: true };
-}
-
-function scarabInteraction(orientation, face) {
-  const baseMap = {
-    0: 1,
-    1: 0,
-    2: 3,
-    3: 2
-  };
-  const rotatedMap = rotateFaceMap(baseMap, orientation);
-  if (face in rotatedMap) {
-    return { destroy: false, stop: false, nextDirection: rotatedMap[face] };
-  }
-  return { destroy: true, stop: true };
-}
-
-function anubisInteraction(orientation, face) {
-  const shieldFace = orientation % 4;
-  if (face === shieldFace) {
-    return { destroy: false, stop: true };
-  }
-  return { destroy: true, stop: true };
-}
-
-function rotateFaceMap(map, orientation) {
-  const rotated = {};
-  for (const [face, outDir] of Object.entries(map)) {
-    const newFace = mod4(Number(face) + orientation);
-    const newOut = mod4(outDir + orientation);
-    rotated[newFace] = newOut;
-  }
-  return rotated;
-}
-
-function findEmitter(player) {
-  for (let y = 0; y < BOARD_HEIGHT; y++) {
-    for (let x = 0; x < BOARD_WIDTH; x++) {
-      const piece = board[y][x];
-      if (piece && piece.player === player && piece.type === "laser") {
-        return { x, y };
+  function hasLegalMoves(boardState, player) {
+    for (let row = 0; row < BOARD_SIZE; row += 1) {
+      for (let col = 0; col < BOARD_SIZE; col += 1) {
+        const piece = boardState[row][col];
+        if (piece && piece.owner === player) {
+          const moves = getLegalMovesForBoard(boardState, row, col, player);
+          if (moves.length > 0) {
+            return true;
+          }
+        }
       }
     }
   }
@@ -561,6 +1269,13 @@ function logAction(text) {
   elements.log.scrollTop = elements.log.scrollHeight;
 }
 
-function clearLog() {
-  elements.log.innerHTML = "";
-}
+  whenReady(initialize);
+
+  function whenReady(fn) {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', fn, { once: true });
+    } else {
+      fn();
+    }
+  }
+})();
