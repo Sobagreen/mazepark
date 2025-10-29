@@ -2,125 +2,66 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>Астральный двор —  стратегов</title>
+  <title>Лучезарная сечь</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <main class="shell">
-    <header class="hero">
-      <div class="hero__text">
-        <p class="hero__overtitle">Тактическая дуэль на двоих</p>
-        <h1>Астральный двор</h1>
-        <p class="hero__subtitle">Управляйте эскадрами Орденов Рассвета и Сумрака, командуйте уникальными фигурами и переграйте соперника в поединке света и тени.</p>
-      </div>
-      <button type="button" id="new-game" class="hero__button">Новая партия</button>
-    </header>
+  <main class="game">
+    <aside class="sidebar">
+      <header class="sidebar__hero">
+        <p class="sidebar__overtitle">Дуэль лучезарных волхвов</p>
+        <h1>Лучезарная сечь</h1>
+        <p class="sidebar__intro">Поверните зеркала, направьте лучи Перуна и Чернобога и сразите чужого волхва, не подпуская свет к своему.</p>
+        <button type="button" id="new-game" class="button button--primary">Новая партия</button>
+      </header>
 
-    <div class="layout">
-      <section class="board-area">
-        <div class="board-frame">
-          <div id="board" class="board" role="grid" aria-label="Игровое поле Астрального двора"></div>
-          <div id="endgame" class="endgame" aria-live="assertive" hidden>
-            <h2 id="endgame-title"></h2>
-            <p id="endgame-subtitle"></p>
-            <button type="button" id="play-again" class="endgame__button">Сыграть ещё</button>
-          </div>
-        </div>
-
-        <div id="status" class="status" role="status" aria-live="polite">
-          <p id="status-primary"></p>
-          <p id="status-secondary"></p>
-        </div>
-
-        <section class="log panel">
-          <div class="panel__title-row">
-            <h2 class="panel__title">Летопись ходов</h2>
-            <p class="panel__subtitle">Отслеживайте развитие дуэли по ходам</p>
-          </div>
-          <ol id="move-log" class="move-log" aria-live="polite"></ol>
-        </section>
+      <section class="panel">
+        <h2>Ход</h2>
+        <p id="turn-indicator" class="panel__turn">—</p>
       </section>
 
-      <aside class="hud">
-        <section class="panel panel--players">
-          <h2 class="panel__title">Командование</h2>
-          <p class="panel__subtitle">Выберите фигуру своего ордена, чтобы вывести её характеристики.</p>
-          <div class="player-card" data-player="dawn">
-            <header class="player-card__header">
-              <div class="player-card__crest" aria-hidden="true"></div>
-              <div>
-                <h3>Орден Рассвета</h3>
-                <p class="player-card__tagline">Атакует молниеносно и удерживает пространство.</p>
-              </div>
-              <span id="turn-dawn" class="player-card__turn" aria-live="polite">Ход</span>
-            </header>
-            <div class="player-card__body">
-              <p class="player-card__label">Трофеи</p>
-              <div id="captured-dawn" class="captured" aria-label="Захвачено Орденом Рассвета"></div>
-            </div>
-          </div>
+      <section class="panel">
+        <h2>Действия</h2>
+        <div class="actions">
+          <button type="button" id="rotate-left" class="button" disabled>Повернуть ↺</button>
+          <button type="button" id="rotate-right" class="button" disabled>Повернуть ↻</button>
+        </div>
+        <p id="action-hint" class="panel__hint">Выберите свою фигуру, чтобы увидеть доступные ходы.</p>
+      </section>
 
-          <div class="player-card" data-player="dusk">
-            <header class="player-card__header">
-              <div class="player-card__crest" aria-hidden="true"></div>
-              <div>
-                <h3>Клан Сумрака</h3>
-                <p class="player-card__tagline">Прессингует аккуратно и расставляет ловушки.</p>
-              </div>
-              <span id="turn-dusk" class="player-card__turn" aria-live="polite">Ожидает</span>
-            </header>
-            <div class="player-card__body">
-              <p class="player-card__label">Трофеи</p>
-              <div id="captured-dusk" class="captured" aria-label="Захвачено Кланом Сумрака"></div>
-            </div>
-          </div>
-        </section>
+      <section class="panel">
+        <h2>Легенда орденов</h2>
+        <ul class="legend">
+          <li><span class="legend__glyph legend__glyph--light">☼</span> Лучезар (излучает лазер)</li>
+          <li><span class="legend__glyph legend__glyph--light">✧</span> Волхв (главная цель)</li>
+          <li><span class="legend__glyph legend__glyph--light">◒</span> Зеркало (отражает луч под 90°)</li>
+          <li><span class="legend__glyph legend__glyph--light">⛬</span> Оберег (двойное зеркало, меняется местами с соседями)</li>
+          <li><span class="legend__glyph legend__glyph--light">⛨</span> Щитоносец (щит отражает луч)</li>
+          <li><span class="legend__glyph legend__glyph--light">▲</span> Тотем (поглощает удар)</li>
+        </ul>
+      </section>
 
-        <section class="panel panel--focus">
-          <h2 class="panel__title">Досье фигуры</h2>
-          <article id="piece-focus" class="focus-card focus-card--empty" aria-live="polite">
-            <div class="focus-card__glyph" id="focus-glyph" aria-hidden="true">☆</div>
-            <div class="focus-card__text">
-              <h3 id="focus-name">Выберите фигуру, чтобы узнать её сильные стороны</h3>
-              <p id="focus-role"></p>
-              <p id="focus-summary"></p>
-              <p id="focus-movement" class="focus-card__movement"></p>
-              <p id="focus-position" class="focus-card__position"></p>
-              <p id="focus-status" class="focus-card__status"></p>
-              <p id="focus-promotion" class="focus-card__promotion"></p>
-            </div>
-            <div class="focus-card__traits">
-              <h4>Специализация</h4>
-              <ul id="focus-traits" class="tag-list"></ul>
-            </div>
-            <div class="focus-card__stats">
-              <h4>Параметры</h4>
-              <dl id="focus-stats" class="stat-list"></dl>
-            </div>
-          </article>
-        </section>
+      <section class="panel">
+        <h2>Хроника</h2>
+        <ol id="move-log" class="log" aria-live="polite"></ol>
+      </section>
+    </aside>
 
-        <section class="panel panel--codex">
-          <h2 class="panel__title">Кодекс фигур</h2>
-          <p class="panel__subtitle">Сила и роль каждого юнита</p>
-          <div id="codex" class="codex"></div>
-        </section>
-
-        <section class="panel panel--rules">
-          <h2 class="panel__title">Правила сражения</h2>
-          <ul class="rules">
-            <li>Игроки ходят по очереди, начиная с Ордена Рассвета.</li>
-            <li>Нельзя оставлять своего Командора под атакой после собственного хода.</li>
-            <li>Фигура берёт противника, если заканчивает ход на его клетке.</li>
-            <li>Рекруты, достигнув последней линии врага, повышаются до Странника.</li>
-            <li>Победа наступает при пленении Командора соперника или при мате. Если ходов нет и угрозы тоже — объявляется перемирие.</li>
-          </ul>
-        </section>
-      </aside>
-    </div>
+    <section class="board-area">
+      <div class="board-wrapper">
+        <div id="board" class="board" role="grid" aria-label="Поле лучезарной сечи"></div>
+        <div id="laser-overlay" class="laser-overlay" aria-hidden="true"></div>
+        <div id="endgame" class="endgame" hidden>
+          <h2 id="endgame-title"></h2>
+          <p id="endgame-subtitle"></p>
+          <button type="button" id="play-again" class="button button--primary">Сыграть ещё раз</button>
+        </div>
+      </div>
+      <p id="status" class="status" aria-live="assertive"></p>
+    </section>
   </main>
-  <span class="sr-only" id="live-region" role="status" aria-live="assertive"></span>
+
   <script src="script.js"></script>
 </body>
 </html>
