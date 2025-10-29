@@ -797,63 +797,8 @@
         badge.textContent = 'Ход';
         card.classList.add('player-card--active');
       } else {
-        badge.textContent = 'Ожидает';
+        cell.replaceChildren();
       }
-      if (isCommanderInCheck(board, player)) {
-        card.classList.add('player-card--alert');
-        if (currentPlayer === player) {
-          badge.textContent = 'Под ударом';
-        }
-      }
-    });
-  }
-
-  function updateCaptured() {
-    const order = ['commander', 'sentinel', 'strider', 'lancer', 'squire'];
-    ['dawn', 'dusk'].forEach((player) => {
-      const container = capturedEls[player];
-      container.innerHTML = '';
-      const counts = capturedPieces[player].reduce((acc, type) => {
-        acc[type] = (acc[type] || 0) + 1;
-        return acc;
-      }, {});
-      const entries = order.filter((type) => counts[type]);
-      if (entries.length === 0) {
-        const empty = document.createElement('span');
-        empty.className = 'captured__empty';
-        empty.textContent = 'Пока без трофеев';
-        container.appendChild(empty);
-        return;
-      }
-      entries.forEach((type) => {
-        const span = document.createElement('span');
-        const glyph = document.createElement('span');
-        glyph.setAttribute('aria-hidden', 'true');
-        glyph.textContent = PIECES[type].glyph[otherPlayer(player)];
-        const count = document.createElement('strong');
-        count.textContent = `${counts[type]}×`;
-        const label = document.createTextNode(` ${PIECES[type].name}`);
-        span.append(glyph, count, label);
-        container.appendChild(span);
-      });
-    });
-  }
-
-  function renderMoveLog() {
-    moveLogEl.innerHTML = '';
-    for (let i = 0; i < moveHistory.length; i += 2) {
-      const entry = document.createElement('li');
-      entry.className = 'move-log__entry';
-      const turnNumber = Math.floor(i / 2) + 1;
-      const turnLabel = document.createElement('span');
-      turnLabel.className = 'move-log__turn';
-      turnLabel.textContent = `${turnNumber}`;
-      const row = document.createElement('div');
-      row.className = 'move-log__row';
-      row.appendChild(createMoveLogCell(moveHistory[i]));
-      row.appendChild(createMoveLogCell(moveHistory[i + 1]));
-      entry.append(turnLabel, row);
-      moveLogEl.appendChild(entry);
     }
   }
 
@@ -1140,30 +1085,65 @@
     if (!piece || piece.owner !== player) {
       return [];
     }
-    const pseudoMoves = generatePseudoMoves(boardState, row, col, piece, 'move');
-    const legal = [];
-    for (const move of pseudoMoves) {
-      const target = boardState[move.row][move.col];
-      if (target && target.owner === player) {
-        continue;
-      }
-      const promotionType = piece.type === 'squire' && move.row === promotionRowFor(player) ? 'strider' : null;
-      const boardAfter = applyMoveOnBoard(boardState, row, col, move.row, move.col, { promotion: promotionType });
-      const commander = findCommander(boardAfter, player);
-      if (!commander) {
-        continue;
-      }
-      if (isSquareUnderAttack(boardAfter, commander.row, commander.col, otherPlayer(player))) {
-        continue;
-      }
-      legal.push({
-        row: move.row,
-        col: move.col,
-        capture: Boolean(target),
-        promotion: promotionType
-      });
+  } else if (laserResult.blocked) {
+    const blockPiece = laserResult.blocked.piece;
+    const owner = PLAYERS[blockPiece.player].name;
+    const cell = toNotation(laserResult.blocked.x, laserResult.blocked.y);
+    logAction(`Луч останавливается о ${PIECE_DEFS[blockPiece.type].name} (${owner}) на ${cell}`);
+    setStatus(`${laserResult.firer} не проходит через ${PIECE_DEFS[blockPiece.type].name} на ${cell}.`);
+  }
+  currentPlayer = currentPlayer === "light" ? "shadow" : "light";
+  turnCounter += 1;
+  updateTurnIndicator();
+  if (!laserResult.hit) {
+    setStatus(`${PLAYERS[currentPlayer].name} готовит ход.`);
+  }
+}
+
+function finishGame(winner) {
+  const loser = winner === "light" ? "shadow" : "light";
+  elements.endgame.hidden = false;
+  elements.endgameTitle.textContent = `${PLAYERS[winner].name} побеждает!`;
+  elements.endgameSubtitle.textContent = `Волхв ${PLAYERS[loser].name} уничтожен лучом.`;
+  setStatus(`${PLAYERS[winner].name} добились победы.`);
+  updateRotateControls(false);
+}
+
+function fireLaser(player) {
+  const emitterPos = findEmitter(player);
+  if (!emitterPos) return { path: [], firer: PLAYERS[player].laserName };
+
+  let { x, y } = emitterPos;
+  let direction = board[y][x].orientation % 4;
+  const path = [];
+
+  while (true) {
+    x += DIRECTIONS[direction].dx;
+    y += DIRECTIONS[direction].dy;
+    if (!inBounds(x, y)) {
+      break;
     }
-    return legal;
+    path.push({ x, y });
+    const target = board[y][x];
+    if (!target) {
+      continue;
+    }
+    const interaction = resolveLaserInteraction(target, direction);
+    if (interaction.destroy) {
+      board[y][x] = null;
+    }
+    if (interaction.stop) {
+      const result = {
+        path,
+        hit: interaction.destroy ? { piece: target, x, y } : null,
+        firer: PLAYERS[player].laserName
+      };
+      if (!interaction.destroy) {
+        result.blocked = { piece: target, x, y };
+      }
+      return result;
+    }
+    direction = interaction.nextDirection;
   }
 
   function calculateDistance(fromRow, fromCol, toRow, toCol) {
@@ -1193,170 +1173,101 @@
         }
       }
     }
-    return false;
   }
+  return null;
+}
 
-  function promotionRowFor(player) {
-    return player === 'dawn' ? 0 : BOARD_SIZE - 1;
+function highlightLaserPath(path) {
+  clearLaserPath();
+  lastLaserPath = path;
+  for (const step of path) {
+    const cell = cells[step.y][step.x];
+    cell.classList.add("cell--laser-trace");
   }
+}
 
-  function isCommanderInCheck(boardState, player) {
-    const commander = findCommander(boardState, player);
-    if (!commander) {
-      return false;
+function clearLaserPath() {
+  for (const step of lastLaserPath) {
+    const cell = cells[step.y][step.x];
+    if (cell) cell.classList.remove("cell--laser-trace");
+  }
+  lastLaserPath = [];
+}
+
+function orthogonalMoves(boardState, x, y, piece) {
+  const moves = [];
+  for (const dir of DIRECTIONS) {
+    const nx = x + dir.dx;
+    const ny = y + dir.dy;
+    if (!inBounds(nx, ny)) continue;
+    const target = boardState[ny][nx];
+    if (!target) {
+      moves.push({ x: nx, y: ny });
+    } else if (target.player !== piece.player) {
+      moves.push({ x: nx, y: ny, capture: true });
     }
-    return isSquareUnderAttack(boardState, commander.row, commander.col, otherPlayer(player));
   }
+  return moves;
+}
 
-  function findCommander(boardState, player) {
-    for (let row = 0; row < BOARD_SIZE; row += 1) {
-      for (let col = 0; col < BOARD_SIZE; col += 1) {
-        const piece = boardState[row][col];
-        if (piece && piece.owner === player && piece.type === 'commander') {
-          return { row, col };
-        }
-      }
+function diagonalMoves(boardState, x, y, piece) {
+  const moves = [];
+  for (const dir of DIAGONALS) {
+    const nx = x + dir.dx;
+    const ny = y + dir.dy;
+    if (!inBounds(nx, ny)) continue;
+    const target = boardState[ny][nx];
+    if (!target) {
+      moves.push({ x: nx, y: ny });
+    } else if (target.player !== piece.player) {
+      moves.push({ x: nx, y: ny, capture: true });
     }
-    return null;
   }
+  return moves;
+}
 
-  function isSquareUnderAttack(boardState, targetRow, targetCol, attacker) {
-    for (let row = 0; row < BOARD_SIZE; row += 1) {
-      for (let col = 0; col < BOARD_SIZE; col += 1) {
-        const piece = boardState[row][col];
-        if (!piece || piece.owner !== attacker) {
-          continue;
-        }
-        const threats = generatePseudoMoves(boardState, row, col, piece, 'threat');
-        if (threats.some((move) => move.row === targetRow && move.col === targetCol)) {
-          return true;
-        }
-      }
+function scarabMoves(boardState, x, y, piece) {
+  const moves = [];
+  for (const dir of DIRECTIONS) {
+    const nx = x + dir.dx;
+    const ny = y + dir.dy;
+    if (!inBounds(nx, ny)) continue;
+    const target = boardState[ny][nx];
+    if (!target) {
+      moves.push({ x: nx, y: ny });
+    } else {
+      moves.push({ x: nx, y: ny, swap: true });
     }
-    return false;
   }
+  return moves;
+}
 
-  function generatePseudoMoves(boardState, row, col, piece, purpose) {
-    const moves = [];
-    const owner = piece.owner;
-    const isThreat = purpose === 'threat';
+function inBounds(x, y) {
+  return x >= 0 && x < BOARD_WIDTH && y >= 0 && y < BOARD_HEIGHT;
+}
 
-    const pushSliding = (directions) => {
-      directions.forEach(([dr, dc]) => {
-        let r = row + dr;
-        let c = col + dc;
-        while (isInside(r, c)) {
-          const occupant = boardState[r][c];
-          if (!occupant) {
-            moves.push({ row: r, col: c });
-          } else {
-            if (occupant.owner !== owner) {
-              moves.push({ row: r, col: c });
-            }
-            break;
-          }
-          r += dr;
-          c += dc;
-        }
-      });
-    };
+function mod4(value) {
+  return (value % 4 + 4) % 4;
+}
 
-    switch (piece.type) {
-      case 'commander': {
-        for (let dr = -1; dr <= 1; dr += 1) {
-          for (let dc = -1; dc <= 1; dc += 1) {
-            if (dr === 0 && dc === 0) continue;
-            const r = row + dr;
-            const c = col + dc;
-            if (!isInside(r, c)) continue;
-            const occupant = boardState[r][c];
-            if (occupant && occupant.owner === owner) continue;
-            moves.push({ row: r, col: c });
-          }
-        }
-        break;
-      }
-      case 'sentinel': {
-        pushSliding([
-          [1, 0],
-          [-1, 0],
-          [0, 1],
-          [0, -1]
-        ]);
-        break;
-      }
-      case 'strider': {
-        pushSliding([
-          [1, 1],
-          [1, -1],
-          [-1, 1],
-          [-1, -1]
-        ]);
-        break;
-      }
-      case 'lancer': {
-        const jumps = [
-          [2, 1], [2, -1],
-          [-2, 1], [-2, -1],
-          [1, 2], [1, -2],
-          [-1, 2], [-1, -2]
-        ];
-        jumps.forEach(([dr, dc]) => {
-          const r = row + dr;
-          const c = col + dc;
-          if (!isInside(r, c)) return;
-          const occupant = boardState[r][c];
-          if (occupant && occupant.owner === owner) return;
-          moves.push({ row: r, col: c });
-        });
-        break;
-      }
-      case 'squire': {
-        const dir = directionByPlayer[owner];
-        const forwardRow = row + dir;
-        if (purpose === 'move') {
-          if (isInside(forwardRow, col) && !boardState[forwardRow][col]) {
-            moves.push({ row: forwardRow, col });
-            const doubleRow = forwardRow + dir;
-            if (!piece.moved && isInside(doubleRow, col) && !boardState[doubleRow][col]) {
-              moves.push({ row: doubleRow, col });
-            }
-          }
-          [-1, 1].forEach((dc) => {
-            const r = row + dir;
-            const c = col + dc;
-            if (!isInside(r, c)) return;
-            const occupant = boardState[r][c];
-            if (occupant && occupant.owner !== owner) {
-              moves.push({ row: r, col: c });
-            }
-          });
-        } else {
-          [-1, 1].forEach((dc) => {
-            const r = row + dir;
-            const c = col + dc;
-            if (isInside(r, c)) {
-              moves.push({ row: r, col: c });
-            }
-          });
-        }
-        break;
-      }
-      default:
-        break;
-    }
+function toNotation(x, y) {
+  return `${FILES[x]}${BOARD_HEIGHT - y}`;
+}
 
-    if (isThreat && piece.type !== 'squire') {
-      // For threats we should not include squares beyond allied pieces; already handled.
-      return moves;
-    }
+function updateTurnIndicator() {
+  elements.turn.textContent = `${turnCounter}. ${PLAYERS[currentPlayer].name}`;
+}
 
-    return moves;
-  }
+function setStatus(message) {
+  elements.status.textContent = message;
+}
 
-  function isInside(row, col) {
-    return row >= 0 && row < BOARD_SIZE && col >= 0 && col < BOARD_SIZE;
-  }
+function logAction(text) {
+  const item = document.createElement("li");
+  item.textContent = `${turnCounter}. ${PLAYERS[currentPlayer].name}: ${text}`;
+  elements.log.appendChild(item);
+  elements.log.scrollTop = elements.log.scrollHeight;
+}
 
   whenReady(initialize);
 

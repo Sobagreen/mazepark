@@ -7,39 +7,27 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <main class="shell">
-    <header class="hero">
-      <div class="hero__text">
-        <p class="hero__overtitle">Тактическая дуэль на двоих</p>
-        <h1>Астральный двор</h1>
-        <p class="hero__subtitle">Управляйте эскадрами Орденов Рассвета и Сумрака, командуйте уникальными фигурами и переграйте соперника в поединке света и тени.</p>
-      </div>
-      <button type="button" id="new-game" class="hero__button">Новая партия</button>
-    </header>
+  <main class="game">
+    <aside class="sidebar">
+      <header class="sidebar__hero">
+        <p class="sidebar__overtitle">Дуэль лучезарных волхвов</p>
+        <h1>Лучезарная сечь</h1>
+        <p class="sidebar__intro">Поверните зеркала, направьте лучи Перуна и Чернобога и сразите чужого волхва, не подпуская свет к своему.</p>
+        <button type="button" id="new-game" class="button button--primary">Новая партия</button>
+      </header>
 
-    <div class="layout">
-      <section class="board-area">
-        <div class="board-frame">
-          <div id="board" class="board" role="grid" aria-label="Игровое поле Астрального двора"></div>
-          <div id="endgame" class="endgame" aria-live="assertive" hidden>
-            <h2 id="endgame-title"></h2>
-            <p id="endgame-subtitle"></p>
-            <button type="button" id="play-again" class="endgame__button">Сыграть ещё</button>
-          </div>
+      <section class="panel">
+        <h2>Ход</h2>
+        <p id="turn-indicator" class="panel__turn">—</p>
+      </section>
+
+      <section class="panel">
+        <h2>Действия</h2>
+        <div class="actions">
+          <button type="button" id="rotate-left" class="button" disabled>Повернуть ↺</button>
+          <button type="button" id="rotate-right" class="button" disabled>Повернуть ↻</button>
         </div>
-
-        <div id="status" class="status" role="status" aria-live="polite">
-          <p id="status-primary"></p>
-          <p id="status-secondary"></p>
-        </div>
-
-        <section class="log panel">
-          <div class="panel__title-row">
-            <h2 class="panel__title">Летопись ходов</h2>
-            <p class="panel__subtitle">Отслеживайте развитие дуэли по ходам</p>
-          </div>
-          <ol id="move-log" class="move-log" aria-live="polite"></ol>
-        </section>
+        <p id="action-hint" class="panel__hint">Выберите свою фигуру, чтобы увидеть доступные ходы.</p>
       </section>
 
       <aside class="hud">
@@ -103,26 +91,26 @@
           </article>
         </section>
 
-        <section class="panel panel--codex">
-          <h2 class="panel__title">Кодекс фигур</h2>
-          <p class="panel__subtitle">Сила и роль каждого юнита</p>
-          <div id="codex" class="codex"></div>
-        </section>
+      <section class="panel">
+        <h2>Хроника</h2>
+        <ol id="move-log" class="log" aria-live="polite"></ol>
+      </section>
+    </aside>
 
-        <section class="panel panel--rules">
-          <h2 class="panel__title">Правила сражения</h2>
-          <ul class="rules">
-            <li>Игроки ходят по очереди, начиная с Ордена Рассвета.</li>
-            <li>Нельзя оставлять своего Командора под атакой после собственного хода.</li>
-            <li>Фигура берёт противника, если заканчивает ход на его клетке.</li>
-            <li>Рекруты, достигнув последней линии врага, повышаются до Странника.</li>
-            <li>Победа наступает при пленении Командора соперника или при мате. Если ходов нет и угрозы тоже — объявляется перемирие.</li>
-          </ul>
-        </section>
-      </aside>
-    </div>
+    <section class="board-area">
+      <div class="board-wrapper">
+        <div id="board" class="board" role="grid" aria-label="Поле лучезарной сечи"></div>
+        <div id="laser-overlay" class="laser-overlay" aria-hidden="true"></div>
+        <div id="endgame" class="endgame" hidden>
+          <h2 id="endgame-title"></h2>
+          <p id="endgame-subtitle"></p>
+          <button type="button" id="play-again" class="button button--primary">Сыграть ещё раз</button>
+        </div>
+      </div>
+      <p id="status" class="status" aria-live="assertive"></p>
+    </section>
   </main>
-  <span class="sr-only" id="live-region" role="status" aria-live="assertive"></span>
+
   <script src="script.js"></script>
 </body>
 </html>
