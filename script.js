@@ -1,377 +1,1023 @@
 (function () {
-  const canvas = document.getElementById('game');
-  const ctx = canvas.getContext('2d');
+  const BOARD_SIZE = 6;
+  const COLUMN_LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
+  const ROW_NUMBERS = [6, 5, 4, 3, 2, 1];
+  const directionByPlayer = { dawn: -1, dusk: 1 };
 
-  const ui = {
-    start: document.getElementById('start'),
-    pause: document.getElementById('pause'),
-    restart: document.getElementById('restart'),
-    score: document.getElementById('score'),
-    best: document.getElementById('best')
+  const PLAYERS = {
+    dawn: {
+      name: 'Орден Рассвета',
+      motto: 'Инициатива света',
+      color: '#f6d47f'
+    },
+    dusk: {
+      name: 'Клан Сумрака',
+      motto: 'Тактика тени',
+      color: '#7aa5ff'
+    }
   };
 
-  const CONFIG = {
-    gravity: 1800, // пикселей в секунду^2
-    flapStrength: -520,
-    pipeGap: 165,
-    pipeWidth: 70,
-    pipeSpeed: 210,
-    spawnInterval: 1.6,
-    minGapTop: 90,
-    groundHeight: 80
+  const PIECES = {
+    commander: {
+      name: 'Командор',
+      glyph: { dawn: '♔', dusk: '♚' },
+      role: 'Лидер',
+      description: 'Центр координации отряда. Командор обеспечивает связь и не может быть потерян.',
+      movement: 'Ходит на одну клетку в любом направлении.',
+      traits: ['Лидер', 'Тактическая аура'],
+      stats: { Манёвр: '★☆☆', Контроль: '★★★★★', Защита: '★★★★' }
+    },
+    sentinel: {
+      name: 'Страж',
+      glyph: { dawn: '♖', dusk: '♜' },
+      role: 'Линейный контроль',
+      description: 'Стражи держат прямые коридоры и отрезают пути отступления.',
+      movement: 'Любое количество клеток по горизонтали или вертикали без прыжков.',
+      traits: ['Линии давления', 'Гарнизон'],
+      stats: { Манёвр: '★★★', Контроль: '★★★★', Сложность: '★★' }
+    },
+    strider: {
+      name: 'Странник',
+      glyph: { dawn: '♗', dusk: '♝' },
+      role: 'Диагональный манёвр',
+      description: 'Странники режут пространство по диагоналям и выстраивают дуги обхода.',
+      movement: 'Любое количество клеток по диагонали без прыжков.',
+      traits: ['Фланг', 'Позиционный прессинг'],
+      stats: { Манёвр: '★★★★', Контроль: '★★★', Сложность: '★★☆' }
+    },
+    lancer: {
+      name: 'Гонец',
+      glyph: { dawn: '♘', dusk: '♞' },
+      role: 'Манёвр через заслоны',
+      description: 'Гонец прыгает дугой, прорывается через заслоны и наносит внезапные удары.',
+      movement: 'Прыжок буквой «Г»: две клетки в одном направлении и одна в перпендикулярном.',
+      traits: ['Скачок', 'Атака из тыла'],
+      stats: { Манёвр: '★★★★★', Контроль: '★★', Сложность: '★★★' }
+    },
+    squire: {
+      name: 'Рекрут',
+      glyph: { dawn: '♙', dusk: '♟' },
+      role: 'Линия фронта',
+      description: 'Рекруты выстраивают фронт. Врага берут по диагонали и могут сделать стартовый рывок.',
+      movement: 'На одну клетку вперёд (две при первом ходе). Захватывает по диагонали. На последней линии повышается до Странника.',
+      traits: ['Гарнизон', 'Повышение'],
+      stats: { Манёвр: '★★', Контроль: '★★', Сложность: '★' }
+    }
   };
 
-  const bird = {
-    x: canvas.width * 0.3,
-    y: canvas.height / 2,
-    radius: 18,
-    velocity: 0,
-    rotation: 0
+  const shellEl = document.querySelector('.shell');
+  const layoutEl = document.querySelector('.layout');
+  const heroEl = document.getElementById('hero');
+  const boardEl = document.getElementById('board');
+  const statusPrimaryEl = document.getElementById('status-primary');
+  const statusSecondaryEl = document.getElementById('status-secondary');
+  const moveLogEl = document.getElementById('move-log');
+  const codexEl = document.getElementById('codex');
+  const newGameButton = document.getElementById('new-game');
+  const newGameLabel = document.getElementById('new-game-label');
+  const heroTickerEl = document.getElementById('hero-ticker');
+  const playAgainButton = document.getElementById('play-again');
+  const liveRegion = document.getElementById('live-region');
+  const endgameEl = document.getElementById('endgame');
+  const endgameTitleEl = document.getElementById('endgame-title');
+  const endgameSubtitleEl = document.getElementById('endgame-subtitle');
+
+  const playerCards = {
+    dawn: document.querySelector('.player-card[data-player="dawn"]'),
+    dusk: document.querySelector('.player-card[data-player="dusk"]')
+  };
+  const turnBadges = {
+    dawn: document.getElementById('turn-dawn'),
+    dusk: document.getElementById('turn-dusk')
+  };
+  const capturedEls = {
+    dawn: document.getElementById('captured-dawn'),
+    dusk: document.getElementById('captured-dusk')
   };
 
-  const stars = Array.from({ length: 30 }, () => ({
-    x: Math.random() * canvas.width,
-    y: Math.random() * (canvas.height - CONFIG.groundHeight - 40),
-    radius: Math.random() * 1.5 + 0.5
-  }));
-
-  let pipes = [];
-  const state = {
-    mode: 'ready',
-    score: 0,
-    best: loadBestScore(),
-    lastTime: performance.now(),
-    spawnTimer: 0
+  const focusEls = {
+    card: document.getElementById('piece-focus'),
+    glyph: document.getElementById('focus-glyph'),
+    name: document.getElementById('focus-name'),
+    role: document.getElementById('focus-role'),
+    summary: document.getElementById('focus-summary'),
+    movement: document.getElementById('focus-movement'),
+    position: document.getElementById('focus-position'),
+    status: document.getElementById('focus-status'),
+    promotion: document.getElementById('focus-promotion'),
+    traits: document.getElementById('focus-traits'),
+    stats: document.getElementById('focus-stats')
   };
 
-  let animationId = null;
+  let board = [];
+  let cellElements = [];
+  let currentPlayer = 'dawn';
+  let selectedCell = null;
+  let legalMoves = [];
+  let legalMoveMap = new Map();
+  let capturedPieces = { dawn: [], dusk: [] };
+  let moveHistory = [];
+  let gameState = 'idle';
+  let winner = null;
+  let lastMove = null;
 
-  function loadBestScore() {
-    const raw = localStorage.getItem('mazepark-flappy-best');
-    const value = parseInt(raw, 10);
-    return Number.isFinite(value) && value >= 0 ? value : 0;
+  newGameButton.addEventListener('click', startNewGame);
+  playAgainButton.addEventListener('click', startNewGame);
+
+  function start() {
+    buildBoardSkeleton();
+    populateCodex();
+    enterIdleState();
   }
 
-  function saveBestScore() {
-    localStorage.setItem('mazepark-flappy-best', String(state.best));
+  function startNewGame() {
+    if (shellEl) {
+      shellEl.classList.remove('shell--idle');
+    }
+    if (layoutEl) {
+      layoutEl.removeAttribute('aria-hidden');
+    }
+    if (heroEl) {
+      heroEl.classList.remove('hero--victory');
+      heroEl.classList.add('hero--compact');
+      heroEl.dataset.state = 'active';
+    }
+    if (newGameLabel) {
+      newGameLabel.textContent = 'Новая партия';
+    }
+    lastMove = null;
+    board = createInitialBoard();
+    currentPlayer = 'dawn';
+    selectedCell = null;
+    legalMoves = [];
+    legalMoveMap.clear();
+    capturedPieces = { dawn: [], dusk: [] };
+    moveHistory = [];
+    gameState = 'playing';
+    winner = null;
+    endgameEl.hidden = true;
+    renderBoard();
+    updateHighlights();
+    updateCaptured();
+    renderMoveLog();
+    updatePieceFocus(null);
+    updateTurnPanel();
+    updateStatus('Орден Рассвета открывает дуэль.', 'Выберите фигуру и впишите первый ход в хронику ночи.', true, 'Стартовый импульс за Рассветом');
   }
 
-  function resetEntities() {
-    state.score = 0;
-    state.spawnTimer = 0;
-    bird.y = canvas.height / 2;
-    bird.velocity = 0;
-    bird.rotation = 0;
-    pipes = [];
-    updateScoreboard();
+  function enterIdleState() {
+    gameState = 'idle';
+    winner = null;
+    lastMove = null;
+    board = createInitialBoard();
+    currentPlayer = 'dawn';
+    selectedCell = null;
+    legalMoves = [];
+    legalMoveMap.clear();
+    capturedPieces = { dawn: [], dusk: [] };
+    moveHistory = [];
+    if (shellEl) {
+      shellEl.classList.add('shell--idle');
+    }
+    if (layoutEl) {
+      layoutEl.setAttribute('aria-hidden', 'true');
+    }
+    if (heroEl) {
+      heroEl.classList.remove('hero--compact', 'hero--victory');
+      heroEl.dataset.state = 'idle';
+    }
+    if (newGameLabel) {
+      newGameLabel.textContent = 'Начать дуэль';
+    }
+    endgameEl.hidden = true;
+    renderBoard();
+    updateHighlights();
+    updateCaptured();
+    renderMoveLog();
+    updatePieceFocus(null);
+    updateTurnPanel();
+    updateStatus('Астральный двор ждёт командующего.', 'Нажмите «Начать дуэль», чтобы пробиться сквозь сумрак.', false, 'Астральный двор скрыт во тьме. Нажмите «Начать дуэль».');
   }
 
-  function updateScoreboard() {
-    ui.score.textContent = state.score;
-    ui.best.textContent = state.best;
-  }
+  function buildBoardSkeleton() {
+    boardEl.innerHTML = '';
+    boardEl.style.setProperty('--board-size', BOARD_SIZE);
+    cellElements = Array.from({ length: BOARD_SIZE }, () => []);
 
-  function applyUiState() {
-    ui.start.disabled = state.mode === 'running';
-    ui.pause.disabled = !(state.mode === 'running' || state.mode === 'paused');
-    ui.restart.disabled = state.mode === 'ready';
-    ui.pause.textContent = state.mode === 'paused' ? 'Продолжить' : 'Пауза';
-  }
-
-  function flap() {
-    bird.velocity = CONFIG.flapStrength;
-  }
-
-  function beginGame() {
-    resetEntities();
-    state.mode = 'running';
-    state.lastTime = performance.now();
-    applyUiState();
-    flap();
-  }
-
-  function togglePause() {
-    if (state.mode === 'running') {
-      state.mode = 'paused';
-      applyUiState();
-    } else if (state.mode === 'paused') {
-      state.mode = 'running';
-      state.lastTime = performance.now();
-      applyUiState();
+    for (let row = 0; row < BOARD_SIZE; row += 1) {
+      for (let col = 0; col < BOARD_SIZE; col += 1) {
+        const cell = document.createElement('button');
+        cell.type = 'button';
+        cell.className = `cell ${(row + col) % 2 === 0 ? 'cell--light' : 'cell--dark'}`;
+        cell.dataset.row = row;
+        cell.dataset.col = col;
+        cell.dataset.coord = toNotation(row, col);
+        cell.setAttribute('aria-label', `Клетка ${toNotation(row, col)}`);
+        cell.addEventListener('click', handleCellClick);
+        boardEl.appendChild(cell);
+        cellElements[row][col] = cell;
+      }
     }
   }
 
-  function gameOver() {
-    if (state.mode === 'gameover') return;
-    state.mode = 'gameover';
-    if (state.score > state.best) {
-      state.best = state.score;
-      saveBestScore();
+  function handleCellClick(event) {
+    if (gameState !== 'playing') {
+      return;
     }
-    updateScoreboard();
-    applyUiState();
+
+    const cell = event.currentTarget;
+    const row = Number(cell.dataset.row);
+    const col = Number(cell.dataset.col);
+    const piece = board[row][col];
+
+    const key = `${row},${col}`;
+    const move = legalMoveMap.get(key);
+    if (move && selectedCell) {
+      executeMove(selectedCell.row, selectedCell.col, move);
+      return;
+    }
+
+    if (selectedCell && selectedCell.row === row && selectedCell.col === col) {
+      selectedCell = null;
+      setLegalMoves([]);
+      updateHighlights();
+      updatePieceFocus(null);
+      updateStatus(`${PLAYERS[currentPlayer].name} делает паузу в тумане.`, 'Вы можете выбрать другую фигуру и сменить траекторию.');
+      return;
+    }
+
+    if (!piece) {
+      selectedCell = null;
+      setLegalMoves([]);
+      updateHighlights();
+      updatePieceFocus(null);
+      return;
+    }
+
+    updatePieceFocus(piece, row, col);
+
+    if (piece.owner !== currentPlayer) {
+      setLegalMoves([]);
+      selectedCell = null;
+      updateHighlights();
+      updateStatus(`${PLAYERS[currentPlayer].name} ведёт игру.`, 'Можете лишь изучить силуэты соперника в полутьме.');
+      return;
+    }
+
+    const moves = getLegalMoves(row, col);
+    selectedCell = { row, col };
+    setLegalMoves(moves);
+    updateHighlights();
+    if (moves.length === 0) {
+      updateStatus(`${PIECES[piece.type].name} упирается в глухой коридор.`, 'Выберите другую фигуру для манёвра по теням.');
+    } else {
+      const coords = moves.map((m) => toNotation(m.row, m.col)).join(', ');
+      updateStatus(`${PIECES[piece.type].name} готов проскользнуть сквозь неон.`, `Доступные клетки: ${coords}.`);
+    }
   }
 
-  function spawnPipe() {
-    const clearance = CONFIG.pipeGap;
-    const maxTop = canvas.height - CONFIG.groundHeight - clearance - CONFIG.minGapTop;
-    const gapTop = CONFIG.minGapTop + Math.random() * Math.max(10, maxTop);
-    pipes.push({
-      x: canvas.width + CONFIG.pipeWidth,
-      width: CONFIG.pipeWidth,
-      gapTop,
-      gapBottom: gapTop + clearance,
-      scored: false
+  function executeMove(fromRow, fromCol, move) {
+    const piece = board[fromRow][fromCol];
+    if (!piece) {
+      return;
+    }
+
+    const target = board[move.row][move.col];
+    const originalType = piece.type;
+    const opponent = otherPlayer(piece.owner);
+    const notation = `${toNotation(fromRow, fromCol)} → ${toNotation(move.row, move.col)}`;
+
+    if (target) {
+      capturedPieces[piece.owner].push(target.type);
+    }
+
+    board[move.row][move.col] = piece;
+    board[fromRow][fromCol] = null;
+    piece.moved = true;
+
+    let promotionType = null;
+    if (move.promotion) {
+      promotionType = move.promotion;
+      piece.promotedFrom = piece.promotedFrom || piece.type;
+      piece.type = promotionType;
+    }
+
+    const moveEntry = {
+      player: piece.owner,
+      pieceType: originalType,
+      notation,
+      capture: Boolean(target),
+      promotion: promotionType,
+      check: false,
+      checkmate: false,
+      stalemate: false
+    };
+
+    const victoryByCapture = target && target.type === 'commander';
+
+    lastMove = { fromRow, fromCol, toRow: move.row, toCol: move.col };
+    selectedCell = null;
+    setLegalMoves([]);
+    renderBoard();
+    updateCaptured();
+
+    if (victoryByCapture) {
+      moveEntry.checkmate = true;
+      moveHistory.push(moveEntry);
+      finalizeGame(piece.owner, `${PIECES[originalType].name} пленил Командора ${PLAYERS[opponent].name}.`, 'Решающее столкновение завершило поединок.');
+      return;
+    }
+
+    const opponentCommander = findCommander(board, opponent);
+    const givesCheck = opponentCommander ? isSquareUnderAttack(board, opponentCommander.row, opponentCommander.col, piece.owner) : false;
+    moveEntry.check = givesCheck;
+    moveHistory.push(moveEntry);
+
+    currentPlayer = opponent;
+
+    const opponentHasMoves = hasLegalMoves(board, opponent);
+    const opponentInCheck = isCommanderInCheck(board, opponent);
+
+    if (!opponentHasMoves) {
+      if (opponentInCheck) {
+        moveEntry.checkmate = true;
+        finalizeGame(piece.owner, `${PLAYERS[piece.owner].name} ставит мат.`, `${PLAYERS[opponent].name} не может спасти Командора.`);
+      } else {
+        moveEntry.stalemate = true;
+        finalizeGame(null, 'Перемирие — пат.', 'Оба ордена выдыхают и объявляют ничью.');
+      }
+      renderMoveLog();
+      return;
+    }
+
+    renderMoveLog();
+    updatePieceFocus(null);
+    updateTurnPanel();
+
+    const actorName = PLAYERS[piece.owner].name;
+    const opponentName = PLAYERS[opponent].name;
+    let primary = `${actorName} ведёт ${PIECES[originalType].name} по маршруту ${notation}.`;
+    if (target) {
+      primary += ` Трофей ночи: ${PIECES[target.type].name}.`;
+    }
+    if (promotionType) {
+      primary += ` Фигура повышена до ${PIECES[piece.type].name}.`;
+    }
+
+    let secondary;
+    if (givesCheck) {
+      secondary = `${opponentName}, тревога: Командор под прицелом неона.`;
+    } else if (opponentInCheck) {
+      secondary = `${opponentName}, туман всё ещё держит вашего Командора в напряжении.`;
+    } else {
+      secondary = `${opponentName}, тени ждут вашего ответа.`;
+    }
+
+    const tickerParts = [notation];
+    if (target) {
+      tickerParts.push(`трофей: ${PIECES[target.type].name}`);
+    }
+    if (promotionType) {
+      tickerParts.push(`повышение: ${PIECES[piece.type].name}`);
+    }
+    if (givesCheck) {
+      tickerParts.push('шах');
+    }
+
+    updateStatus(primary, secondary, true, tickerParts.join(' ◇ '));
+    updateHighlights();
+    updateCommanderAlerts();
+  }
+
+  function finalizeGame(winningPlayer, title, subtitle) {
+    gameState = 'ended';
+    winner = winningPlayer;
+    selectedCell = null;
+    setLegalMoves([]);
+    updateHighlights();
+    updateCommanderAlerts();
+    updateTurnPanel();
+
+    const heading = winningPlayer ? `${PLAYERS[winningPlayer].name} побеждает!` : title;
+    const detail = subtitle;
+
+    if (heroEl) {
+      heroEl.classList.remove('hero--compact');
+      heroEl.classList.add('hero--victory');
+      heroEl.dataset.state = 'ended';
+    }
+    if (newGameLabel) {
+      newGameLabel.textContent = winningPlayer ? 'Реванш' : 'Новая дуэль';
+    }
+
+    endgameTitleEl.textContent = heading;
+    endgameSubtitleEl.textContent = detail;
+    endgameEl.hidden = false;
+    const tickerParts = [heading];
+    if (winningPlayer) {
+      tickerParts.push('дуэль завершена');
+    } else {
+      tickerParts.push('ночь окончилась перемирием');
+    }
+    updateStatus(heading, detail, true, tickerParts.join(' ◇ '));
+    renderMoveLog();
+  }
+
+  function setLegalMoves(moves) {
+    legalMoves = moves;
+    legalMoveMap = new Map();
+    moves.forEach((move) => {
+      legalMoveMap.set(`${move.row},${move.col}`, move);
     });
   }
 
-  function updateGame(delta) {
-    state.spawnTimer += delta;
-    if (state.spawnTimer >= CONFIG.spawnInterval) {
-      state.spawnTimer = 0;
-      spawnPipe();
-    }
-
-    bird.velocity += CONFIG.gravity * delta;
-    bird.y += bird.velocity * delta;
-    bird.rotation = Math.atan2(bird.velocity, CONFIG.pipeSpeed * 2);
-
-    const ceiling = bird.radius;
-    const floor = canvas.height - CONFIG.groundHeight - bird.radius;
-    if (bird.y < ceiling) {
-      bird.y = ceiling;
-      bird.velocity = 0;
-    }
-    if (bird.y > floor) {
-      bird.y = floor;
-      gameOver();
-    }
-
-    const nextPipes = [];
-    for (const pipe of pipes) {
-      pipe.x -= CONFIG.pipeSpeed * delta;
-      if (!pipe.scored && pipe.x + pipe.width < bird.x - bird.radius) {
-        pipe.scored = true;
-        state.score += 1;
-        updateScoreboard();
+  function renderBoard() {
+    for (let row = 0; row < BOARD_SIZE; row += 1) {
+      for (let col = 0; col < BOARD_SIZE; col += 1) {
+        const cell = cellElements[row][col];
+        const piece = board[row][col];
+        cell.innerHTML = '';
+        cell.classList.remove('cell--alert', 'cell--last', 'cell--last-target');
+        if (!piece) {
+          cell.setAttribute('aria-label', `Пустая клетка ${toNotation(row, col)}`);
+          continue;
+        }
+        const def = PIECES[piece.type];
+        const wrapper = document.createElement('div');
+        wrapper.className = `piece piece--${piece.owner} piece--${piece.type}`;
+        const glyph = document.createElement('span');
+        glyph.className = 'piece__glyph';
+        glyph.setAttribute('aria-hidden', 'true');
+        glyph.textContent = def.glyph[piece.owner];
+        const sr = document.createElement('span');
+        sr.className = 'sr-only';
+        sr.textContent = `${def.name} игрока ${PLAYERS[piece.owner].name}`;
+        wrapper.appendChild(glyph);
+        wrapper.appendChild(sr);
+        cell.appendChild(wrapper);
+        cell.setAttribute('aria-label', `${def.name} ${PLAYERS[piece.owner].name} на клетке ${toNotation(row, col)}`);
       }
-      if (pipe.x + pipe.width > 0) {
-        nextPipes.push(pipe);
-      }
+    }
+    updateCommanderAlerts();
+    applyLastMoveHighlight();
+  }
 
-      if (bird.x + bird.radius > pipe.x && bird.x - bird.radius < pipe.x + pipe.width) {
-        if (bird.y - bird.radius < pipe.gapTop || bird.y + bird.radius > pipe.gapBottom) {
-          gameOver();
+  function updateHighlights() {
+    for (let row = 0; row < BOARD_SIZE; row += 1) {
+      for (let col = 0; col < BOARD_SIZE; col += 1) {
+        const cell = cellElements[row][col];
+        cell.classList.remove('cell--selected', 'cell--move', 'cell--capture');
+        if (selectedCell && selectedCell.row === row && selectedCell.col === col) {
+          cell.classList.add('cell--selected');
+        }
+        const key = `${row},${col}`;
+        if (legalMoveMap.has(key)) {
+          const move = legalMoveMap.get(key);
+          cell.classList.add(move.capture ? 'cell--capture' : 'cell--move');
         }
       }
     }
-    pipes = nextPipes;
   }
 
-  function drawBackground() {
-    const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-    gradient.addColorStop(0, '#060915');
-    gradient.addColorStop(0.55, '#102040');
-    gradient.addColorStop(1, '#182d52');
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    ctx.save();
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-    for (const star of stars) {
-      ctx.beginPath();
-      ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
-      ctx.fill();
+  function applyLastMoveHighlight() {
+    if (!lastMove) {
+      return;
     }
-    ctx.restore();
-  }
-
-  function drawGround() {
-    ctx.fillStyle = '#1a2d4d';
-    ctx.fillRect(0, canvas.height - CONFIG.groundHeight, canvas.width, CONFIG.groundHeight);
-    ctx.strokeStyle = '#253d63';
-    ctx.lineWidth = 4;
-    ctx.beginPath();
-    ctx.moveTo(0, canvas.height - CONFIG.groundHeight);
-    ctx.lineTo(canvas.width, canvas.height - CONFIG.groundHeight);
-    ctx.stroke();
-  }
-
-  function drawPipes() {
-    for (const pipe of pipes) {
-      const gradient = ctx.createLinearGradient(pipe.x, 0, pipe.x + pipe.width, 0);
-      gradient.addColorStop(0, '#1ad6ff');
-      gradient.addColorStop(1, '#1a90ff');
-      ctx.fillStyle = gradient;
-
-      ctx.fillRect(pipe.x, 0, pipe.width, pipe.gapTop);
-      ctx.fillRect(pipe.x, pipe.gapBottom, pipe.width, canvas.height - CONFIG.groundHeight - pipe.gapBottom);
-
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
-      ctx.fillRect(pipe.x, pipe.gapTop - 12, pipe.width, 12);
-      ctx.fillRect(pipe.x, pipe.gapBottom, pipe.width, 12);
+    const { fromRow, fromCol, toRow, toCol } = lastMove;
+    const fromCell = cellElements[fromRow] && cellElements[fromRow][fromCol];
+    const toCell = cellElements[toRow] && cellElements[toRow][toCol];
+    if (fromCell) {
+      fromCell.classList.add('cell--last');
+    }
+    if (toCell) {
+      toCell.classList.add('cell--last', 'cell--last-target');
     }
   }
 
-  function drawBird() {
-    ctx.save();
-    ctx.translate(bird.x, bird.y);
-    ctx.rotate(Math.max(Math.min(bird.rotation, 0.45), -0.75));
-    ctx.fillStyle = '#ffe56c';
-    ctx.beginPath();
-    ctx.arc(0, 0, bird.radius, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.fillStyle = '#f9c23c';
-    ctx.beginPath();
-    ctx.ellipse(-bird.radius * 0.6, 0, bird.radius * 0.65, bird.radius * 0.5, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.fillStyle = '#0c1324';
-    ctx.beginPath();
-    ctx.arc(bird.radius * 0.4, -bird.radius * 0.2, bird.radius * 0.25, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.fillStyle = '#ff9a3c';
-    ctx.beginPath();
-    ctx.moveTo(bird.radius, 0);
-    ctx.lineTo(bird.radius + 12, -4);
-    ctx.lineTo(bird.radius + 12, 4);
-    ctx.closePath();
-    ctx.fill();
-
-    ctx.restore();
+  function updateCommanderAlerts() {
+    for (let row = 0; row < BOARD_SIZE; row += 1) {
+      for (let col = 0; col < BOARD_SIZE; col += 1) {
+        cellElements[row][col].classList.remove('cell--alert');
+      }
+    }
+    const players = ['dawn', 'dusk'];
+    players.forEach((player) => {
+      const commander = findCommander(board, player);
+      if (!commander) {
+        return;
+      }
+      const cell = cellElements[commander.row][commander.col];
+      if (isCommanderInCheck(board, player)) {
+        cell.classList.add('cell--alert');
+      }
+    });
   }
 
-  function drawOverlay() {
-    let title = '';
-    let subtitle = '';
-
-    if (state.mode === 'ready') {
-      title = 'Готовы к полёту?';
-      subtitle = 'Нажмите «Старт» или пробел, чтобы начать.';
-    } else if (state.mode === 'paused') {
-      title = 'Пауза';
-      subtitle = 'Нажмите «Продолжить» или пробел, чтобы вернуться в полёт.';
-    } else if (state.mode === 'gameover') {
-      title = 'Промах!';
-      subtitle = `Ваш счёт: ${state.score}. Попробуйте снова.`;
+  function updateStatus(primary, secondary = '', announce = true, tickerMessage = null) {
+    statusPrimaryEl.textContent = primary;
+    statusSecondaryEl.textContent = secondary;
+    const combined = `${primary} ${secondary}`.trim();
+    if (announce) {
+      liveRegion.textContent = combined;
+      window.setTimeout(() => {
+        liveRegion.textContent = '';
+      }, 1000);
     }
-
-    if (!title) return;
-
-    ctx.save();
-    ctx.fillStyle = 'rgba(5, 9, 18, 0.65)';
-    ctx.fillRect(40, canvas.height * 0.32, canvas.width - 80, 140);
-
-    ctx.textAlign = 'center';
-    ctx.fillStyle = '#ffe56c';
-    ctx.font = '700 32px "Segoe UI", sans-serif';
-    ctx.fillText(title, canvas.width / 2, canvas.height * 0.4);
-
-    ctx.fillStyle = '#d2dbf5';
-    ctx.font = '400 18px "Segoe UI", sans-serif';
-    ctx.fillText(subtitle, canvas.width / 2, canvas.height * 0.47);
-    ctx.restore();
+    setTicker(tickerMessage || combined);
   }
 
-  function drawScore() {
-    ctx.save();
-    ctx.textAlign = 'left';
-    ctx.font = '700 24px "Segoe UI", sans-serif';
-    ctx.fillStyle = 'rgba(255, 229, 108, 0.95)';
-    ctx.fillText(`Счёт: ${state.score}`, 20, 36);
-    ctx.fillText(`Рекорд: ${state.best}`, 20, 66);
-    ctx.restore();
+  function setTicker(message) {
+    if (!heroTickerEl) {
+      return;
+    }
+    heroTickerEl.textContent = message || 'Туманы пока молчат.';
   }
 
-  function draw() {
-    drawBackground();
-    drawPipes();
-    drawGround();
-    drawBird();
-    drawScore();
-    drawOverlay();
+  function updateTurnPanel() {
+    const players = ['dawn', 'dusk'];
+    players.forEach((player) => {
+      const card = playerCards[player];
+      const badge = turnBadges[player];
+      card.classList.remove('player-card--active', 'player-card--alert');
+      if (gameState === 'idle') {
+        badge.textContent = player === 'dawn' ? 'Готов' : 'Дежурит';
+        return;
+      }
+      if (gameState === 'ended') {
+        if (winner === player) {
+          badge.textContent = 'Победа';
+        } else if (winner === null) {
+          badge.textContent = 'Перемирие';
+        } else {
+          badge.textContent = 'Поражение';
+        }
+        return;
+      }
+      if (currentPlayer === player) {
+        badge.textContent = 'Ход';
+        card.classList.add('player-card--active');
+      } else {
+        badge.textContent = 'Ожидает';
+      }
+      if (isCommanderInCheck(board, player)) {
+        card.classList.add('player-card--alert');
+        if (currentPlayer === player) {
+          badge.textContent = 'Под ударом';
+        }
+      }
+    });
   }
 
-  function loop(timestamp) {
-    const delta = Math.min((timestamp - state.lastTime) / 1000, 0.05);
-    state.lastTime = timestamp;
-
-    if (state.mode === 'running') {
-      updateGame(delta);
-    }
-
-    draw();
-    animationId = requestAnimationFrame(loop);
+  function updateCaptured() {
+    const order = ['commander', 'sentinel', 'strider', 'lancer', 'squire'];
+    ['dawn', 'dusk'].forEach((player) => {
+      const container = capturedEls[player];
+      container.innerHTML = '';
+      const counts = capturedPieces[player].reduce((acc, type) => {
+        acc[type] = (acc[type] || 0) + 1;
+        return acc;
+      }, {});
+      const entries = order.filter((type) => counts[type]);
+      if (entries.length === 0) {
+        const empty = document.createElement('span');
+        empty.className = 'captured__empty';
+        empty.textContent = 'Пока без трофеев';
+        container.appendChild(empty);
+        return;
+      }
+      entries.forEach((type) => {
+        const span = document.createElement('span');
+        const glyph = document.createElement('span');
+        glyph.setAttribute('aria-hidden', 'true');
+        glyph.textContent = PIECES[type].glyph[otherPlayer(player)];
+        const count = document.createElement('strong');
+        count.textContent = `${counts[type]}×`;
+        const label = document.createTextNode(` ${PIECES[type].name}`);
+        span.append(glyph, count, label);
+        container.appendChild(span);
+      });
+    });
   }
 
-  function handleFlapTrigger(event) {
-    if (event) {
-      event.preventDefault();
-    }
-
-    if (state.mode === 'ready' || state.mode === 'gameover') {
-      beginGame();
-    } else if (state.mode === 'running') {
-      flap();
-    } else if (state.mode === 'paused') {
-      togglePause();
-    }
-  }
-
-  ui.start.addEventListener('click', () => {
-    beginGame();
-  });
-
-  ui.pause.addEventListener('click', () => {
-    togglePause();
-  });
-
-  ui.restart.addEventListener('click', () => {
-    beginGame();
-  });
-
-  canvas.addEventListener('pointerdown', handleFlapTrigger);
-  window.addEventListener('keydown', (event) => {
-    if (event.code === 'Space' || event.code === 'ArrowUp') {
-      handleFlapTrigger(event);
-    } else if (event.code === 'KeyP') {
-      event.preventDefault();
-      togglePause();
-    } else if (event.code === 'KeyR' && state.mode !== 'ready') {
-      event.preventDefault();
-      beginGame();
-    }
-  });
-
-  window.addEventListener('touchstart', (event) => {
-    handleFlapTrigger(event);
-  }, { passive: false });
-
-  document.addEventListener('visibilitychange', () => {
-    if (document.hidden && state.mode === 'running') {
-      togglePause();
-    }
-  });
-
-  function cancelAnimation() {
-    if (animationId !== null) {
-      cancelAnimationFrame(animationId);
-      animationId = null;
+  function renderMoveLog() {
+    moveLogEl.innerHTML = '';
+    for (let i = 0; i < moveHistory.length; i += 2) {
+      const entry = document.createElement('li');
+      entry.className = 'move-log__entry';
+      const turnNumber = Math.floor(i / 2) + 1;
+      const turnLabel = document.createElement('span');
+      turnLabel.className = 'move-log__turn';
+      turnLabel.textContent = `${turnNumber}`;
+      const row = document.createElement('div');
+      row.className = 'move-log__row';
+      row.appendChild(createMoveLogCell(moveHistory[i]));
+      row.appendChild(createMoveLogCell(moveHistory[i + 1]));
+      entry.append(turnLabel, row);
+      moveLogEl.appendChild(entry);
     }
   }
 
-  window.addEventListener('beforeunload', cancelAnimation);
-
-  function init() {
-    resetEntities();
-    state.mode = 'ready';
-    applyUiState();
-    updateScoreboard();
-    state.lastTime = performance.now();
-    animationId = requestAnimationFrame(loop);
+  function createMoveLogCell(entry) {
+    const cell = document.createElement('div');
+    cell.className = 'move-log__cell';
+    if (!entry) {
+      cell.classList.add('move-log__cell--empty');
+      cell.textContent = '…';
+      return cell;
+    }
+    const playerLabel = document.createElement('span');
+    playerLabel.className = 'move-log__player';
+    playerLabel.textContent = PLAYERS[entry.player].name;
+    const notation = document.createElement('span');
+    notation.className = 'move-log__notation';
+    notation.textContent = `${PIECES[entry.pieceType].glyph[entry.player]} ${entry.notation}`;
+    const detail = document.createElement('div');
+    detail.className = 'move-log__detail';
+    const flags = [];
+    if (entry.capture) {
+      flags.push({ text: 'трофей', type: 'capture' });
+    }
+    if (entry.promotion) {
+      flags.push({ text: `повышение: ${PIECES[entry.promotion].name}`, type: 'promotion' });
+    }
+    if (entry.checkmate) {
+      flags.push({ text: 'мат', type: 'checkmate' });
+    } else if (entry.check) {
+      flags.push({ text: 'шах', type: 'check' });
+    }
+    if (entry.stalemate) {
+      flags.push({ text: 'пат', type: 'stalemate' });
+    }
+    const makeBadge = (text, type) => {
+      const span = document.createElement('span');
+      span.className = `move-log__badge move-log__badge--${type}`;
+      span.textContent = text;
+      return span;
+    };
+    if (flags.length === 0) {
+      detail.appendChild(makeBadge('манёвр без шума', 'quiet'));
+    } else {
+      flags.forEach((flag) => {
+        detail.appendChild(makeBadge(flag.text, flag.type));
+      });
+    }
+    cell.append(playerLabel, notation, detail);
+    return cell;
   }
 
-  init();
+  function updatePieceFocus(piece, row, col) {
+    focusEls.traits.innerHTML = '';
+    focusEls.stats.innerHTML = '';
+    if (!piece) {
+      focusEls.card.classList.add('focus-card--empty');
+      focusEls.glyph.textContent = '☆';
+      focusEls.name.textContent = 'Выберите фигуру, чтобы узнать её сильные стороны';
+      focusEls.role.textContent = '';
+      focusEls.summary.textContent = '';
+      focusEls.movement.textContent = '';
+      focusEls.position.textContent = '';
+      focusEls.status.textContent = '';
+      focusEls.promotion.textContent = '';
+      const placeholder = document.createElement('li');
+      placeholder.className = 'tag-list__placeholder';
+      placeholder.textContent = 'Тактическое досье появится здесь';
+      focusEls.traits.appendChild(placeholder);
+      return;
+    }
+
+    const def = PIECES[piece.type];
+    focusEls.card.classList.remove('focus-card--empty');
+    focusEls.glyph.textContent = def.glyph[piece.owner];
+    focusEls.name.textContent = `${def.name} — ${PLAYERS[piece.owner].name}`;
+    focusEls.role.textContent = def.role;
+    focusEls.summary.textContent = def.description;
+    focusEls.movement.textContent = def.movement;
+    focusEls.position.textContent = `Позиция: ${toNotation(row, col)}`;
+    focusEls.status.textContent = piece.moved ? 'Уже участвовал в манёврах.' : 'Пока не двигался.';
+    if (piece.promotedFrom && piece.promotedFrom !== piece.type) {
+      focusEls.promotion.textContent = `Повышен из ${PIECES[piece.promotedFrom].name}.`;
+    } else {
+      focusEls.promotion.textContent = '';
+    }
+
+    def.traits.forEach((trait) => {
+      const li = document.createElement('li');
+      li.textContent = trait;
+      focusEls.traits.appendChild(li);
+    });
+
+    Object.entries(def.stats).forEach(([key, value]) => {
+      const dt = document.createElement('dt');
+      dt.textContent = key;
+      const dd = document.createElement('dd');
+      dd.textContent = value;
+      focusEls.stats.append(dt, dd);
+    });
+  }
+
+  function populateCodex() {
+    codexEl.innerHTML = '';
+    Object.entries(PIECES).forEach(([type, def]) => {
+      const card = document.createElement('article');
+      card.className = `codex-card codex-card--${type}`;
+      const header = document.createElement('div');
+      header.className = 'codex-card__header';
+      const glyph = document.createElement('span');
+      glyph.className = 'codex-card__glyph';
+      glyph.textContent = def.glyph.dawn;
+      const titleWrap = document.createElement('div');
+      const title = document.createElement('h3');
+      title.className = 'codex-card__title';
+      title.textContent = def.name;
+      const role = document.createElement('p');
+      role.className = 'codex-card__role';
+      role.textContent = def.role;
+      titleWrap.append(title, role);
+      header.append(glyph, titleWrap);
+      const desc = document.createElement('p');
+      desc.className = 'codex-card__text';
+      desc.textContent = def.description;
+      const move = document.createElement('p');
+      move.className = 'codex-card__text';
+      move.textContent = def.movement;
+      const traits = document.createElement('ul');
+      traits.className = 'tag-list';
+      def.traits.forEach((trait) => {
+        const li = document.createElement('li');
+        li.textContent = trait;
+        traits.appendChild(li);
+      });
+      const stats = document.createElement('dl');
+      stats.className = 'stat-list';
+      Object.entries(def.stats).forEach(([key, value]) => {
+        const dt = document.createElement('dt');
+        dt.textContent = key;
+        const dd = document.createElement('dd');
+        dd.textContent = value;
+        stats.append(dt, dd);
+      });
+      card.append(header, desc, move, traits, stats);
+      codexEl.appendChild(card);
+    });
+  }
+
+  function toNotation(row, col) {
+    const letter = COLUMN_LETTERS[col] || '?';
+    const number = ROW_NUMBERS[row] || row + 1;
+    return `${letter}${number}`;
+  }
+
+  function otherPlayer(player) {
+    return player === 'dawn' ? 'dusk' : 'dawn';
+  }
+
+  function createInitialBoard() {
+    const backline = ['sentinel', 'lancer', 'commander', 'strider', 'lancer', 'sentinel'];
+    const boardState = Array.from({ length: BOARD_SIZE }, () => Array(BOARD_SIZE).fill(null));
+    for (let col = 0; col < BOARD_SIZE; col += 1) {
+      boardState[0][col] = createPiece(backline[col], 'dusk');
+      boardState[1][col] = createPiece('squire', 'dusk');
+      boardState[BOARD_SIZE - 2][col] = createPiece('squire', 'dawn');
+      boardState[BOARD_SIZE - 1][col] = createPiece(backline[col], 'dawn');
+    }
+    return boardState;
+  }
+
+  function createPiece(type, owner) {
+    return { type, owner, moved: false };
+  }
+
+  function cloneBoard(boardState) {
+    return boardState.map((row) => row.map((cell) => (cell ? { ...cell } : null)));
+  }
+
+  function applyMoveOnBoard(boardState, fromRow, fromCol, toRow, toCol, options = {}) {
+    const clone = cloneBoard(boardState);
+    const piece = clone[fromRow][fromCol];
+    clone[fromRow][fromCol] = null;
+    if (!piece) {
+      return clone;
+    }
+    const movedPiece = { ...piece, moved: true };
+    if (options.promotion) {
+      movedPiece.promotedFrom = movedPiece.promotedFrom || movedPiece.type;
+      movedPiece.type = options.promotion;
+    }
+    clone[toRow][toCol] = movedPiece;
+    return clone;
+  }
+
+  function getLegalMoves(row, col) {
+    return getLegalMovesForBoard(board, row, col, currentPlayer);
+  }
+
+  function getLegalMovesForBoard(boardState, row, col, player) {
+    const piece = boardState[row][col];
+    if (!piece || piece.owner !== player) {
+      return [];
+    }
+    const pseudoMoves = generatePseudoMoves(boardState, row, col, piece, 'move');
+    const legal = [];
+    for (const move of pseudoMoves) {
+      const target = boardState[move.row][move.col];
+      if (target && target.owner === player) {
+        continue;
+      }
+      const promotionType = piece.type === 'squire' && move.row === promotionRowFor(player) ? 'strider' : null;
+      const boardAfter = applyMoveOnBoard(boardState, row, col, move.row, move.col, { promotion: promotionType });
+      const commander = findCommander(boardAfter, player);
+      if (!commander) {
+        continue;
+      }
+      if (isSquareUnderAttack(boardAfter, commander.row, commander.col, otherPlayer(player))) {
+        continue;
+      }
+      legal.push({
+        row: move.row,
+        col: move.col,
+        capture: Boolean(target),
+        promotion: promotionType
+      });
+    }
+    return legal;
+  }
+
+  function hasLegalMoves(boardState, player) {
+    for (let row = 0; row < BOARD_SIZE; row += 1) {
+      for (let col = 0; col < BOARD_SIZE; col += 1) {
+        const piece = boardState[row][col];
+        if (piece && piece.owner === player) {
+          const moves = getLegalMovesForBoard(boardState, row, col, player);
+          if (moves.length > 0) {
+            return true;
+          }
+        }
+      }
+    }
+    return false;
+  }
+
+  function promotionRowFor(player) {
+    return player === 'dawn' ? 0 : BOARD_SIZE - 1;
+  }
+
+  function isCommanderInCheck(boardState, player) {
+    const commander = findCommander(boardState, player);
+    if (!commander) {
+      return false;
+    }
+    return isSquareUnderAttack(boardState, commander.row, commander.col, otherPlayer(player));
+  }
+
+  function findCommander(boardState, player) {
+    for (let row = 0; row < BOARD_SIZE; row += 1) {
+      for (let col = 0; col < BOARD_SIZE; col += 1) {
+        const piece = boardState[row][col];
+        if (piece && piece.owner === player && piece.type === 'commander') {
+          return { row, col };
+        }
+      }
+    }
+    return null;
+  }
+
+  function isSquareUnderAttack(boardState, targetRow, targetCol, attacker) {
+    for (let row = 0; row < BOARD_SIZE; row += 1) {
+      for (let col = 0; col < BOARD_SIZE; col += 1) {
+        const piece = boardState[row][col];
+        if (!piece || piece.owner !== attacker) {
+          continue;
+        }
+        const threats = generatePseudoMoves(boardState, row, col, piece, 'threat');
+        if (threats.some((move) => move.row === targetRow && move.col === targetCol)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  function generatePseudoMoves(boardState, row, col, piece, purpose) {
+    const moves = [];
+    const owner = piece.owner;
+    const isThreat = purpose === 'threat';
+
+    const pushSliding = (directions) => {
+      directions.forEach(([dr, dc]) => {
+        let r = row + dr;
+        let c = col + dc;
+        while (isInside(r, c)) {
+          const occupant = boardState[r][c];
+          if (!occupant) {
+            moves.push({ row: r, col: c });
+          } else {
+            if (occupant.owner !== owner) {
+              moves.push({ row: r, col: c });
+            }
+            break;
+          }
+          r += dr;
+          c += dc;
+        }
+      });
+    };
+
+    switch (piece.type) {
+      case 'commander': {
+        for (let dr = -1; dr <= 1; dr += 1) {
+          for (let dc = -1; dc <= 1; dc += 1) {
+            if (dr === 0 && dc === 0) continue;
+            const r = row + dr;
+            const c = col + dc;
+            if (!isInside(r, c)) continue;
+            const occupant = boardState[r][c];
+            if (occupant && occupant.owner === owner) continue;
+            moves.push({ row: r, col: c });
+          }
+        }
+        break;
+      }
+      case 'sentinel': {
+        pushSliding([
+          [1, 0],
+          [-1, 0],
+          [0, 1],
+          [0, -1]
+        ]);
+        break;
+      }
+      case 'strider': {
+        pushSliding([
+          [1, 1],
+          [1, -1],
+          [-1, 1],
+          [-1, -1]
+        ]);
+        break;
+      }
+      case 'lancer': {
+        const jumps = [
+          [2, 1], [2, -1],
+          [-2, 1], [-2, -1],
+          [1, 2], [1, -2],
+          [-1, 2], [-1, -2]
+        ];
+        jumps.forEach(([dr, dc]) => {
+          const r = row + dr;
+          const c = col + dc;
+          if (!isInside(r, c)) return;
+          const occupant = boardState[r][c];
+          if (occupant && occupant.owner === owner) return;
+          moves.push({ row: r, col: c });
+        });
+        break;
+      }
+      case 'squire': {
+        const dir = directionByPlayer[owner];
+        const forwardRow = row + dir;
+        if (purpose === 'move') {
+          if (isInside(forwardRow, col) && !boardState[forwardRow][col]) {
+            moves.push({ row: forwardRow, col });
+            const doubleRow = forwardRow + dir;
+            if (!piece.moved && isInside(doubleRow, col) && !boardState[doubleRow][col]) {
+              moves.push({ row: doubleRow, col });
+            }
+          }
+          [-1, 1].forEach((dc) => {
+            const r = row + dir;
+            const c = col + dc;
+            if (!isInside(r, c)) return;
+            const occupant = boardState[r][c];
+            if (occupant && occupant.owner !== owner) {
+              moves.push({ row: r, col: c });
+            }
+          });
+        } else {
+          [-1, 1].forEach((dc) => {
+            const r = row + dir;
+            const c = col + dc;
+            if (isInside(r, c)) {
+              moves.push({ row: r, col: c });
+            }
+          });
+        }
+        break;
+      }
+      default:
+        break;
+    }
+
+    if (isThreat && piece.type !== 'squire') {
+      // For threats we should not include squares beyond allied pieces; already handled.
+      return moves;
+    }
+
+    return moves;
+  }
+
+  function isInside(row, col) {
+    return row >= 0 && row < BOARD_SIZE && col >= 0 && col < BOARD_SIZE;
+  }
+
+  start();
 })();
