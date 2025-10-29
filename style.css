@@ -1,7 +1,7 @@
 :root {
   color-scheme: dark;
   --bg: radial-gradient(circle at 20% 20%, #182347 0%, #0a0f1f 55%, #050812 100%);
-  --panel-bg: rgba(12, 22, 45, 0.78);
+  --panel-bg: rgba(12, 22, 45, 0.79);
   --panel-border: rgba(120, 167, 255, 0.2);
   --text-primary: #dde7ff;
   --text-muted: #94a3c7;
