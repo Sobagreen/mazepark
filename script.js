@@ -1,7 +1,7 @@
 (function () {
-  const BOARD_SIZE = 6;
-  const COLUMN_LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
-  const ROW_NUMBERS = [6, 5, 4, 3, 2, 1];
+  const BOARD_SIZE = 10;
+  const COLUMN_LETTERS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
+  const ROW_NUMBERS = [10, 9, 8, 7, 6, 5, 4, 3, 2, 1];
   const directionByPlayer = { dawn: -1, dusk: 1 };
 
   const PLAYERS = {
@@ -20,48 +20,118 @@
   const PIECES = {
     commander: {
       name: 'Командор',
-      glyph: { dawn: '♔', dusk: '♚' },
+      glyph: { dawn: '✶', dusk: '✹' },
       role: 'Лидер',
       description: 'Центр координации отряда. Командор обеспечивает связь и не может быть потерян.',
       movement: 'Ходит на одну клетку в любом направлении.',
       traits: ['Лидер', 'Тактическая аура'],
-      stats: { Манёвр: '★☆☆', Контроль: '★★★★★', Защита: '★★★★' }
+      stats: { Манёвр: '★☆☆', Контроль: '★★★★★', Защита: '★★★★' },
+      abilities: [
+        {
+          id: 'radiant-step',
+          name: 'Радиантный шаг',
+          cost: 4,
+          description: 'Прорыв на две клетки по любой из восьми направлений. Пути должны быть свободны.'
+        },
+        {
+          id: 'astral-swap',
+          name: 'Астральный обмен',
+          cost: 6,
+          description: 'Меняется местами с союзной фигурой в радиусе трёх клеток, мгновенно перебрасывая силы.'
+        }
+      ]
     },
     sentinel: {
       name: 'Страж',
-      glyph: { dawn: '♖', dusk: '♜' },
+      glyph: { dawn: '⬢', dusk: '⬣' },
       role: 'Линейный контроль',
       description: 'Стражи держат прямые коридоры и отрезают пути отступления.',
       movement: 'Любое количество клеток по горизонтали или вертикали без прыжков.',
       traits: ['Линии давления', 'Гарнизон'],
-      stats: { Манёвр: '★★★', Контроль: '★★★★', Сложность: '★★' }
+      stats: { Манёвр: '★★★', Контроль: '★★★★', Сложность: '★★' },
+      abilities: [
+        {
+          id: 'iron-diagonals',
+          name: 'Железные диагонали',
+          cost: 3,
+          description: 'Дает возможность сместиться по диагонали на одну или две клетки.'
+        },
+        {
+          id: 'siege-bolt',
+          name: 'Осадный импульс',
+          cost: 5,
+          description: 'Дистанционный удар по прямой до трёх клеток. Страж остаётся на месте.'
+        }
+      ]
     },
     strider: {
       name: 'Странник',
-      glyph: { dawn: '♗', dusk: '♝' },
+      glyph: { dawn: '◇', dusk: '◆' },
       role: 'Диагональный манёвр',
       description: 'Странники режут пространство по диагоналям и выстраивают дуги обхода.',
       movement: 'Любое количество клеток по диагонали без прыжков.',
       traits: ['Фланг', 'Позиционный прессинг'],
-      stats: { Манёвр: '★★★★', Контроль: '★★★', Сложность: '★★☆' }
+      stats: { Манёвр: '★★★★', Контроль: '★★★', Сложность: '★★☆' },
+      abilities: [
+        {
+          id: 'horizon-drift',
+          name: 'Горизонтальный дрейф',
+          cost: 3,
+          description: 'Однократный ход на две клетки по горизонтали, раскрывающий новые углы атаки.'
+        },
+        {
+          id: 'prism-gate',
+          name: 'Призматический портал',
+          cost: 6,
+          description: 'Телепорт на диагональ через три клетки, если цель свободна.'
+        }
+      ]
     },
     lancer: {
       name: 'Гонец',
-      glyph: { dawn: '♘', dusk: '♞' },
+      glyph: { dawn: '⚚', dusk: '⚝' },
       role: 'Манёвр через заслоны',
       description: 'Гонец прыгает дугой, прорывается через заслоны и наносит внезапные удары.',
       movement: 'Прыжок буквой «Г»: две клетки в одном направлении и одна в перпендикулярном.',
       traits: ['Скачок', 'Атака из тыла'],
-      stats: { Манёвр: '★★★★★', Контроль: '★★', Сложность: '★★★' }
+      stats: { Манёвр: '★★★★★', Контроль: '★★', Сложность: '★★★' },
+      abilities: [
+        {
+          id: 'meteor-dash',
+          name: 'Метеорный разгон',
+          cost: 3,
+          description: 'Рывок по прямой до трёх клеток с возможностью срезать врага в конце пути.'
+        },
+        {
+          id: 'storm-reversal',
+          name: 'Штормовой переворот',
+          cost: 5,
+          description: 'Прыжок к цели по ходу коня с обменом позиций, выбивая врага с ключевой клетки.'
+        }
+      ]
     },
     squire: {
       name: 'Рекрут',
-      glyph: { dawn: '♙', dusk: '♟' },
+      glyph: { dawn: '◖', dusk: '◗' },
       role: 'Линия фронта',
       description: 'Рекруты выстраивают фронт. Врага берут по диагонали и могут сделать стартовый рывок.',
       movement: 'На одну клетку вперёд (две при первом ходе). Захватывает по диагонали. На последней линии повышается до Странника.',
       traits: ['Гарнизон', 'Повышение'],
-      stats: { Манёвр: '★★', Контроль: '★★', Сложность: '★' }
+      stats: { Манёвр: '★★', Контроль: '★★', Сложность: '★' },
+      abilities: [
+        {
+          id: 'line-surge',
+          name: 'Фронтовой рывок',
+          cost: 2,
+          description: 'Повторный марш на две клетки вперёд даже после первых шагов, если путь свободен.'
+        },
+        {
+          id: 'hook-strike',
+          name: 'Крюковой удар',
+          cost: 3,
+          description: 'Лобовая атака на одну клетку вперёд, пробивая оборону противника.'
+        }
+      ]
     }
   };
 
@@ -80,6 +150,26 @@
   let turnBadges;
   let capturedEls;
   let focusEls;
+
+  let boardEl;
+  let boardFrame;
+  let statusPrimaryEl;
+  let statusSecondaryEl;
+  let moveLogEl;
+  let codexEl;
+  let newGameButton;
+  let playAgainButton;
+  let liveRegion;
+  let endgameEl;
+  let endgameTitleEl;
+  let endgameSubtitleEl;
+  let playerCards;
+  let turnBadges;
+  let capturedEls;
+  let focusEls;
+
+  let activeAbility = null;
+  let abilitySource = null;
 
   let board = [];
   let cellElements = [];
@@ -142,6 +232,15 @@
     buildBoardSkeleton();
     populateCodex();
     startNewGame();
+    window.addEventListener('resize', updateBoardOrientation);
+  }
+
+  function handleNewGameRequest(event) {
+    event?.preventDefault();
+    startNewGame();
+    if (event?.currentTarget instanceof HTMLElement) {
+      event.currentTarget.blur();
+    }
   }
 
   function handleNewGameRequest(event) {
@@ -163,7 +262,9 @@
     gameState = 'playing';
     winner = null;
     endgameEl.hidden = true;
+    clearAbilityState();
     renderBoard();
+    updateBoardOrientation();
     updateHighlights();
     updateCaptured();
     renderMoveLog();
@@ -202,6 +303,26 @@
     const row = Number(cell.dataset.row);
     const col = Number(cell.dataset.col);
     const piece = board[row][col];
+
+    if (activeAbility && abilitySource) {
+      const key = `${row},${col}`;
+      const abilityMove = legalMoveMap.get(key);
+      if (abilityMove) {
+        executeMove(abilitySource.row, abilitySource.col, abilityMove);
+        return;
+      }
+      if (abilitySource.row === row && abilitySource.col === col) {
+        clearAbilityState();
+        setLegalMoves([]);
+        updateHighlights();
+        if (piece) {
+          updatePieceFocus(piece, row, col);
+        }
+        updateStatus('Способность отменена.', `${PLAYERS[currentPlayer].name} выбирает новое действие.`);
+        return;
+      }
+      clearAbilityState();
+    }
 
     const key = `${row},${col}`;
     const move = legalMoveMap.get(key);
@@ -249,63 +370,222 @@
     }
   }
 
+  function clearAbilityState() {
+    activeAbility = null;
+    abilitySource = null;
+  }
+
+  function handleAbilityActivation(row, col, abilityDef) {
+    if (gameState !== 'playing') {
+      return;
+    }
+    const piece = board[row][col];
+    if (!piece || piece.owner !== currentPlayer) {
+      return;
+    }
+    if (piece.energy < abilityDef.cost) {
+      updateStatus('Недостаточно силы для способности.', `Нужно ${abilityDef.cost}, доступно ${piece.energy}.`);
+      return;
+    }
+
+    if (
+      activeAbility &&
+      abilitySource &&
+      activeAbility.id === abilityDef.id &&
+      abilitySource.row === row &&
+      abilitySource.col === col
+    ) {
+      clearAbilityState();
+      setLegalMoves([]);
+      updateHighlights();
+      updatePieceFocus(piece, row, col);
+      updateStatus(`${abilityDef.name} отменена.`, `${PLAYERS[currentPlayer].name} выбирает новое действие.`, false);
+      return;
+    }
+
+    const moves = getAbilityMoves(board, row, col, piece, abilityDef);
+    if (moves.length === 0) {
+      clearAbilityState();
+      setLegalMoves([]);
+      updateHighlights();
+      updatePieceFocus(piece, row, col);
+      updateStatus(`${abilityDef.name} пока невозможна.`, 'Нет допустимых целей.', false);
+      return;
+    }
+
+    activeAbility = abilityDef;
+    abilitySource = { row, col };
+    selectedCell = { row, col };
+    setLegalMoves(moves);
+    updateHighlights();
+    updatePieceFocus(piece, row, col);
+    const coords = moves.map((move) => toNotation(move.row, move.col)).join(', ');
+    updateStatus(`${abilityDef.name} готова.`, `Доступные цели: ${coords}.`, false);
+  }
+
+  function getAbilityMoves(boardState, row, col, piece, abilityDef) {
+    const effect = ABILITY_EFFECTS[abilityDef.id];
+    if (!effect) {
+      return [];
+    }
+    const options = effect.generate(boardState, row, col, piece, abilityDef) || [];
+    const legal = [];
+    for (const option of options) {
+      const simulation = cloneBoard(boardState);
+      const simPiece = simulation[row][col];
+      if (!simPiece) {
+        continue;
+      }
+      const result = effect.apply(simulation, row, col, simPiece, option, abilityDef);
+      if (!result) {
+        continue;
+      }
+      const commander = findCommander(simulation, piece.owner);
+      if (!commander) {
+        continue;
+      }
+      if (isSquareUnderAttack(simulation, commander.row, commander.col, otherPlayer(piece.owner))) {
+        continue;
+      }
+      legal.push({
+        ...option,
+        abilityId: abilityDef.id,
+        abilityName: abilityDef.name,
+        capture:
+          option.capture !== undefined
+            ? option.capture
+            : Boolean(option.type === 'strike'
+                ? boardState[option.row][option.col] && boardState[option.row][option.col].owner !== piece.owner
+                : boardState[option.row]?.[option.col] && boardState[option.row][option.col].owner !== piece.owner),
+        promotion: option.promotion || null
+      });
+    }
+    return legal;
+  }
+
   function executeMove(fromRow, fromCol, move) {
     const piece = board[fromRow][fromCol];
     if (!piece) {
       return;
     }
 
-    const target = board[move.row][move.col];
     const originalType = piece.type;
     const opponent = otherPlayer(piece.owner);
-    const notation = `${toNotation(fromRow, fromCol)} → ${toNotation(move.row, move.col)}`;
+    const abilityDef = move.abilityId ? getAbilityDefinition(originalType, move.abilityId) : null;
+    const effect = abilityDef ? ABILITY_EFFECTS[abilityDef.id] : null;
 
-    if (target) {
-      capturedPieces[piece.owner].push(target.type);
+    let target = board[move.row]?.[move.col] || null;
+    let captureOccurred = Boolean(target);
+    let promotionType = move.promotion || null;
+    let finalRow = move.row;
+    let finalCol = move.col;
+    let stayedInPlace = false;
+    let notationSymbol = null;
+
+    if (abilityDef) {
+      if (!effect) {
+        return;
+      }
+      const result = effect.apply(board, fromRow, fromCol, piece, move, abilityDef);
+      if (!result) {
+        return;
+      }
+      finalRow = result.finalRow;
+      finalCol = result.finalCol;
+      promotionType = result.promotion || promotionType;
+      captureOccurred = Boolean(result.capture);
+      target = result.capturedPiece || null;
+      stayedInPlace = Boolean(result.stayPut);
+      notationSymbol = result.notationSymbol || null;
+      if (captureOccurred && target) {
+        capturedPieces[piece.owner].push(target.type);
+      }
+    } else {
+      if (target) {
+        capturedPieces[piece.owner].push(target.type);
+      }
+      board[move.row][move.col] = piece;
+      board[fromRow][fromCol] = null;
+      piece.moved = true;
+      if (move.promotion) {
+        promotionType = move.promotion;
+        piece.promotedFrom = piece.promotedFrom || piece.type;
+        piece.type = promotionType;
+      }
     }
 
-    board[move.row][move.col] = piece;
-    board[fromRow][fromCol] = null;
-    piece.moved = true;
+    const victoryByCapture = target && target.type === 'commander' && captureOccurred;
 
-    let promotionType = null;
-    if (move.promotion) {
-      promotionType = move.promotion;
-      piece.promotedFrom = piece.promotedFrom || piece.type;
-      piece.type = promotionType;
+    clearAbilityState();
+    selectedCell = null;
+    setLegalMoves([]);
+
+    const movedPiece = board[finalRow][finalCol] || board[fromRow][fromCol] || piece;
+    const distance = stayedInPlace ? 0 : calculateDistance(fromRow, fromCol, finalRow, finalCol);
+    let energyGain = distance;
+    if (captureOccurred && target) {
+      energyGain += CAPTURE_REWARD[target.type] || 0;
+    }
+    if (abilityDef) {
+      movedPiece.energy = Math.max(0, movedPiece.energy - abilityDef.cost);
+    }
+    movedPiece.energy = Math.min(MAX_ENERGY, movedPiece.energy + energyGain);
+    movedPiece.moved = true;
+
+    let notationFrom = toNotation(fromRow, fromCol);
+    let notationTo = toNotation(finalRow, finalCol);
+    let notation;
+    if (abilityDef) {
+      if (move.type === 'strike') {
+        notation = `${notationFrom} ⚡ ${toNotation(move.row, move.col)}`;
+      } else if (move.type === 'swap' || move.type === 'swap-enemy') {
+        notation = `${notationFrom} ⇄ ${notationTo}`;
+      } else {
+        notation = `${notationFrom} ⇢ ${notationTo}`;
+      }
+      if (notationSymbol) {
+        notation += ` ${notationSymbol}`;
+      }
+    } else {
+      notation = `${notationFrom} → ${notationTo}`;
     }
 
     const moveEntry = {
-      player: piece.owner,
+      player: movedPiece.owner,
       pieceType: originalType,
       notation,
-      capture: Boolean(target),
+      capture: captureOccurred,
       promotion: promotionType,
+      ability: abilityDef ? abilityDef.name : null,
       check: false,
       checkmate: false,
       stalemate: false
     };
 
-    const victoryByCapture = target && target.type === 'commander';
-
-    selectedCell = null;
-    setLegalMoves([]);
     renderBoard();
     updateCaptured();
 
     if (victoryByCapture) {
       moveEntry.checkmate = true;
       moveHistory.push(moveEntry);
-      finalizeGame(piece.owner, `${PIECES[originalType].name} пленил Командора ${PLAYERS[opponent].name}.`, 'Решающее столкновение завершило поединок.');
+      const action = abilityDef ? `способностью «${abilityDef.name}»` : 'точным манёвром';
+      finalizeGame(
+        movedPiece.owner,
+        `${PIECES[originalType].name} пленил Командора ${PLAYERS[opponent].name}.`,
+        `Решающее столкновение завершено, использована ${action}.`
+      );
       return;
     }
 
     const opponentCommander = findCommander(board, opponent);
-    const givesCheck = opponentCommander ? isSquareUnderAttack(board, opponentCommander.row, opponentCommander.col, piece.owner) : false;
+    const givesCheck = opponentCommander
+      ? isSquareUnderAttack(board, opponentCommander.row, opponentCommander.col, movedPiece.owner)
+      : false;
     moveEntry.check = givesCheck;
     moveHistory.push(moveEntry);
 
     currentPlayer = opponent;
+    updateBoardOrientation();
 
     const opponentHasMoves = hasLegalMoves(board, opponent);
     const opponentInCheck = isCommanderInCheck(board, opponent);
@@ -313,7 +593,11 @@
     if (!opponentHasMoves) {
       if (opponentInCheck) {
         moveEntry.checkmate = true;
-        finalizeGame(piece.owner, `${PLAYERS[piece.owner].name} ставит мат.`, `${PLAYERS[opponent].name} не может спасти Командора.`);
+        finalizeGame(
+          movedPiece.owner,
+          `${PLAYERS[movedPiece.owner].name} ставит мат.`,
+          `${PLAYERS[opponent].name} не может спасти Командора.`
+        );
       } else {
         moveEntry.stalemate = true;
         finalizeGame(null, 'Перемирие — пат.', 'Оба ордена выдыхают и объявляют ничью.');
@@ -326,14 +610,25 @@
     updatePieceFocus(null);
     updateTurnPanel();
 
-    const actorName = PLAYERS[piece.owner].name;
+    const actorName = PLAYERS[movedPiece.owner].name;
     const opponentName = PLAYERS[opponent].name;
-    let primary = `${actorName} перемещает ${PIECES[originalType].name} на ${toNotation(move.row, move.col)}.`;
-    if (target) {
-      primary += ` Взято: ${PIECES[target.type].name}.`;
-    }
-    if (promotionType) {
-      primary += ` Повышение до ${PIECES[piece.type].name}.`;
+    let primary;
+    if (abilityDef) {
+      primary = `${actorName} задействует «${abilityDef.name}» у ${PIECES[originalType].name}.`;
+      if (captureOccurred && target) {
+        primary += ` Цель: ${PIECES[target.type].name}.`;
+      }
+      if (promotionType) {
+        primary += ` Повышение до ${PIECES[movedPiece.type].name}.`;
+      }
+    } else {
+      primary = `${actorName} перемещает ${PIECES[originalType].name} на ${notationTo}.`;
+      if (captureOccurred && target) {
+        primary += ` Взято: ${PIECES[target.type].name}.`;
+      }
+      if (promotionType) {
+        primary += ` Повышение до ${PIECES[movedPiece.type].name}.`;
+      }
     }
 
     let secondary;
@@ -367,6 +662,7 @@
     endgameEl.hidden = false;
     updateStatus(heading, detail);
     renderMoveLog();
+    updateBoardOrientation();
   }
 
   function setLegalMoves(moves) {
@@ -400,8 +696,19 @@
         sr.textContent = `${def.name} игрока ${PLAYERS[piece.owner].name}`;
         wrapper.appendChild(glyph);
         wrapper.appendChild(sr);
+        if (piece.energy > 0) {
+          const energyBadge = document.createElement('span');
+          energyBadge.className = 'piece__energy';
+          energyBadge.textContent = piece.energy;
+          energyBadge.setAttribute('aria-hidden', 'true');
+          wrapper.appendChild(energyBadge);
+        }
         cell.appendChild(wrapper);
-        cell.setAttribute('aria-label', `${def.name} ${PLAYERS[piece.owner].name} на клетке ${toNotation(row, col)}`);
+        let label = `${def.name} ${PLAYERS[piece.owner].name} на клетке ${toNotation(row, col)}`;
+        if (piece.energy > 0) {
+          label += `. Сила: ${piece.energy}.`;
+        }
+        cell.setAttribute('aria-label', label);
       }
     }
     updateCommanderAlerts();
@@ -411,13 +718,16 @@
     for (let row = 0; row < BOARD_SIZE; row += 1) {
       for (let col = 0; col < BOARD_SIZE; col += 1) {
         const cell = cellElements[row][col];
-        cell.classList.remove('cell--selected', 'cell--move', 'cell--capture');
+        cell.classList.remove('cell--selected', 'cell--move', 'cell--capture', 'cell--ability');
         if (selectedCell && selectedCell.row === row && selectedCell.col === col) {
           cell.classList.add('cell--selected');
         }
         const key = `${row},${col}`;
         if (legalMoveMap.has(key)) {
           const move = legalMoveMap.get(key);
+          if (move.abilityId) {
+            cell.classList.add('cell--ability');
+          }
           cell.classList.add(move.capture ? 'cell--capture' : 'cell--move');
         }
       }
@@ -441,6 +751,18 @@
         cell.classList.add('cell--alert');
       }
     });
+  }
+
+  function updateBoardOrientation() {
+    if (!boardFrame) {
+      return;
+    }
+    const tabletopMode = window.matchMedia('(max-width: 720px)').matches;
+    let facingPlayer = currentPlayer;
+    if (gameState === 'ended') {
+      facingPlayer = winner !== null ? winner : 'dawn';
+    }
+    boardFrame.classList.toggle('board-frame--flipped', tabletopMode && facingPlayer === 'dusk');
   }
 
   function updateStatus(primary, secondary = '', announce = true) {
@@ -549,9 +871,15 @@
     const notation = document.createElement('span');
     notation.className = 'move-log__notation';
     notation.textContent = `${PIECES[entry.pieceType].glyph[entry.player]} ${entry.notation}`;
+    if (entry.ability) {
+      notation.textContent += ' ✦';
+    }
     const detail = document.createElement('p');
     detail.className = 'move-log__detail';
     const flags = [];
+    if (entry.ability) {
+      flags.push(`приём: ${entry.ability}`);
+    }
     if (entry.capture) {
       flags.push('взято');
     }
@@ -574,6 +902,8 @@
   function updatePieceFocus(piece, row, col) {
     focusEls.traits.innerHTML = '';
     focusEls.stats.innerHTML = '';
+    focusEls.abilities.innerHTML = '';
+    focusEls.energy.textContent = '';
     if (!piece) {
       focusEls.card.classList.add('focus-card--empty');
       focusEls.glyph.textContent = '☆';
@@ -584,6 +914,10 @@
       focusEls.position.textContent = '';
       focusEls.status.textContent = '';
       focusEls.promotion.textContent = '';
+      const abilityPlaceholder = document.createElement('p');
+      abilityPlaceholder.className = 'focus-card__abilities-placeholder';
+      abilityPlaceholder.textContent = 'Способности появятся после выбора фигуры.';
+      focusEls.abilities.appendChild(abilityPlaceholder);
       const placeholder = document.createElement('li');
       placeholder.className = 'tag-list__placeholder';
       placeholder.textContent = 'Тактическое досье появится здесь';
@@ -600,6 +934,7 @@
     focusEls.movement.textContent = def.movement;
     focusEls.position.textContent = `Позиция: ${toNotation(row, col)}`;
     focusEls.status.textContent = piece.moved ? 'Уже участвовал в манёврах.' : 'Пока не двигался.';
+    focusEls.energy.textContent = `Сила: ${piece.energy}`;
     if (piece.promotedFrom && piece.promotedFrom !== piece.type) {
       focusEls.promotion.textContent = `Повышен из ${PIECES[piece.promotedFrom].name}.`;
     } else {
@@ -619,6 +954,51 @@
       dd.textContent = value;
       focusEls.stats.append(dt, dd);
     });
+
+    if (def.abilities && def.abilities.length > 0) {
+      def.abilities.forEach((ability) => {
+        const item = document.createElement('div');
+        item.className = 'ability';
+        const header = document.createElement('div');
+        header.className = 'ability__header';
+        const title = document.createElement('h4');
+        title.className = 'ability__name';
+        title.textContent = ability.name;
+        const cost = document.createElement('span');
+        cost.className = 'ability__cost';
+        cost.textContent = `${ability.cost} ⚡`;
+        header.append(title, cost);
+        const description = document.createElement('p');
+        description.className = 'ability__description';
+        description.textContent = ability.description;
+        item.append(header, description);
+        if (piece.owner === currentPlayer && gameState === 'playing') {
+          const button = document.createElement('button');
+          button.type = 'button';
+          button.className = 'ability__button';
+          button.textContent = piece.energy >= ability.cost ? 'Активировать' : 'Недостаточно силы';
+          button.disabled = piece.energy < ability.cost;
+          if (
+            activeAbility &&
+            abilitySource &&
+            abilitySource.row === row &&
+            abilitySource.col === col &&
+            activeAbility.id === ability.id
+          ) {
+            button.classList.add('ability__button--active');
+            button.textContent = 'Выбор цели';
+          }
+          button.addEventListener('click', () => handleAbilityActivation(row, col, ability));
+          item.appendChild(button);
+        }
+        focusEls.abilities.appendChild(item);
+      });
+    } else {
+      const abilityPlaceholder = document.createElement('p');
+      abilityPlaceholder.className = 'focus-card__abilities-placeholder';
+      abilityPlaceholder.textContent = 'Особых приёмов не заявлено.';
+      focusEls.abilities.appendChild(abilityPlaceholder);
+    }
   }
 
   function populateCodex() {
@@ -663,6 +1043,24 @@
         stats.append(dt, dd);
       });
       card.append(header, desc, move, traits, stats);
+      if (def.abilities && def.abilities.length > 0) {
+        const abilityBlock = document.createElement('div');
+        abilityBlock.className = 'codex-card__abilities';
+        const abilityTitle = document.createElement('h4');
+        abilityTitle.textContent = 'Способности';
+        abilityBlock.appendChild(abilityTitle);
+        def.abilities.forEach((ability) => {
+          const abilityRow = document.createElement('div');
+          abilityRow.className = 'codex-card__ability';
+          const abilityName = document.createElement('strong');
+          abilityName.textContent = `${ability.name} — ${ability.cost}⚡`;
+          const abilityDesc = document.createElement('p');
+          abilityDesc.textContent = ability.description;
+          abilityRow.append(abilityName, abilityDesc);
+          abilityBlock.appendChild(abilityRow);
+        });
+        card.appendChild(abilityBlock);
+      }
       codexEl.appendChild(card);
     });
   }
@@ -677,20 +1075,40 @@
     return player === 'dawn' ? 'dusk' : 'dawn';
   }
 
+  function getAbilityDefinition(type, abilityId) {
+    const def = PIECES[type];
+    if (!def || !def.abilities) {
+      return null;
+    }
+    return def.abilities.find((ability) => ability.id === abilityId) || null;
+  }
+
   function createInitialBoard() {
-    const backline = ['sentinel', 'lancer', 'commander', 'strider', 'lancer', 'sentinel'];
+    const backline = [
+      'sentinel',
+      'lancer',
+      'strider',
+      'sentinel',
+      'commander',
+      'strider',
+      'sentinel',
+      'strider',
+      'lancer',
+      'sentinel'
+    ];
     const boardState = Array.from({ length: BOARD_SIZE }, () => Array(BOARD_SIZE).fill(null));
     for (let col = 0; col < BOARD_SIZE; col += 1) {
-      boardState[0][col] = createPiece(backline[col], 'dusk');
+      const pieceType = backline[col % backline.length];
+      boardState[0][col] = createPiece(pieceType, 'dusk');
       boardState[1][col] = createPiece('squire', 'dusk');
       boardState[BOARD_SIZE - 2][col] = createPiece('squire', 'dawn');
-      boardState[BOARD_SIZE - 1][col] = createPiece(backline[col], 'dawn');
+      boardState[BOARD_SIZE - 1][col] = createPiece(pieceType, 'dawn');
     }
     return boardState;
   }
 
   function createPiece(type, owner) {
-    return { type, owner, moved: false };
+    return { type, owner, moved: false, energy: 0 };
   }
 
   function cloneBoard(boardState) {
@@ -746,6 +1164,21 @@
       });
     }
     return legal;
+  }
+
+  function calculateDistance(fromRow, fromCol, toRow, toCol) {
+    const dr = Math.abs(fromRow - toRow);
+    const dc = Math.abs(fromCol - toCol);
+    if ((dr === 2 && dc === 1) || (dr === 1 && dc === 2)) {
+      return 3;
+    }
+    if (dr === dc) {
+      return dr;
+    }
+    if (dr === 0 || dc === 0) {
+      return dr + dc;
+    }
+    return dr + dc;
   }
 
   function hasLegalMoves(boardState, player) {
