@@ -939,65 +939,16 @@ button {
     max-width: unset;
   }
 
-  .board-area {
-    align-items: stretch;
-  }
-
   .board {
     grid-template-columns: repeat(var(--board-size), minmax(40px, 1fr));
   }
 
-  .board-frame {
-    width: min(100%, 520px);
-    margin: 0 auto;
-  }
-
-  .layout {
-    display: flex;
-    flex-direction: column;
+  .board-area {
     align-items: stretch;
   }
 
-  .board-area {
-    order: 2;
-  }
-
-  .hud {
-    order: 3;
-    display: contents;
-  }
-
-  .panel--players {
-    order: 1;
-    background: none;
-    border: none;
-    box-shadow: none;
-    padding: 0;
-    display: flex;
-    flex-direction: column;
-    gap: clamp(12px, 4vw, 18px);
-    align-items: center;
-  }
-
-  .panel--players .player-card {
-    width: min(100%, 340px);
-  }
-
-  .panel--players .player-card[data-player="dusk"] {
-    transform: rotate(180deg);
-    transform-origin: center;
-  }
-
-  .panel--focus {
-    order: 3;
-  }
-
-  .panel--codex {
-    order: 4;
-  }
-
-  .panel--rules {
-    order: 5;
+  .board-frame {
+    width: min(100%, 460px);
   }
 
   .panel__title-row {

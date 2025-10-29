@@ -135,57 +135,21 @@
     }
   };
 
-  const MAX_ENERGY = 16;
-  const CAPTURE_REWARD = {
-    commander: 6,
-    sentinel: 4,
-    strider: 4,
-    lancer: 4,
-    squire: 2
-  };
-
-  const ABILITY_EFFECTS = {
-    'radiant-step': {
-      generate: generateRadiantStepOptions,
-      apply: applyStandardAbilityMove
-    },
-    'astral-swap': {
-      generate: generateAstralSwapOptions,
-      apply: applyAstralSwap
-    },
-    'iron-diagonals': {
-      generate: generateIronDiagonalOptions,
-      apply: applyStandardAbilityMove
-    },
-    'siege-bolt': {
-      generate: generateSiegeBoltOptions,
-      apply: applySiegeBolt
-    },
-    'horizon-drift': {
-      generate: generateHorizonDriftOptions,
-      apply: applyStandardAbilityMove
-    },
-    'prism-gate': {
-      generate: generatePrismGateOptions,
-      apply: applyStandardAbilityMove
-    },
-    'meteor-dash': {
-      generate: generateMeteorDashOptions,
-      apply: applyStandardAbilityMove
-    },
-    'storm-reversal': {
-      generate: generateStormReversalOptions,
-      apply: applyStormReversal
-    },
-    'line-surge': {
-      generate: generateLineSurgeOptions,
-      apply: applyStandardAbilityMove
-    },
-    'hook-strike': {
-      generate: generateHookStrikeOptions,
-      apply: applyStandardAbilityMove
-    }
-  };
+  let boardEl;
+  let statusPrimaryEl;
+  let statusSecondaryEl;
+  let moveLogEl;
+  let codexEl;
+  let newGameButton;
+  let playAgainButton;
+  let liveRegion;
+  let endgameEl;
+  let endgameTitleEl;
+  let endgameSubtitleEl;
+  let playerCards;
+  let turnBadges;
+  let capturedEls;
+  let focusEls;
 
   let boardEl;
   let boardFrame;
@@ -220,7 +184,6 @@
 
   function initialize() {
     boardEl = document.getElementById('board');
-    boardFrame = document.querySelector('.board-frame');
     statusPrimaryEl = document.getElementById('status-primary');
     statusSecondaryEl = document.getElementById('status-secondary');
     moveLogEl = document.getElementById('move-log');
@@ -255,10 +218,8 @@
       position: document.getElementById('focus-position'),
       status: document.getElementById('focus-status'),
       promotion: document.getElementById('focus-promotion'),
-      energy: document.getElementById('focus-energy'),
       traits: document.getElementById('focus-traits'),
-      stats: document.getElementById('focus-stats'),
-      abilities: document.getElementById('focus-abilities')
+      stats: document.getElementById('focus-stats')
     };
 
     if (!boardEl) {
@@ -272,6 +233,14 @@
     populateCodex();
     startNewGame();
     window.addEventListener('resize', updateBoardOrientation);
+  }
+
+  function handleNewGameRequest(event) {
+    event?.preventDefault();
+    startNewGame();
+    if (event?.currentTarget instanceof HTMLElement) {
+      event.currentTarget.blur();
+    }
   }
 
   function handleNewGameRequest(event) {
@@ -1387,335 +1356,6 @@
 
   function isInside(row, col) {
     return row >= 0 && row < BOARD_SIZE && col >= 0 && col < BOARD_SIZE;
-  }
-
-  function generateRadiantStepOptions(boardState, row, col, piece) {
-    const moves = [];
-    for (let dr = -1; dr <= 1; dr += 1) {
-      for (let dc = -1; dc <= 1; dc += 1) {
-        if (dr === 0 && dc === 0) {
-          continue;
-        }
-        for (let step = 1; step <= 2; step += 1) {
-          const r = row + dr * step;
-          const c = col + dc * step;
-          if (!isInside(r, c)) {
-            break;
-          }
-          if (step === 2) {
-            const midRow = row + dr;
-            const midCol = col + dc;
-            if (boardState[midRow][midCol]) {
-              break;
-            }
-          }
-          const occupant = boardState[r][c];
-          if (occupant && occupant.owner === piece.owner) {
-            break;
-          }
-          moves.push({ row: r, col: c, type: 'move', capture: Boolean(occupant && occupant.owner !== piece.owner) });
-          if (occupant) {
-            break;
-          }
-        }
-      }
-    }
-    return moves;
-  }
-
-  function generateAstralSwapOptions(boardState, row, col, piece) {
-    const moves = [];
-    for (let r = 0; r < BOARD_SIZE; r += 1) {
-      for (let c = 0; c < BOARD_SIZE; c += 1) {
-        if (r === row && c === col) {
-          continue;
-        }
-        const occupant = boardState[r][c];
-        if (!occupant || occupant.owner !== piece.owner) {
-          continue;
-        }
-        const distance = Math.abs(row - r) + Math.abs(col - c);
-        if (distance > 3) {
-          continue;
-        }
-        moves.push({ row: r, col: c, type: 'swap', capture: false });
-      }
-    }
-    return moves;
-  }
-
-  function generateIronDiagonalOptions(boardState, row, col, piece) {
-    const moves = [];
-    const directions = [
-      [1, 1],
-      [1, -1],
-      [-1, 1],
-      [-1, -1]
-    ];
-    directions.forEach(([dr, dc]) => {
-      for (let step = 1; step <= 2; step += 1) {
-        const r = row + dr * step;
-        const c = col + dc * step;
-        if (!isInside(r, c)) {
-          break;
-        }
-        if (step === 2) {
-          const midRow = row + dr;
-          const midCol = col + dc;
-          if (boardState[midRow][midCol]) {
-            break;
-          }
-        }
-        const occupant = boardState[r][c];
-        if (occupant && occupant.owner === piece.owner) {
-          break;
-        }
-        moves.push({ row: r, col: c, type: 'move', capture: Boolean(occupant && occupant.owner !== piece.owner) });
-        if (occupant) {
-          break;
-        }
-      }
-    });
-    return moves;
-  }
-
-  function generateSiegeBoltOptions(boardState, row, col, piece) {
-    const moves = [];
-    const directions = [
-      [1, 0],
-      [-1, 0],
-      [0, 1],
-      [0, -1]
-    ];
-    directions.forEach(([dr, dc]) => {
-      let r = row + dr;
-      let c = col + dc;
-      let step = 1;
-      while (isInside(r, c) && step <= 3) {
-        const occupant = boardState[r][c];
-        if (occupant) {
-          if (occupant.owner !== piece.owner) {
-            moves.push({ row: r, col: c, type: 'strike', capture: true });
-          }
-          break;
-        }
-        r += dr;
-        c += dc;
-        step += 1;
-      }
-    });
-    return moves;
-  }
-
-  function generateHorizonDriftOptions(boardState, row, col, piece) {
-    const moves = [];
-    const directions = [
-      [0, 1],
-      [0, -1]
-    ];
-    directions.forEach(([dr, dc]) => {
-      for (let step = 1; step <= 2; step += 1) {
-        const r = row + dr * step;
-        const c = col + dc * step;
-        if (!isInside(r, c)) {
-          break;
-        }
-        if (step === 2) {
-          const midRow = row + dr;
-          const midCol = col + dc;
-          if (boardState[midRow][midCol]) {
-            break;
-          }
-        }
-        const occupant = boardState[r][c];
-        if (occupant && occupant.owner === piece.owner) {
-          break;
-        }
-        moves.push({ row: r, col: c, type: 'move', capture: Boolean(occupant && occupant.owner !== piece.owner) });
-        if (occupant) {
-          break;
-        }
-      }
-    });
-    return moves;
-  }
-
-  function generatePrismGateOptions(boardState, row, col) {
-    const moves = [];
-    const directions = [
-      [1, 1],
-      [1, -1],
-      [-1, 1],
-      [-1, -1]
-    ];
-    directions.forEach(([dr, dc]) => {
-      const r = row + dr * 3;
-      const c = col + dc * 3;
-      if (!isInside(r, c)) {
-        return;
-      }
-      if (!boardState[r][c]) {
-        moves.push({ row: r, col: c, type: 'move', capture: false });
-      }
-    });
-    return moves;
-  }
-
-  function generateMeteorDashOptions(boardState, row, col, piece) {
-    const moves = [];
-    const directions = [
-      [1, 0],
-      [-1, 0],
-      [0, 1],
-      [0, -1]
-    ];
-    directions.forEach(([dr, dc]) => {
-      let r = row + dr;
-      let c = col + dc;
-      let step = 1;
-      while (isInside(r, c) && step <= 3) {
-        const occupant = boardState[r][c];
-        if (occupant) {
-          if (occupant.owner !== piece.owner) {
-            moves.push({ row: r, col: c, type: 'move', capture: true });
-          }
-          break;
-        }
-        moves.push({ row: r, col: c, type: 'move', capture: false });
-        r += dr;
-        c += dc;
-        step += 1;
-      }
-    });
-    return moves;
-  }
-
-  function generateStormReversalOptions(boardState, row, col, piece) {
-    const moves = [];
-    const jumps = [
-      [2, 1], [2, -1],
-      [-2, 1], [-2, -1],
-      [1, 2], [1, -2],
-      [-1, 2], [-1, -2]
-    ];
-    jumps.forEach(([dr, dc]) => {
-      const r = row + dr;
-      const c = col + dc;
-      if (!isInside(r, c)) {
-        return;
-      }
-      const occupant = boardState[r][c];
-      if (occupant && occupant.owner !== piece.owner) {
-        moves.push({ row: r, col: c, type: 'swap-enemy', capture: false });
-      }
-    });
-    return moves;
-  }
-
-  function generateLineSurgeOptions(boardState, row, col, piece) {
-    const moves = [];
-    const dir = directionByPlayer[piece.owner];
-    const firstRow = row + dir;
-    const secondRow = row + dir * 2;
-    if (
-      isInside(firstRow, col) &&
-      !boardState[firstRow][col] &&
-      isInside(secondRow, col) &&
-      !boardState[secondRow][col]
-    ) {
-      const promotion = secondRow === promotionRowFor(piece.owner) ? 'strider' : null;
-      moves.push({ row: secondRow, col, type: 'move', capture: false, promotion });
-    }
-    return moves;
-  }
-
-  function generateHookStrikeOptions(boardState, row, col, piece) {
-    const moves = [];
-    const dir = directionByPlayer[piece.owner];
-    const targetRow = row + dir;
-    if (!isInside(targetRow, col)) {
-      return moves;
-    }
-    const occupant = boardState[targetRow][col];
-    if (occupant && occupant.owner !== piece.owner) {
-      const promotion = targetRow === promotionRowFor(piece.owner) ? 'strider' : null;
-      moves.push({ row: targetRow, col, type: 'move', capture: true, promotion });
-    }
-    return moves;
-  }
-
-  function applyStandardAbilityMove(boardState, fromRow, fromCol, piece, option) {
-    const target = boardState[option.row][option.col];
-    if (target && target.owner === piece.owner) {
-      return null;
-    }
-    boardState[option.row][option.col] = piece;
-    boardState[fromRow][fromCol] = null;
-    piece.moved = true;
-    if (option.promotion) {
-      piece.promotedFrom = piece.promotedFrom || piece.type;
-      piece.type = option.promotion;
-    }
-    const captured = target && target.owner !== piece.owner ? target : null;
-    return {
-      finalRow: option.row,
-      finalCol: option.col,
-      capture: Boolean(captured),
-      capturedPiece: captured,
-      promotion: option.promotion || null
-    };
-  }
-
-  function applyAstralSwap(boardState, fromRow, fromCol, piece, option) {
-    const ally = boardState[option.row][option.col];
-    if (!ally || ally.owner !== piece.owner) {
-      return null;
-    }
-    boardState[option.row][option.col] = piece;
-    boardState[fromRow][fromCol] = ally;
-    piece.moved = true;
-    ally.moved = true;
-    return {
-      finalRow: option.row,
-      finalCol: option.col,
-      capture: false,
-      capturedPiece: null
-    };
-  }
-
-  function applySiegeBolt(boardState, fromRow, fromCol, piece, option) {
-    const enemy = boardState[option.row][option.col];
-    if (!enemy || enemy.owner === piece.owner) {
-      return null;
-    }
-    boardState[option.row][option.col] = null;
-    piece.moved = true;
-    return {
-      finalRow: fromRow,
-      finalCol: fromCol,
-      capture: true,
-      capturedPiece: enemy,
-      stayPut: true,
-      notationSymbol: '☄'
-    };
-  }
-
-  function applyStormReversal(boardState, fromRow, fromCol, piece, option) {
-    const enemy = boardState[option.row][option.col];
-    if (!enemy || enemy.owner === piece.owner) {
-      return null;
-    }
-    boardState[option.row][option.col] = piece;
-    boardState[fromRow][fromCol] = enemy;
-    piece.moved = true;
-    enemy.moved = true;
-    return {
-      finalRow: option.row,
-      finalCol: option.col,
-      capture: false,
-      capturedPiece: null,
-      notationSymbol: '↺'
-    };
   }
 
   whenReady(initialize);
