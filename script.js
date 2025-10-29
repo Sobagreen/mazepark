@@ -69,27 +69,27 @@ const DIAGONALS = [
   { dx: -1, dy: 1 }
 ];
 
+// Стартовая расстановка «Око Перуна» повторяет классическую схему Laser Chess/Khet,
+// адаптированную под квадратное поле 8×8. Ориентации отражают исходные углы зеркал.
 const INITIAL_LIGHT_SETUP = [
   { x: 0, y: 7, type: "laser", orientation: 1 },
   { x: 1, y: 7, type: "pyramid", orientation: 1 },
   { x: 2, y: 7, type: "scarab", orientation: 0 },
-  { x: 3, y: 7, type: "volhv", orientation: 0 },
-  { x: 4, y: 7, type: "anubis", orientation: 0 },
-  { x: 5, y: 7, type: "scarab", orientation: 2 },
-  { x: 6, y: 7, type: "pyramid", orientation: 2 },
-  { x: 7, y: 7, type: "obelisk", orientation: 0 },
-  { x: 0, y: 6, type: "pyramid", orientation: 1 },
-  { x: 1, y: 6, type: "anubis", orientation: 3 },
-  { x: 2, y: 6, type: "pyramid", orientation: 0 },
-  { x: 3, y: 6, type: "obelisk", orientation: 0 },
-  { x: 4, y: 6, type: "pyramid", orientation: 2 },
-  { x: 5, y: 6, type: "anubis", orientation: 1 },
-  { x: 6, y: 6, type: "pyramid", orientation: 3 },
+  { x: 3, y: 7, type: "anubis", orientation: 0 },
+  { x: 4, y: 7, type: "volhv", orientation: 0 },
+  { x: 5, y: 7, type: "anubis", orientation: 0 },
+  { x: 6, y: 7, type: "scarab", orientation: 2 },
+  { x: 7, y: 7, type: "pyramid", orientation: 2 },
+  { x: 0, y: 6, type: "pyramid", orientation: 0 },
+  { x: 1, y: 6, type: "obelisk", orientation: 0 },
+  { x: 2, y: 6, type: "pyramid", orientation: 1 },
+  { x: 3, y: 6, type: "pyramid", orientation: 3 },
+  { x: 4, y: 6, type: "pyramid", orientation: 1 },
+  { x: 5, y: 6, type: "pyramid", orientation: 3 },
+  { x: 6, y: 6, type: "obelisk", orientation: 0 },
   { x: 7, y: 6, type: "pyramid", orientation: 2 },
-  { x: 0, y: 5, type: "pyramid", orientation: 0 },
-  { x: 2, y: 5, type: "obelisk", orientation: 0 },
-  { x: 5, y: 5, type: "obelisk", orientation: 0 },
-  { x: 7, y: 5, type: "pyramid", orientation: 2 }
+  { x: 2, y: 5, type: "pyramid", orientation: 0 },
+  { x: 5, y: 5, type: "pyramid", orientation: 2 }
 ];
 
 let board = createEmptyBoard();
@@ -112,7 +112,8 @@ const elements = {
   endgameTitle: document.getElementById("endgame-title"),
   endgameSubtitle: document.getElementById("endgame-subtitle"),
   playAgain: document.getElementById("play-again"),
-  themeToggle: document.getElementById("theme-toggle")
+  themeToggle: document.getElementById("theme-toggle"),
+  laserOverlay: document.getElementById("laser-overlay")
 };
 
 const cells = [];
@@ -131,11 +132,13 @@ function startNewGame() {
   lastLaserPath = [];
   turnCounter = 1;
   clearLog();
+  clearLaserPath();
   updateTurnIndicator();
   renderBoard();
   setStatus("Выберите фигуру и передвиньте её либо поверните зеркало.");
   elements.hint.textContent = "Выберите свою фигуру, чтобы увидеть доступные ходы.";
   elements.endgame.hidden = true;
+  elements.endgame.setAttribute("aria-hidden", "true");
   updateRotateControls(false);
 }
 
@@ -198,7 +201,6 @@ function attachEventListeners() {
 }
 
 function renderBoard() {
-  clearLaserPath();
   for (let y = 0; y < BOARD_HEIGHT; y++) {
     for (let x = 0; x < BOARD_WIDTH; x++) {
       const cell = cells[y][x];
@@ -326,7 +328,7 @@ function endTurn() {
   clearSelection();
   const laserResult = fireLaser(currentPlayer);
   renderBoard();
-  highlightLaserPath(laserResult.path);
+  highlightLaserPath(laserResult);
   if (laserResult.hit) {
     const hitPiece = laserResult.hit.piece;
     const owner = PLAYERS[hitPiece.player].name;
@@ -356,6 +358,7 @@ function endTurn() {
 function finishGame(winner) {
   const loser = winner === "light" ? "shadow" : "light";
   elements.endgame.hidden = false;
+  elements.endgame.setAttribute("aria-hidden", "false");
   elements.endgameTitle.textContent = `${PLAYERS[winner].name} побеждает!`;
   elements.endgameSubtitle.textContent = `Волхв ${PLAYERS[loser].name} уничтожен лучом.`;
   setStatus(`${PLAYERS[winner].name} добились победы.`);
@@ -364,21 +367,34 @@ function finishGame(winner) {
 
 function fireLaser(player) {
   const emitterPos = findEmitter(player);
-  if (!emitterPos) return { path: [], firer: PLAYERS[player].laserName };
+  if (!emitterPos) {
+    return { path: [], firer: PLAYERS[player].laserName, origin: null };
+  }
 
   let { x, y } = emitterPos;
   let direction = board[y][x].orientation % 4;
   const path = [];
+  let previous = { x, y };
 
   while (true) {
-    x += DIRECTIONS[direction].dx;
-    y += DIRECTIONS[direction].dy;
-    if (!inBounds(x, y)) {
-      break;
+    const nextX = x + DIRECTIONS[direction].dx;
+    const nextY = y + DIRECTIONS[direction].dy;
+    if (!inBounds(nextX, nextY)) {
+      return {
+        path,
+        hit: null,
+        firer: PLAYERS[player].laserName,
+        origin: emitterPos,
+        termination: computeExitPoint(previous, direction)
+      };
     }
+
+    x = nextX;
+    y = nextY;
     path.push({ x, y });
     const target = board[y][x];
     if (!target) {
+      previous = { x, y };
       continue;
     }
     const interaction = resolveLaserInteraction(target, direction);
@@ -389,21 +405,18 @@ function fireLaser(player) {
       const result = {
         path,
         hit: interaction.destroy ? { piece: target, x, y } : null,
-        firer: PLAYERS[player].laserName
+        firer: PLAYERS[player].laserName,
+        origin: emitterPos,
+        termination: { x: x + 0.5, y: y + 0.5 }
       };
       if (!interaction.destroy) {
         result.blocked = { piece: target, x, y };
       }
       return result;
     }
+    previous = { x, y };
     direction = interaction.nextDirection;
   }
-
-  return {
-    path,
-    hit: null,
-    firer: PLAYERS[player].laserName
-  };
 }
 
 function resolveLaserInteraction(piece, incomingDirection) {
@@ -481,13 +494,20 @@ function findEmitter(player) {
   return null;
 }
 
-function highlightLaserPath(path) {
+function highlightLaserPath(result) {
   clearLaserPath();
+  if (!result || !result.origin) {
+    return;
+  }
+
+  const path = result.path || [];
   lastLaserPath = path;
   for (const step of path) {
     const cell = cells[step.y][step.x];
     cell.classList.add("cell--laser-trace");
   }
+
+  drawLaserBeam(result);
 }
 
 function clearLaserPath() {
@@ -496,6 +516,71 @@ function clearLaserPath() {
     if (cell) cell.classList.remove("cell--laser-trace");
   }
   lastLaserPath = [];
+  if (elements.laserOverlay) {
+    elements.laserOverlay.replaceChildren();
+  }
+}
+
+function drawLaserBeam(result) {
+  if (!elements.laserOverlay) return;
+
+  const points = [];
+  points.push(toCellCenter(result.origin.x, result.origin.y));
+  for (const step of result.path) {
+    points.push(toCellCenter(step.x, step.y));
+  }
+  if (result.termination) {
+    const lastPoint = points[points.length - 1];
+    if (!lastPoint || Math.abs(lastPoint.x - result.termination.x) > 0.001 || Math.abs(lastPoint.y - result.termination.y) > 0.001) {
+      points.push(result.termination);
+    }
+  }
+
+  if (points.length < 2) {
+    return;
+  }
+
+  for (let i = 0; i < points.length - 1; i += 1) {
+    const start = points[i];
+    const end = points[i + 1];
+    const dx = end.x - start.x;
+    const dy = end.y - start.y;
+    const segment = document.createElement("div");
+    segment.className = "laser-overlay__beam";
+    segment.style.left = `${(start.x / BOARD_WIDTH) * 100}%`;
+    segment.style.top = `${(start.y / BOARD_HEIGHT) * 100}%`;
+    segment.style.width = `${(Math.hypot(dx, dy) / BOARD_WIDTH) * 100}%`;
+    segment.style.transform = `translate(0, -50%) rotate(${Math.atan2(dy, dx)}rad)`;
+    elements.laserOverlay.appendChild(segment);
+  }
+
+  if (result.hit || result.blocked) {
+    const impact = result.hit || result.blocked;
+    const marker = document.createElement("div");
+    marker.className = "laser-overlay__impact";
+    const center = toCellCenter(impact.x, impact.y);
+    marker.style.left = `${(center.x / BOARD_WIDTH) * 100}%`;
+    marker.style.top = `${(center.y / BOARD_HEIGHT) * 100}%`;
+    elements.laserOverlay.appendChild(marker);
+  }
+}
+
+function toCellCenter(x, y) {
+  return { x: x + 0.5, y: y + 0.5 };
+}
+
+function computeExitPoint(previous, direction) {
+  switch (direction % 4) {
+    case 0:
+      return { x: previous.x + 0.5, y: 0 };
+    case 1:
+      return { x: BOARD_WIDTH, y: previous.y + 0.5 };
+    case 2:
+      return { x: previous.x + 0.5, y: BOARD_HEIGHT };
+    case 3:
+    default:
+      return { x: 0, y: previous.y + 0.5 };
+  }
 }
 
 function orthogonalMoves(boardState, x, y, piece) {

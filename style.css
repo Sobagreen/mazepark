@@ -6,6 +6,10 @@
   box-sizing: border-box;
 }
 
+[hidden] {
+  display: none !important;
+}
+
 body {
   margin: 0;
   min-height: 100vh;
@@ -296,7 +300,7 @@ body.theme-light .button--primary {
 .board {
   display: grid;
   grid-template-columns: repeat(8, minmax(0, 1fr));
-  width: min(520px, 92vw);
+  width: min(650px, 96vw);
   aspect-ratio: 1 / 1;
   border-radius: 18px;
   overflow: hidden;
@@ -326,7 +330,7 @@ body.theme-light .button--primary {
   background: var(--cell-dark);
   display: grid;
   place-items: center;
-  font-size: clamp(1.5rem, 2.4vw, 2.4rem);
+  font-size: clamp(1.8rem, 3vw, 3rem);
   line-height: 1;
   border: 1px solid var(--cell-border);
   box-shadow: inset 0 0 0 1px var(--cell-inner-glow);
@@ -451,12 +455,65 @@ body.theme-light .piece {
   gap: 1rem;
   place-items: center;
   text-align: center;
+  z-index: 4;
 }
 
 .laser-overlay {
   pointer-events: none;
   position: absolute;
   inset: 0;
+  z-index: 3;
+}
+
+.laser-overlay__beam {
+  position: absolute;
+  height: 1.6%;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.2), var(--laser));
+  box-shadow: 0 0 18px var(--laser), 0 0 36px rgba(255, 94, 94, 0.55);
+  border-radius: 999px;
+  transform-origin: 0 50%;
+  opacity: 0;
+  animation: laser-trace 0.45s ease forwards;
+}
+
+.laser-overlay__impact {
+  position: absolute;
+  width: 6%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.9) 0%, var(--laser) 45%, rgba(255, 94, 94, 0) 70%);
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 22px rgba(255, 94, 94, 0.6);
+  animation: laser-impact 0.5s ease forwards;
+}
+
+@keyframes laser-trace {
+  0% {
+    opacity: 0;
+    filter: blur(4px);
+  }
+  40% {
+    opacity: 0.9;
+    filter: blur(0.8px);
+  }
+  100% {
+    opacity: 0.75;
+    filter: blur(1.2px);
+  }
+}
+
+@keyframes laser-impact {
+  0% {
+    transform: translate(-50%, -50%) scale(0.3);
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0.6;
+  }
 }
 
 @media (max-width: 960px) {
@@ -495,7 +552,7 @@ body.theme-light .piece {
 
   .board {
     width: 100%;
-    max-width: 520px;
+    max-width: 650px;
   }
 }
 
