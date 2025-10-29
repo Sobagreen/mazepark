@@ -1,38 +1,30 @@
- (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
-diff --git a/index.html b/index.html
-index 8b137891791fe96927ad78e64b0aad7bded08bdc..701b9172d4458e7b3d21785621f1e4df3d8f4df6 100644
---- a/index.html
- b/index.html
-@@ -1 1,28 @@
--
 <!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>Ночной обход</title>
+  <title>Ночной обход — Flappy</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>Ночной обход</h1>
-  <div id="board"></div>
-  <div id="controls">
-    <button data-action="up">↑</button>
-    <button data-action="down">↓</button>
-    <button data-action="left">←</button>
-    <button data-action="right">→</button>
-    <button data-action="jump">Прыжок</button>
-    <button data-action="slide">Подкат</button>
-    <button data-action="punch">Удар</button>
-    <button data-action="dodge">Уворот</button>
-    <button id="undo">↺</button>
-    <button id="go">GO</button>
-    <button id="new">Новый</button>
-  </div>
-  <div id="sequence"></div>
-  <div id="status"></div>
+  <main class="layout">
+    <header class="header">
+      <h1>Ночной обход</h1>
+      <p class="subtitle">Помогите разведчику перелететь через прожекторы и пройдите как можно дальше.</p>
+    </header>
+    <section class="hud">
+      <div class="scoreboard" aria-live="polite">
+        <span>Счёт: <strong id="score">0</strong></span>
+        <span>Рекорд: <strong id="best">0</strong></span>
+      </div>
+      <div class="controls" aria-label="Управление">
+        <button id="start" type="button">Старт</button>
+        <button id="pause" type="button" disabled>Пауза</button>
+        <button id="restart" type="button" disabled>Заново</button>
+      </div>
+    </section>
+    <canvas id="game" width="400" height="600" role="img" aria-label="Игровое поле flappy bird"></canvas>
+    <p class="hint">Нажмите пробел, кликните по полю или коснитесь экрана, чтобы взмахнуть крыльями.</p>
+  </main>
   <script src="script.js"></script>
 </body>
 </html>
- 
-EOF
-)
