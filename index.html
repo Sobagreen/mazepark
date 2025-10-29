@@ -2,34 +2,22 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>Астральный двор — дуэль стратегов</title>
+  <title>Астральный двор —  стратегов</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <main class="shell shell--idle">
-    <header class="hero" id="hero">
-      <div class="hero__atmo" aria-hidden="true">
-        <span class="hero__glow hero__glow--dawn"></span>
-        <span class="hero__glow hero__glow--dusk"></span>
-        <span class="hero__grain"></span>
-      </div>
+  <main class="shell">
+    <header class="hero">
       <div class="hero__text">
         <p class="hero__overtitle">Тактическая дуэль на двоих</p>
         <h1>Астральный двор</h1>
         <p class="hero__subtitle">Управляйте эскадрами Орденов Рассвета и Сумрака, командуйте уникальными фигурами и переграйте соперника в поединке света и тени.</p>
-        <p class="hero__logline">Неон мерцает в тумане башни. На доске — только вы, соперник и тихие шаги фигур.</p>
-        <div id="hero-ticker" class="hero__ticker" aria-live="polite">Астральный двор скрыт во тьме. Нажмите «Начать дуэль».</div>
       </div>
-      <div class="hero__cta">
-        <button type="button" id="new-game" class="hero__button">
-          <span id="new-game-label" class="hero__button-label">Начать дуэль</span>
-        </button>
-        <p class="hero__hint">Совершая ходы, прислушивайтесь к хронике — она отражает ход дуэли в стиле нуар.</p>
-      </div>
+      <button type="button" id="new-game" class="hero__button">Новая партия</button>
     </header>
 
-    <div class="layout" aria-hidden="true">
+    <div class="layout">
       <section class="board-area">
         <div class="board-frame">
           <div id="board" class="board" role="grid" aria-label="Игровое поле Астрального двора"></div>

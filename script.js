@@ -6,7 +6,7 @@
 
   const PLAYERS = {
     dawn: {
-      name: 'Орден Рассвета',
+      name: 'Орден Рассвеа',
       motto: 'Инициатива света',
       color: '#f6d47f'
     },
@@ -65,17 +65,12 @@
     }
   };
 
-  const shellEl = document.querySelector('.shell');
-  const layoutEl = document.querySelector('.layout');
-  const heroEl = document.getElementById('hero');
   const boardEl = document.getElementById('board');
   const statusPrimaryEl = document.getElementById('status-primary');
   const statusSecondaryEl = document.getElementById('status-secondary');
   const moveLogEl = document.getElementById('move-log');
   const codexEl = document.getElementById('codex');
   const newGameButton = document.getElementById('new-game');
-  const newGameLabel = document.getElementById('new-game-label');
-  const heroTickerEl = document.getElementById('hero-ticker');
   const playAgainButton = document.getElementById('play-again');
   const liveRegion = document.getElementById('live-region');
   const endgameEl = document.getElementById('endgame');
@@ -119,7 +114,6 @@
   let moveHistory = [];
   let gameState = 'idle';
   let winner = null;
-  let lastMove = null;
 
   newGameButton.addEventListener('click', startNewGame);
   playAgainButton.addEventListener('click', startNewGame);
@@ -127,25 +121,10 @@
   function start() {
     buildBoardSkeleton();
     populateCodex();
-    enterIdleState();
+    startNewGame();
   }
 
   function startNewGame() {
-    if (shellEl) {
-      shellEl.classList.remove('shell--idle');
-    }
-    if (layoutEl) {
-      layoutEl.removeAttribute('aria-hidden');
-    }
-    if (heroEl) {
-      heroEl.classList.remove('hero--victory');
-      heroEl.classList.add('hero--compact');
-      heroEl.dataset.state = 'active';
-    }
-    if (newGameLabel) {
-      newGameLabel.textContent = 'Новая партия';
-    }
-    lastMove = null;
     board = createInitialBoard();
     currentPlayer = 'dawn';
     selectedCell = null;
@@ -162,41 +141,7 @@
     renderMoveLog();
     updatePieceFocus(null);
     updateTurnPanel();
-    updateStatus('Орден Рассвета открывает дуэль.', 'Выберите фигуру и впишите первый ход в хронику ночи.', true, 'Стартовый импульс за Рассветом');
-  }
-
-  function enterIdleState() {
-    gameState = 'idle';
-    winner = null;
-    lastMove = null;
-    board = createInitialBoard();
-    currentPlayer = 'dawn';
-    selectedCell = null;
-    legalMoves = [];
-    legalMoveMap.clear();
-    capturedPieces = { dawn: [], dusk: [] };
-    moveHistory = [];
-    if (shellEl) {
-      shellEl.classList.add('shell--idle');
-    }
-    if (layoutEl) {
-      layoutEl.setAttribute('aria-hidden', 'true');
-    }
-    if (heroEl) {
-      heroEl.classList.remove('hero--compact', 'hero--victory');
-      heroEl.dataset.state = 'idle';
-    }
-    if (newGameLabel) {
-      newGameLabel.textContent = 'Начать дуэль';
-    }
-    endgameEl.hidden = true;
-    renderBoard();
-    updateHighlights();
-    updateCaptured();
-    renderMoveLog();
-    updatePieceFocus(null);
-    updateTurnPanel();
-    updateStatus('Астральный двор ждёт командующего.', 'Нажмите «Начать дуэль», чтобы пробиться сквозь сумрак.', false, 'Астральный двор скрыт во тьме. Нажмите «Начать дуэль».');
+    updateStatus('Орден Рассвета начинает партию.', 'Выберите фигуру, чтобы совершить первый ход.');
   }
 
   function buildBoardSkeleton() {
@@ -242,7 +187,7 @@
       setLegalMoves([]);
       updateHighlights();
       updatePieceFocus(null);
-      updateStatus(`${PLAYERS[currentPlayer].name} делает паузу в тумане.`, 'Вы можете выбрать другую фигуру и сменить траекторию.');
+      updateStatus(`${PLAYERS[currentPlayer].name} ожидает решения.`, 'Вы можете выбрать другую фигуру.');
       return;
     }
 
@@ -260,7 +205,7 @@
       setLegalMoves([]);
       selectedCell = null;
       updateHighlights();
-      updateStatus(`${PLAYERS[currentPlayer].name} ведёт игру.`, 'Можете лишь изучить силуэты соперника в полутьме.');
+      updateStatus(`${PLAYERS[currentPlayer].name} ходит.`, 'Вы можете только изучить фигуры соперника.');
       return;
     }
 
@@ -269,10 +214,10 @@
     setLegalMoves(moves);
     updateHighlights();
     if (moves.length === 0) {
-      updateStatus(`${PIECES[piece.type].name} упирается в глухой коридор.`, 'Выберите другую фигуру для манёвра по теням.');
+      updateStatus(`${PIECES[piece.type].name} заблокирован.`, 'Выберите другую фигуру для манёвра.');
     } else {
       const coords = moves.map((m) => toNotation(m.row, m.col)).join(', ');
-      updateStatus(`${PIECES[piece.type].name} готов проскользнуть сквозь неон.`, `Доступные клетки: ${coords}.`);
+      updateStatus(`${PIECES[piece.type].name} готов к манёвру.`, `Доступные клетки: ${coords}.`);
     }
   }
 
@@ -315,7 +260,6 @@
 
     const victoryByCapture = target && target.type === 'commander';
 
-    lastMove = { fromRow, fromCol, toRow: move.row, toCol: move.col };
     selectedCell = null;
     setLegalMoves([]);
     renderBoard();
@@ -356,35 +300,24 @@
 
     const actorName = PLAYERS[piece.owner].name;
     const opponentName = PLAYERS[opponent].name;
-    let primary = `${actorName} ведёт ${PIECES[originalType].name} по маршруту ${notation}.`;
+    let primary = `${actorName} перемещает ${PIECES[originalType].name} на ${toNotation(move.row, move.col)}.`;
     if (target) {
-      primary += ` Трофей ночи: ${PIECES[target.type].name}.`;
+      primary += ` Взято: ${PIECES[target.type].name}.`;
     }
     if (promotionType) {
-      primary += ` Фигура повышена до ${PIECES[piece.type].name}.`;
+      primary += ` Повышение до ${PIECES[piece.type].name}.`;
     }
 
     let secondary;
     if (givesCheck) {
-      secondary = `${opponentName}, тревога: Командор под прицелом неона.`;
+      secondary = `${opponentName}, ваш Командор под прицелом!`;
     } else if (opponentInCheck) {
-      secondary = `${opponentName}, туман всё ещё держит вашего Командора в напряжении.`;
+      secondary = `${opponentName}, ваш Командор всё ещё под угрозой.`;
     } else {
-      secondary = `${opponentName}, тени ждут вашего ответа.`;
+      secondary = `${opponentName}, ваш ход.`;
     }
 
-    const tickerParts = [notation];
-    if (target) {
-      tickerParts.push(`трофей: ${PIECES[target.type].name}`);
-    }
-    if (promotionType) {
-      tickerParts.push(`повышение: ${PIECES[piece.type].name}`);
-    }
-    if (givesCheck) {
-      tickerParts.push('шах');
-    }
-
-    updateStatus(primary, secondary, true, tickerParts.join(' ◇ '));
+    updateStatus(primary, secondary);
     updateHighlights();
     updateCommanderAlerts();
   }
@@ -401,25 +334,10 @@
     const heading = winningPlayer ? `${PLAYERS[winningPlayer].name} побеждает!` : title;
     const detail = subtitle;
 
-    if (heroEl) {
-      heroEl.classList.remove('hero--compact');
-      heroEl.classList.add('hero--victory');
-      heroEl.dataset.state = 'ended';
-    }
-    if (newGameLabel) {
-      newGameLabel.textContent = winningPlayer ? 'Реванш' : 'Новая дуэль';
-    }
-
     endgameTitleEl.textContent = heading;
     endgameSubtitleEl.textContent = detail;
     endgameEl.hidden = false;
-    const tickerParts = [heading];
-    if (winningPlayer) {
-      tickerParts.push('дуэль завершена');
-    } else {
-      tickerParts.push('ночь окончилась перемирием');
-    }
-    updateStatus(heading, detail, true, tickerParts.join(' ◇ '));
+    updateStatus(heading, detail);
     renderMoveLog();
   }
 
@@ -437,7 +355,7 @@
         const cell = cellElements[row][col];
         const piece = board[row][col];
         cell.innerHTML = '';
-        cell.classList.remove('cell--alert', 'cell--last', 'cell--last-target');
+        cell.classList.remove('cell--alert');
         if (!piece) {
           cell.setAttribute('aria-label', `Пустая клетка ${toNotation(row, col)}`);
           continue;
@@ -459,7 +377,6 @@
       }
     }
     updateCommanderAlerts();
-    applyLastMoveHighlight();
   }
 
   function updateHighlights() {
@@ -476,21 +393,6 @@
           cell.classList.add(move.capture ? 'cell--capture' : 'cell--move');
         }
       }
-    }
-  }
-
-  function applyLastMoveHighlight() {
-    if (!lastMove) {
-      return;
-    }
-    const { fromRow, fromCol, toRow, toCol } = lastMove;
-    const fromCell = cellElements[fromRow] && cellElements[fromRow][fromCol];
-    const toCell = cellElements[toRow] && cellElements[toRow][toCol];
-    if (fromCell) {
-      fromCell.classList.add('cell--last');
-    }
-    if (toCell) {
-      toCell.classList.add('cell--last', 'cell--last-target');
     }
   }
 
@@ -513,24 +415,16 @@
     });
   }
 
-  function updateStatus(primary, secondary = '', announce = true, tickerMessage = null) {
+  function updateStatus(primary, secondary = '', announce = true) {
     statusPrimaryEl.textContent = primary;
     statusSecondaryEl.textContent = secondary;
-    const combined = `${primary} ${secondary}`.trim();
     if (announce) {
+      const combined = `${primary} ${secondary}`.trim();
       liveRegion.textContent = combined;
       window.setTimeout(() => {
         liveRegion.textContent = '';
       }, 1000);
     }
-    setTicker(tickerMessage || combined);
-  }
-
-  function setTicker(message) {
-    if (!heroTickerEl) {
-      return;
-    }
-    heroTickerEl.textContent = message || 'Туманы пока молчат.';
   }
 
   function updateTurnPanel() {
@@ -539,10 +433,6 @@
       const card = playerCards[player];
       const badge = turnBadges[player];
       card.classList.remove('player-card--active', 'player-card--alert');
-      if (gameState === 'idle') {
-        badge.textContent = player === 'dawn' ? 'Готов' : 'Дежурит';
-        return;
-      }
       if (gameState === 'ended') {
         if (winner === player) {
           badge.textContent = 'Победа';
@@ -631,36 +521,24 @@
     const notation = document.createElement('span');
     notation.className = 'move-log__notation';
     notation.textContent = `${PIECES[entry.pieceType].glyph[entry.player]} ${entry.notation}`;
-    const detail = document.createElement('div');
+    const detail = document.createElement('p');
     detail.className = 'move-log__detail';
     const flags = [];
     if (entry.capture) {
-      flags.push({ text: 'трофей', type: 'capture' });
+      flags.push('взято');
     }
     if (entry.promotion) {
-      flags.push({ text: `повышение: ${PIECES[entry.promotion].name}`, type: 'promotion' });
+      flags.push(`повышение → ${PIECES[entry.promotion].name}`);
     }
     if (entry.checkmate) {
-      flags.push({ text: 'мат', type: 'checkmate' });
+      flags.push('мат');
     } else if (entry.check) {
-      flags.push({ text: 'шах', type: 'check' });
+      flags.push('шах');
     }
     if (entry.stalemate) {
-      flags.push({ text: 'пат', type: 'stalemate' });
+      flags.push('пат');
     }
-    const makeBadge = (text, type) => {
-      const span = document.createElement('span');
-      span.className = `move-log__badge move-log__badge--${type}`;
-      span.textContent = text;
-      return span;
-    };
-    if (flags.length === 0) {
-      detail.appendChild(makeBadge('манёвр без шума', 'quiet'));
-    } else {
-      flags.forEach((flag) => {
-        detail.appendChild(makeBadge(flag.text, flag.type));
-      });
-    }
+    detail.textContent = flags.length ? flags.join(' · ') : 'манёвр';
     cell.append(playerLabel, notation, detail);
     return cell;
   }
