@@ -1,6 +1,31 @@
-const BOARD_WIDTH = 8;
-const BOARD_HEIGHT = 8;
-const FILES = "ABCDEFGH";
+const INITIAL_LAYOUT = [
+  ["Л1", "П", "П", "П", "Щ1", "В1", "Щ1", "З1", "П", "П"],
+  ["П", "П", "З1", "П", "П", "П", "П", "П", "П", "П"],
+  ["П", "П", "П", "З2", "П", "П", "П", "П", "П", "П"],
+  ["З1", "П", "З2", "П", "Т1", "Т1", "П", "З1", "П", "З2"],
+  ["З1", "П", "З2", "П", "Т2", "Т2", "П", "З1", "П", "З2"],
+  ["П", "П", "П", "П", "П", "П", "З1", "П", "П", "П"],
+  ["П", "П", "П", "П", "П", "П", "П", "З2", "П", "П"],
+  ["П", "П", "П", "З2", "В2", "З2", "П", "П", "П", "Л2"]
+];
+
+const TOKEN_MAP = {
+  П: null,
+  "Л1": { type: "laser", player: "light", orientation: 1 },
+  "Л2": { type: "laser", player: "shadow", orientation: 3 },
+  "В1": { type: "volhv", player: "light", orientation: 2 },
+  "В2": { type: "volhv", player: "shadow", orientation: 0 },
+  "З1": { type: "mirror", player: "light", orientation: 0 },
+  "З2": { type: "mirror", player: "shadow", orientation: 2 },
+  "Щ1": { type: "shield", player: "light", orientation: 2 },
+  "Щ2": { type: "shield", player: "shadow", orientation: 0 },
+  "Т1": { type: "totem", player: "light", orientation: 0 },
+  "Т2": { type: "totem", player: "shadow", orientation: 2 }
+};
+
+const BOARD_HEIGHT = INITIAL_LAYOUT.length;
+const BOARD_WIDTH = INITIAL_LAYOUT[0].length;
+const FILES = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".slice(0, BOARD_WIDTH);
 const THEME_STORAGE_KEY = "laser-theme";
 
 const PLAYERS = {
@@ -21,43 +46,36 @@ const PIECE_DEFS = {
     name: "Лучезар",
     glyph: "☼",
     canRotate: true,
-    description: "Излучает луч. Не двигается, но может поворачивать направление луча.",
+    description: "Излучает луч. Не двигается и неуязвим, можно лишь поворачивать направление луча.",
     movement: () => []
   },
   volhv: {
     name: "Волхв",
     glyph: "✧",
     canRotate: false,
-    description: "Главная фигура. Двигается по прямым на одну клетку. Потеря ведёт к поражению.",
+    description: "Главная фигура. Ходит на одну клетку по ортогоналям. Попадание луча заканчивает партию.",
     movement: (board, x, y, piece) => orthogonalMoves(board, x, y, piece)
   },
-  pyramid: {
-    name: "Зеркало",
-    glyph: "◒",
+  mirror: {
+    name: "Зерцало",
+    glyph: "◩",
     canRotate: true,
-    description: "Один отражающий фас. Поворачивайте, чтобы направлять луч под прямым углом.",
+    description: "Один зеркальный фас. Отражает луч под прямым углом, уязвимо с открытых сторон.",
     movement: (board, x, y, piece) => diagonalMoves(board, x, y, piece)
   },
-  scarab: {
-    name: "Оберег",
-    glyph: "⛬",
-    canRotate: true,
-    description: "Двойное зеркало. Может меняться местами с соседями или отражать с двух сторон.",
-    movement: (board, x, y, piece) => scarabMoves(board, x, y, piece)
-  },
-  anubis: {
+  shield: {
     name: "Щитоносец",
-    glyph: "⛨",
+    glyph: "🛡",
     canRotate: true,
-    description: "Щит отражает луч с одной стороны. Защищайте волхва и зеркала.",
+    description: "Щит гасит луч лицевой стороной. С боков и тыла может быть уничтожен.",
     movement: (board, x, y, piece) => orthogonalMoves(board, x, y, piece)
   },
-  obelisk: {
+  totem: {
     name: "Тотем",
-    glyph: "▲",
-    canRotate: false,
-    description: "Прочно стоит, блокирует луч. Может шагать по прямым.",
-    movement: (board, x, y, piece) => orthogonalMoves(board, x, y, piece)
+    glyph: "⟁",
+    canRotate: true,
+    description: "Двуликое зеркало. Отражает с двух сторон и может сменяться местами с зерцалом или щитом поблизости.",
+    movement: (board, x, y, piece) => totemMoves(board, x, y, piece)
   }
 };
 
@@ -73,29 +91,6 @@ const DIAGONALS = [
   { dx: 1, dy: 1 },
   { dx: -1, dy: -1 },
   { dx: -1, dy: 1 }
-];
-
-// Стартовая расстановка «Око Перуна» повторяет классическую схему Laser Chess/Khet,
-// адаптированную под квадратное поле 8×8. Ориентации отражают исходные углы зеркал.
-const INITIAL_LIGHT_SETUP = [
-  { x: 0, y: 7, type: "laser", orientation: 1 },
-  { x: 1, y: 7, type: "pyramid", orientation: 1 },
-  { x: 2, y: 7, type: "scarab", orientation: 0 },
-  { x: 3, y: 7, type: "anubis", orientation: 0 },
-  { x: 4, y: 7, type: "volhv", orientation: 0 },
-  { x: 5, y: 7, type: "anubis", orientation: 0 },
-  { x: 6, y: 7, type: "scarab", orientation: 2 },
-  { x: 7, y: 7, type: "pyramid", orientation: 2 },
-  { x: 0, y: 6, type: "pyramid", orientation: 0 },
-  { x: 1, y: 6, type: "obelisk", orientation: 0 },
-  { x: 2, y: 6, type: "pyramid", orientation: 1 },
-  { x: 3, y: 6, type: "pyramid", orientation: 3 },
-  { x: 4, y: 6, type: "pyramid", orientation: 1 },
-  { x: 5, y: 6, type: "pyramid", orientation: 3 },
-  { x: 6, y: 6, type: "obelisk", orientation: 0 },
-  { x: 7, y: 6, type: "pyramid", orientation: 2 },
-  { x: 2, y: 5, type: "pyramid", orientation: 0 },
-  { x: 5, y: 5, type: "pyramid", orientation: 2 }
 ];
 
 let board = createEmptyBoard();
@@ -146,32 +141,25 @@ function createEmptyBoard() {
 }
 
 function placeInitialPieces() {
-  for (const spec of INITIAL_LIGHT_SETUP) {
-    placePiece(spec, "light");
-    placePiece(mirrorSpec(spec), "shadow");
+  for (let y = 0; y < BOARD_HEIGHT; y++) {
+    for (let x = 0; x < BOARD_WIDTH; x++) {
+      const token = INITIAL_LAYOUT[y][x];
+      const spec = TOKEN_MAP[token];
+      if (spec) {
+        board[y][x] = {
+          type: spec.type,
+          player: spec.player,
+          orientation: spec.orientation % 4
+        };
+      }
+    }
   }
-}
-
-function placePiece(spec, player) {
-  const piece = {
-    type: spec.type,
-    player,
-    orientation: spec.orientation % 4
-  };
-  board[spec.y][spec.x] = piece;
-}
-
-function mirrorSpec(spec) {
-  return {
-    x: BOARD_WIDTH - 1 - spec.x,
-    y: BOARD_HEIGHT - 1 - spec.y,
-    type: spec.type,
-    orientation: (spec.orientation + 2) % 4
-  };
 }
 
 function initialiseBoardGrid() {
   elements.board.innerHTML = "";
+  elements.board.style.setProperty("--board-columns", BOARD_WIDTH);
+  elements.board.style.setProperty("--board-rows", BOARD_HEIGHT);
   for (let y = 0; y < BOARD_HEIGHT; y++) {
     cells[y] = [];
     for (let x = 0; x < BOARD_WIDTH; x++) {
@@ -206,7 +194,7 @@ function renderBoard() {
       const piece = board[y][x];
       cell.classList.toggle("cell--light", (x + y) % 2 === 0);
       cell.classList.toggle("cell--selected", selectedCell && selectedCell.x === x && selectedCell.y === y);
-      cell.classList.remove("cell--option", "cell--capture");
+      cell.classList.remove("cell--option", "cell--swap");
       if (piece) {
         const def = PIECE_DEFS[piece.type];
         const wrapper = document.createElement("div");
@@ -226,8 +214,8 @@ function renderBoard() {
   for (const option of currentOptions) {
     const cell = cells[option.y][option.x];
     cell.classList.add("cell--option");
-    if (option.capture || option.swap) {
-      cell.classList.add("cell--capture");
+    if (option.swap) {
+      cell.classList.add("cell--swap");
     }
   }
 }
@@ -261,7 +249,9 @@ function selectCell(x, y) {
   renderBoard();
   updateRotateControls(def.canRotate);
   const movesText = currentOptions.length
-    ? `Доступно ходов: ${currentOptions.map((opt) => toNotation(opt.x, opt.y)).join(", ")}.`
+    ? `Доступно ходов: ${currentOptions
+        .map((opt) => `${toNotation(opt.x, opt.y)}${opt.swap ? "⇄" : ""}`)
+        .join(", ")}.`
     : def.canRotate
       ? "Можно только повернуть выбранную фигуру."
       : "Для этой фигуры доступных действий нет.";
@@ -290,19 +280,26 @@ function updateRotateControls(enabled) {
 function executeMove(option, piece, from) {
   const targetPiece = board[option.y][option.x];
 
-  if (option.swap && targetPiece) {
+  if (option.swap) {
+    if (!targetPiece) {
+      return;
+    }
     board[from.y][from.x] = targetPiece;
     board[option.y][option.x] = piece;
     setStatus(`${PLAYERS[currentPlayer].name}: ${PIECE_DEFS[piece.type].name} меняется местами с ${PIECE_DEFS[targetPiece.type].name} на ${toNotation(option.x, option.y)}.`);
-  } else {
-    board[from.y][from.x] = null;
-    board[option.y][option.x] = piece;
-    if (targetPiece) {
-      setStatus(`${PLAYERS[currentPlayer].name}: ${PIECE_DEFS[piece.type].name} захватывает ${PIECE_DEFS[targetPiece.type].name}.`);
-    } else {
-      setStatus(`${PLAYERS[currentPlayer].name}: ${PIECE_DEFS[piece.type].name} перемещён на ${toNotation(option.x, option.y)}.`);
-    }
+    endTurn();
+    return;
   }
+
+  if (targetPiece) {
+    setStatus(`${PLAYERS[currentPlayer].name}: клетка ${toNotation(option.x, option.y)} уже занята.`);
+    renderBoard();
+    return;
+  }
+
+  board[from.y][from.x] = null;
+  board[option.y][option.x] = piece;
+  setStatus(`${PLAYERS[currentPlayer].name}: ${PIECE_DEFS[piece.type].name} перемещён на ${toNotation(option.x, option.y)}.`);
 
   endTurn();
 }
@@ -417,15 +414,14 @@ function fireLaser(player) {
 function resolveLaserInteraction(piece, incomingDirection) {
   const face = mod4(incomingDirection + 2);
   switch (piece.type) {
-    case "pyramid":
-      return pyramidInteraction(piece.orientation, face);
-    case "scarab":
-      return scarabInteraction(piece.orientation, face);
-    case "anubis":
-      return anubisInteraction(piece.orientation, face);
+    case "mirror":
+      return mirrorInteraction(piece.orientation, face);
+    case "totem":
+      return totemInteraction(piece.orientation, face);
+    case "shield":
+      return shieldInteraction(piece.orientation, face);
     case "laser":
-      return { destroy: true, stop: true };
-    case "obelisk":
+      return { destroy: false, stop: true };
     case "volhv":
       return { destroy: true, stop: true };
     default:
@@ -433,7 +429,7 @@ function resolveLaserInteraction(piece, incomingDirection) {
   }
 }
 
-function pyramidInteraction(orientation, face) {
+function mirrorInteraction(orientation, face) {
   const baseMap = {
     0: 1,
     1: 0
@@ -445,7 +441,7 @@ function pyramidInteraction(orientation, face) {
   return { destroy: true, stop: true };
 }
 
-function scarabInteraction(orientation, face) {
+function totemInteraction(orientation, face) {
   const baseMap = {
     0: 1,
     1: 0,
@@ -459,7 +455,7 @@ function scarabInteraction(orientation, face) {
   return { destroy: true, stop: true };
 }
 
-function anubisInteraction(orientation, face) {
+function shieldInteraction(orientation, face) {
   const shieldFace = orientation % 4;
   if (face === shieldFace) {
     return { destroy: false, stop: true };
@@ -575,8 +571,6 @@ function orthogonalMoves(boardState, x, y, piece) {
     const target = boardState[ny][nx];
     if (!target) {
       moves.push({ x: nx, y: ny });
-    } else if (target.player !== piece.player) {
-      moves.push({ x: nx, y: ny, capture: true });
     }
   }
   return moves;
@@ -591,14 +585,12 @@ function diagonalMoves(boardState, x, y, piece) {
     const target = boardState[ny][nx];
     if (!target) {
       moves.push({ x: nx, y: ny });
-    } else if (target.player !== piece.player) {
-      moves.push({ x: nx, y: ny, capture: true });
     }
   }
   return moves;
 }
 
-function scarabMoves(boardState, x, y, piece) {
+function totemMoves(boardState, x, y, piece) {
   const moves = [];
   for (const dir of DIRECTIONS) {
     const nx = x + dir.dx;
@@ -607,7 +599,10 @@ function scarabMoves(boardState, x, y, piece) {
     const target = boardState[ny][nx];
     if (!target) {
       moves.push({ x: nx, y: ny });
-    } else {
+    } else if (
+      target.player === piece.player &&
+      (target.type === "mirror" || target.type === "shield")
+    ) {
       moves.push({ x: nx, y: ny, swap: true });
     }
   }

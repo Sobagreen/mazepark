@@ -245,10 +245,10 @@ body.theme-light .button--primary {
 
 .board {
   display: grid;
-  grid-template-columns: repeat(8, minmax(0, 1fr));
+  grid-template-columns: repeat(var(--board-columns, 8), minmax(0, 1fr));
   grid-auto-rows: 1fr;
-  width: min(820px, 96vw);
-  aspect-ratio: 1 / 1;
+  width: min(900px, 96vw);
+  aspect-ratio: var(--board-columns, 8) / var(--board-rows, 8);
   border-radius: 18px;
   overflow: hidden;
   border: 1px solid var(--panel-border-color);
@@ -303,10 +303,10 @@ body.theme-light .button--primary {
   background: rgba(107, 154, 255, 0.18);
 }
 
-.cell--capture::after {
+.cell--swap::after {
   border-style: solid;
-  background: rgba(255, 94, 94, 0.25);
-  border-color: var(--laser);
+  background: rgba(107, 154, 255, 0.24);
+  border-color: rgba(107, 154, 255, 0.8);
 }
 
 .piece {
