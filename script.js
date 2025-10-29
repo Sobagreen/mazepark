@@ -111,7 +111,6 @@ const elements = {
   turn: document.getElementById("turn-indicator"),
   rotateLeft: document.getElementById("rotate-left"),
   rotateRight: document.getElementById("rotate-right"),
-  hint: document.getElementById("action-hint"),
   endgame: document.getElementById("endgame"),
   endgameTitle: document.getElementById("endgame-title"),
   endgameSubtitle: document.getElementById("endgame-subtitle"),
@@ -133,18 +132,13 @@ function startNewGame() {
   board = createEmptyBoard();
   placeInitialPieces();
   currentPlayer = "light";
-  selectedCell = null;
-  currentOptions = [];
   turnCounter = 1;
   clearLaserPath();
   updateTurnIndicator();
-  renderBoard();
-  setStatus("Выберите фигуру и передвиньте её либо поверните зеркало.");
-  elements.hint.textContent = "Выберите свою фигуру, чтобы увидеть доступные ходы.";
+  clearSelection({ silent: true });
+  setStatus("Дружина Перуна начинает дуэль: выберите фигуру или поверните зеркало.");
   elements.endgame.hidden = true;
   elements.endgame.setAttribute("aria-hidden", "true");
-  updateRotateControls(false);
-  updatePiecePanel();
 }
 
 function createEmptyBoard() {
@@ -267,22 +261,23 @@ function selectCell(x, y) {
   renderBoard();
   updateRotateControls(def.canRotate);
   const movesText = currentOptions.length
-    ? `Доступно ходов: ${currentOptions.map((opt) => toNotation(opt.x, opt.y)).join(", ")}`
+    ? `Доступно ходов: ${currentOptions.map((opt) => toNotation(opt.x, opt.y)).join(", ")}.`
     : def.canRotate
       ? "Можно только повернуть выбранную фигуру."
       : "Для этой фигуры доступных действий нет.";
-  elements.hint.textContent = `${def.name}: ${movesText}`;
-  setStatus(`${PLAYERS[currentPlayer].name}: выбрана фигура ${def.name} на ${toNotation(x, y)}.`);
+  setStatus(`${PLAYERS[currentPlayer].name}: ${def.name} на ${toNotation(x, y)}. ${movesText}`);
   updatePiecePanel(piece, toNotation(x, y));
 }
 
-function clearSelection() {
+function clearSelection({ silent = false } = {}) {
   selectedCell = null;
   currentOptions = [];
   renderBoard();
   updateRotateControls(false);
-  elements.hint.textContent = "Выберите свою фигуру, чтобы увидеть доступные ходы.";
   updatePiecePanel();
+  if (!silent) {
+    setStatus(`${PLAYERS[currentPlayer].name}: выберите фигуру.`);
+  }
 }
 
 function updateRotateControls(enabled) {
@@ -326,8 +321,9 @@ function rotateSelected(delta) {
 }
 
 function endTurn() {
-  clearSelection();
-  const laserResult = fireLaser(currentPlayer);
+  clearSelection({ silent: true });
+  const activePlayer = currentPlayer;
+  const laserResult = fireLaser(activePlayer);
   renderBoard();
   highlightLaserPath(laserResult);
   if (laserResult.hit) {
@@ -337,7 +333,7 @@ function endTurn() {
     const cell = toNotation(laserResult.hit.x, laserResult.hit.y);
     setStatus(`${laserResult.firer} испепеляет ${pieceName} (${owner}) на ${cell}.`);
     if (hitPiece.type === "volhv") {
-      finishGame(currentPlayer);
+      finishGame(activePlayer);
       return;
     }
   } else if (laserResult.blocked) {
@@ -346,7 +342,7 @@ function endTurn() {
     const cell = toNotation(laserResult.blocked.x, laserResult.blocked.y);
     setStatus(`${laserResult.firer} не проходит через ${PIECE_DEFS[blockPiece.type].name} на ${cell}.`);
   }
-  currentPlayer = currentPlayer === "light" ? "shadow" : "light";
+  currentPlayer = activePlayer === "light" ? "shadow" : "light";
   turnCounter += 1;
   updateTurnIndicator();
   if (!laserResult.hit) {

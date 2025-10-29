@@ -8,43 +8,6 @@
 </head>
 <body class="theme-dark">
   <main class="game">
-    <aside class="sidebar">
-      <header class="sidebar__hero">
-        <p class="sidebar__overtitle">Дуэль лучезарных волхвов</p>
-        <h1>Лучезарная сечь</h1>
-        <p class="sidebar__intro">Поверните зеркала, направьте лучи Перуна и Чернобога и сразите чужого волхва, не подпуская свет к своему.</p>
-      </header>
-
-      <section class="panel">
-        <h2>Ход</h2>
-        <p id="turn-indicator" class="panel__turn">—</p>
-      </section>
-
-      <section class="panel">
-        <h2>Подсказка</h2>
-        <p id="action-hint" class="panel__hint">Выберите свою фигуру, чтобы увидеть доступные ходы.</p>
-      </section>
-
-      <section class="panel panel--piece" aria-live="polite">
-        <h2>Фигура</h2>
-        <p id="piece-name" class="piece-panel__name">—</p>
-        <p id="piece-details" class="piece-panel__details">Коснитесь своей фигуры, чтобы узнать её свойства.</p>
-      </section>
-
-      <section class="panel panel--legend">
-        <h2>Легенда орденов</h2>
-        <ul class="legend">
-          <li><span class="legend__glyph legend__glyph--light">☼</span> Лучезар (излучает лазер)</li>
-          <li><span class="legend__glyph legend__glyph--light">✧</span> Волхв (главная цель)</li>
-          <li><span class="legend__glyph legend__glyph--light">◒</span> Зеркало (отражает луч под 90°)</li>
-          <li><span class="legend__glyph legend__glyph--light">⛬</span> Оберег (двойное зеркало, меняется местами с соседями)</li>
-          <li><span class="legend__glyph legend__glyph--light">⛨</span> Щитоносец (щит отражает луч)</li>
-          <li><span class="legend__glyph legend__glyph--light">▲</span> Тотем (поглощает удар)</li>
-        </ul>
-      </section>
-
-    </aside>
-
     <section class="board-area">
       <div class="board-toolbar">
         <button type="button" id="new-game" class="toolbar-button toolbar-button--primary" title="Начать заново">New</button>
@@ -67,6 +30,30 @@
       </div>
       <p id="status" class="status" aria-live="assertive"></p>
     </section>
+    <aside class="sidebar">
+      <section class="panel">
+        <h2>Ход</h2>
+        <p id="turn-indicator" class="panel__turn">—</p>
+      </section>
+
+      <section class="panel panel--piece" aria-live="polite">
+        <h2>Фигура</h2>
+        <p id="piece-name" class="piece-panel__name">—</p>
+        <p id="piece-details" class="piece-panel__details">Коснитесь своей фигуры, чтобы узнать её свойства.</p>
+      </section>
+
+      <section class="panel panel--legend">
+        <h2>Легенда орденов</h2>
+        <ul class="legend">
+          <li><span class="legend__glyph legend__glyph--light">☼</span> Лучезар (излучает лазер)</li>
+          <li><span class="legend__glyph legend__glyph--light">✧</span> Волхв (главная цель)</li>
+          <li><span class="legend__glyph legend__glyph--light">◒</span> Зеркало (отражает луч под 90°)</li>
+          <li><span class="legend__glyph legend__glyph--light">⛬</span> Оберег (двойное зеркало, меняется местами с соседями)</li>
+          <li><span class="legend__glyph legend__glyph--light">⛨</span> Щитоносец (щит отражает луч)</li>
+          <li><span class="legend__glyph legend__glyph--light">▲</span> Тотем (поглощает удар)</li>
+        </ul>
+      </section>
+    </aside>
   </main>
 
   <script src="script.js"></script>
