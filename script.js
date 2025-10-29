@@ -21,36 +21,42 @@ const PIECE_DEFS = {
     name: "Лучезар",
     glyph: "☼",
     canRotate: true,
+    description: "Излучает луч. Не двигается, но может поворачивать направление луча.",
     movement: () => []
   },
   volhv: {
     name: "Волхв",
     glyph: "✧",
     canRotate: false,
+    description: "Главная фигура. Двигается по прямым на одну клетку. Потеря ведёт к поражению.",
     movement: (board, x, y, piece) => orthogonalMoves(board, x, y, piece)
   },
   pyramid: {
     name: "Зеркало",
     glyph: "◒",
     canRotate: true,
+    description: "Один отражающий фас. Поворачивайте, чтобы направлять луч под прямым углом.",
     movement: (board, x, y, piece) => diagonalMoves(board, x, y, piece)
   },
   scarab: {
     name: "Оберег",
     glyph: "⛬",
     canRotate: true,
+    description: "Двойное зеркало. Может меняться местами с соседями или отражать с двух сторон.",
     movement: (board, x, y, piece) => scarabMoves(board, x, y, piece)
   },
   anubis: {
     name: "Щитоносец",
     glyph: "⛨",
     canRotate: true,
+    description: "Щит отражает луч с одной стороны. Защищайте волхва и зеркала.",
     movement: (board, x, y, piece) => orthogonalMoves(board, x, y, piece)
   },
   obelisk: {
     name: "Тотем",
     glyph: "▲",
     canRotate: false,
+    description: "Прочно стоит, блокирует луч. Может шагать по прямым.",
     movement: (board, x, y, piece) => orthogonalMoves(board, x, y, piece)
   }
 };
@@ -97,7 +103,6 @@ let currentPlayer = "light";
 let selectedCell = null;
 let currentOptions = [];
 let turnCounter = 1;
-let lastLaserPath = [];
 let currentTheme = "dark";
 
 const elements = {
@@ -107,13 +112,14 @@ const elements = {
   rotateLeft: document.getElementById("rotate-left"),
   rotateRight: document.getElementById("rotate-right"),
   hint: document.getElementById("action-hint"),
-  log: document.getElementById("move-log"),
   endgame: document.getElementById("endgame"),
   endgameTitle: document.getElementById("endgame-title"),
   endgameSubtitle: document.getElementById("endgame-subtitle"),
   playAgain: document.getElementById("play-again"),
   themeToggle: document.getElementById("theme-toggle"),
-  laserOverlay: document.getElementById("laser-overlay")
+  laserOverlay: document.getElementById("laser-overlay"),
+  pieceName: document.getElementById("piece-name"),
+  pieceDetails: document.getElementById("piece-details")
 };
 
 const cells = [];
@@ -129,9 +135,7 @@ function startNewGame() {
   currentPlayer = "light";
   selectedCell = null;
   currentOptions = [];
-  lastLaserPath = [];
   turnCounter = 1;
-  clearLog();
   clearLaserPath();
   updateTurnIndicator();
   renderBoard();
@@ -140,6 +144,7 @@ function startNewGame() {
   elements.endgame.hidden = true;
   elements.endgame.setAttribute("aria-hidden", "true");
   updateRotateControls(false);
+  updatePiecePanel();
 }
 
 function createEmptyBoard() {
@@ -268,6 +273,7 @@ function selectCell(x, y) {
       : "Для этой фигуры доступных действий нет.";
   elements.hint.textContent = `${def.name}: ${movesText}`;
   setStatus(`${PLAYERS[currentPlayer].name}: выбрана фигура ${def.name} на ${toNotation(x, y)}.`);
+  updatePiecePanel(piece, toNotation(x, y));
 }
 
 function clearSelection() {
@@ -276,6 +282,7 @@ function clearSelection() {
   renderBoard();
   updateRotateControls(false);
   elements.hint.textContent = "Выберите свою фигуру, чтобы увидеть доступные ходы.";
+  updatePiecePanel();
 }
 
 function updateRotateControls(enabled) {
@@ -286,25 +293,20 @@ function updateRotateControls(enabled) {
 }
 
 function executeMove(option, piece, from) {
-  const fromNotation = toNotation(from.x, from.y);
   const targetPiece = board[option.y][option.x];
 
   if (option.swap && targetPiece) {
     board[from.y][from.x] = targetPiece;
     board[option.y][option.x] = piece;
     setStatus(`${PLAYERS[currentPlayer].name}: ${PIECE_DEFS[piece.type].name} меняется местами с ${PIECE_DEFS[targetPiece.type].name} на ${toNotation(option.x, option.y)}.`);
-    logAction(`${PIECE_DEFS[piece.type].name} ${fromNotation} ↔ ${toNotation(option.x, option.y)}`);
   } else {
     board[from.y][from.x] = null;
     board[option.y][option.x] = piece;
-    let actionText = `${PIECE_DEFS[piece.type].name} ${fromNotation} → ${toNotation(option.x, option.y)}`;
     if (targetPiece) {
-      actionText += ` (захват ${PIECE_DEFS[targetPiece.type].name})`;
       setStatus(`${PLAYERS[currentPlayer].name}: ${PIECE_DEFS[piece.type].name} захватывает ${PIECE_DEFS[targetPiece.type].name}.`);
     } else {
       setStatus(`${PLAYERS[currentPlayer].name}: ${PIECE_DEFS[piece.type].name} перемещён на ${toNotation(option.x, option.y)}.`);
     }
-    logAction(actionText);
   }
 
   endTurn();
@@ -320,7 +322,6 @@ function rotateSelected(delta) {
   renderBoard();
   const dirSymbol = delta > 0 ? "↻" : "↺";
   setStatus(`${PLAYERS[currentPlayer].name}: ${def.name} на ${toNotation(selectedCell.x, selectedCell.y)} повёрнут ${delta > 0 ? "по" : "против"} часовой стрелки.`);
-  logAction(`${def.name} ${toNotation(selectedCell.x, selectedCell.y)} ${dirSymbol}`);
   endTurn();
 }
 
@@ -334,7 +335,6 @@ function endTurn() {
     const owner = PLAYERS[hitPiece.player].name;
     const pieceName = PIECE_DEFS[hitPiece.type].name;
     const cell = toNotation(laserResult.hit.x, laserResult.hit.y);
-    logAction(`Лазер поражает ${pieceName} (${owner}) на ${cell}`);
     setStatus(`${laserResult.firer} испепеляет ${pieceName} (${owner}) на ${cell}.`);
     if (hitPiece.type === "volhv") {
       finishGame(currentPlayer);
@@ -344,7 +344,6 @@ function endTurn() {
     const blockPiece = laserResult.blocked.piece;
     const owner = PLAYERS[blockPiece.player].name;
     const cell = toNotation(laserResult.blocked.x, laserResult.blocked.y);
-    logAction(`Луч останавливается о ${PIECE_DEFS[blockPiece.type].name} (${owner}) на ${cell}`);
     setStatus(`${laserResult.firer} не проходит через ${PIECE_DEFS[blockPiece.type].name} на ${cell}.`);
   }
   currentPlayer = currentPlayer === "light" ? "shadow" : "light";
@@ -500,22 +499,10 @@ function highlightLaserPath(result) {
     return;
   }
 
-  const path = result.path || [];
-  lastLaserPath = path;
-  for (const step of path) {
-    const cell = cells[step.y][step.x];
-    cell.classList.add("cell--laser-trace");
-  }
-
   drawLaserBeam(result);
 }
 
 function clearLaserPath() {
-  for (const step of lastLaserPath) {
-    const cell = cells[step.y][step.x];
-    if (cell) cell.classList.remove("cell--laser-trace");
-  }
-  lastLaserPath = [];
   if (elements.laserOverlay) {
     elements.laserOverlay.replaceChildren();
   }
@@ -651,17 +638,6 @@ function setStatus(message) {
   elements.status.textContent = message;
 }
 
-function logAction(text) {
-  const item = document.createElement("li");
-  item.textContent = `${turnCounter}. ${PLAYERS[currentPlayer].name}: ${text}`;
-  elements.log.appendChild(item);
-  elements.log.scrollTop = elements.log.scrollHeight;
-}
-
-function clearLog() {
-  elements.log.innerHTML = "";
-}
-
 function initialiseTheme() {
   let theme = null;
   try {
@@ -689,14 +665,44 @@ function setTheme(theme) {
   document.body.classList.toggle("theme-dark", currentTheme === "dark");
   document.documentElement.style.colorScheme = currentTheme === "light" ? "light" : "dark";
   if (elements.themeToggle) {
-    const buttonLabel = currentTheme === "light" ? "Тёмная тема" : "Светлая тема";
-    elements.themeToggle.textContent = buttonLabel;
+    const icon = currentTheme === "light" ? "☀️" : "🌙";
+    elements.themeToggle.innerHTML = `<span aria-hidden="true">${icon}</span>`;
     elements.themeToggle.setAttribute("aria-pressed", currentTheme === "light" ? "true" : "false");
     elements.themeToggle.setAttribute("aria-label", `Переключить тему. Текущая тема: ${currentTheme === "light" ? "светлая" : "тёмная"}.`);
+    elements.themeToggle.setAttribute("title", currentTheme === "light" ? "Включить тёмную тему" : "Включить светлую тему");
   }
   try {
     localStorage.setItem(THEME_STORAGE_KEY, currentTheme);
   } catch (err) {
     // игнорируем, если локальное хранилище недоступно
+  }
+}
+
+function updatePiecePanel(piece = null, position = null) {
+  if (!elements.pieceName || !elements.pieceDetails) return;
+  if (!piece) {
+    elements.pieceName.textContent = "—";
+    elements.pieceDetails.textContent = "Коснитесь своей фигуры, чтобы узнать её свойства.";
+    return;
+  }
+  const def = PIECE_DEFS[piece.type];
+  const owner = PLAYERS[piece.player].name;
+  const facing = orientationToText(piece.orientation);
+  elements.pieceName.textContent = `${def.name} • ${owner}`;
+  const positionText = position ? `Позиция ${position}. ` : "";
+  elements.pieceDetails.textContent = `${positionText}${def.description} Повернут ${facing}.`;
+}
+
+function orientationToText(orientation) {
+  switch (mod4(orientation)) {
+    case 0:
+      return "к северу";
+    case 1:
+      return "к востоку";
+    case 2:
+      return "к югу";
+    case 3:
+    default:
+      return "к западу";
   }
 }

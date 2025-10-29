@@ -13,10 +13,6 @@
         <p class="sidebar__overtitle">Дуэль лучезарных волхвов</p>
         <h1>Лучезарная сечь</h1>
         <p class="sidebar__intro">Поверните зеркала, направьте лучи Перуна и Чернобога и сразите чужого волхва, не подпуская свет к своему.</p>
-        <div class="hero__actions">
-          <button type="button" id="new-game" class="button button--primary">Новая партия</button>
-          <button type="button" id="theme-toggle" class="button button--ghost" aria-pressed="false">Светлая тема</button>
-        </div>
       </header>
 
       <section class="panel">
@@ -25,12 +21,14 @@
       </section>
 
       <section class="panel">
-        <h2>Действия</h2>
-        <div class="actions">
-          <button type="button" id="rotate-left" class="button" disabled>Повернуть ↺</button>
-          <button type="button" id="rotate-right" class="button" disabled>Повернуть ↻</button>
-        </div>
+        <h2>Подсказка</h2>
         <p id="action-hint" class="panel__hint">Выберите свою фигуру, чтобы увидеть доступные ходы.</p>
+      </section>
+
+      <section class="panel panel--piece" aria-live="polite">
+        <h2>Фигура</h2>
+        <p id="piece-name" class="piece-panel__name">—</p>
+        <p id="piece-details" class="piece-panel__details">Коснитесь своей фигуры, чтобы узнать её свойства.</p>
       </section>
 
       <section class="panel panel--legend">
@@ -45,13 +43,15 @@
         </ul>
       </section>
 
-      <section class="panel panel--log">
-        <h2>Хроника</h2>
-        <ol id="move-log" class="log" aria-live="polite"></ol>
-      </section>
     </aside>
 
     <section class="board-area">
+      <div class="board-toolbar">
+        <button type="button" id="new-game" class="toolbar-button toolbar-button--primary" title="Начать заново">New</button>
+        <button type="button" id="theme-toggle" class="toolbar-button toolbar-button--icon" aria-pressed="false" aria-label="Переключить тему">
+          <span aria-hidden="true">🌙</span>
+        </button>
+      </div>
       <div class="board-wrapper">
         <div id="board" class="board" role="grid" aria-label="Поле лучезарной сечи"></div>
         <div id="laser-overlay" class="laser-overlay" aria-hidden="true"></div>
@@ -60,6 +60,10 @@
           <p id="endgame-subtitle"></p>
           <button type="button" id="play-again" class="button button--primary">Сыграть ещё раз</button>
         </div>
+      </div>
+      <div class="board-actions">
+        <button type="button" id="rotate-left" class="board-action" disabled aria-label="Повернуть против часовой стрелки">↺</button>
+        <button type="button" id="rotate-right" class="board-action" disabled aria-label="Повернуть по часовой стрелке">↻</button>
       </div>
       <p id="status" class="status" aria-live="assertive"></p>
     </section>
