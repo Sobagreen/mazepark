@@ -6,7 +6,7 @@
 
   const PLAYERS = {
     dawn: {
-      name: 'Орден Рассвета',
+      name: 'Орден Рассвеа',
       motto: 'Инициатива света',
       color: '#f6d47f'
     },
