@@ -332,24 +332,10 @@ body.theme-light .piece {
   opacity: 0.82;
 }
 
-.piece__icon {
-  width: min(72%, 54px);
-  aspect-ratio: 1;
-  display: grid;
-  place-items: center;
-  margin: 0 auto;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.35));
-}
-
-.piece__icon svg {
-  width: 100%;
-  height: 100%;
-  display: block;
+.piece__glyph {
+  display: inline-block;
   transition: transform 0.2s ease;
-  transform-origin: 50% 50%;
-  pointer-events: none;
 }
-
 
 .status {
   min-height: 2.5rem;
