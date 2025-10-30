@@ -43,40 +43,55 @@ const PLAYERS = {
   }
 };
 
-// Поместите файлы PNG (laser.png, volhv.png, mirror.png, shield.png, totem.png)
-// в папку "pieces" рядом со script.js.
+// Поместите файлы PNG для каждой фракции в подпапки "pieces/light" и "pieces/shadow"
+// рядом со script.js. Например: pieces/light/laser.png, pieces/shadow/laser.png и т.д.
 const PIECE_DEFS = {
   laser: {
     name: "Лучезар",
-    image: "pieces/laser.png",
+    images: {
+      light: "pieces/light/laser.png",
+      shadow: "pieces/shadow/laser.png"
+    },
     canRotate: true,
     description: "Излучает луч. Не двигается и неуязвим, можно лишь поворачивать направление луча.",
     movement: () => []
   },
   volhv: {
     name: "Волхв",
-    image: "pieces/volhv.png",
+    images: {
+      light: "pieces/light/volhv.png",
+      shadow: "pieces/shadow/volhv.png"
+    },
     canRotate: false,
     description: "Главная фигура. Ходит на одну клетку в любом направлении. Попадание луча заканчивает партию.",
     movement: (board, x, y, piece) => adjacentMoves(board, x, y, piece)
   },
   mirror: {
     name: "Зерцало",
-    image: "pieces/mirror.png",
+    images: {
+      light: "pieces/light/mirror.png",
+      shadow: "pieces/shadow/mirror.png"
+    },
     canRotate: true,
     description: "Один зеркальный фас. Отражает луч под прямым углом, уязвимо с открытых сторон.",
     movement: (board, x, y, piece) => adjacentMoves(board, x, y, piece)
   },
   shield: {
     name: "Щитоносец",
-    image: "pieces/shield.png",
+    images: {
+      light: "pieces/light/shield.png",
+      shadow: "pieces/shadow/shield.png"
+    },
     canRotate: true,
     description: "Щит гасит луч лицевой стороной. С боков и тыла может быть уничтожен.",
     movement: (board, x, y, piece) => adjacentMoves(board, x, y, piece)
   },
   totem: {
     name: "Тотем",
-    image: "pieces/totem.png",
+    images: {
+      light: "pieces/light/totem.png",
+      shadow: "pieces/shadow/totem.png"
+    },
     canRotate: true,
     description: "Двуликое зеркало. Отражает с двух сторон и может сменяться местами с зерцалом или щитом поблизости, включая диагональ.",
     movement: (board, x, y, piece) => totemMoves(board, x, y, piece)
@@ -206,7 +221,7 @@ function renderBoard() {
         const wrapper = document.createElement("div");
         wrapper.className = `piece piece--${piece.player}`;
         const image = document.createElement("img");
-        image.src = def.image;
+        image.src = def.images[piece.player];
         image.alt = "";
         image.className = "piece__image";
         image.style.transform = `rotate(${piece.orientation * 90}deg)`;
