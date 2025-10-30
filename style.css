@@ -362,6 +362,7 @@ body.theme-light .piece {
   pointer-events: none;
   user-select: none;
   transition: transform 0.2s ease;
+  transform-origin: center;
 }
 
 .legend__glyph img {
