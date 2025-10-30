@@ -433,8 +433,8 @@ function resolveLaserInteraction(piece, incomingDirection) {
 
 function mirrorInteraction(orientation, face) {
   const baseMap = {
-    0: 1,
-    1: 0
+    0: 3,
+    3: 0
   };
   const rotatedMap = rotateFaceMap(baseMap, orientation);
   if (face in rotatedMap) {
