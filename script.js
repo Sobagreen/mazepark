@@ -88,15 +88,24 @@ const DIRECTIONS = [
   { dx: -1, dy: 0 }  // влево
 ];
 
+const DIAGONALS = [
+  { dx: 1, dy: -1 },
+  { dx: 1, dy: 1 },
+  { dx: -1, dy: -1 },
+  { dx: -1, dy: 1 }
+];
+
 let board = createEmptyBoard();
 let currentPlayer = "light";
 let selectedCell = null;
 let currentOptions = [];
+let turnCounter = 1;
 let currentTheme = "dark";
 
 const elements = {
   board: document.getElementById("board"),
   status: document.getElementById("status"),
+  turn: document.getElementById("turn-indicator"),
   rotateLeft: document.getElementById("rotate-left"),
   rotateRight: document.getElementById("rotate-right"),
   endgame: document.getElementById("endgame"),
@@ -120,7 +129,9 @@ function startNewGame() {
   board = createEmptyBoard();
   placeInitialPieces();
   currentPlayer = "light";
+  turnCounter = 1;
   clearLaserPath();
+  updateTurnIndicator();
   clearSelection({ silent: true });
   setStatus("Дружина Перуна начинает дуэль: выберите фигуру или поверните зеркало.");
   elements.endgame.hidden = true;
@@ -331,6 +342,8 @@ function endTurn() {
     setStatus(`${laserResult.firer} не проходит через ${PIECE_DEFS[blockPiece.type].name} на ${cell}.`);
   }
   currentPlayer = activePlayer === "light" ? "shadow" : "light";
+  turnCounter += 1;
+  updateTurnIndicator();
   if (!laserResult.hit) {
     setStatus(`${PLAYERS[currentPlayer].name} готовит ход.`);
   }
@@ -551,36 +564,44 @@ function computeExitPoint(previous, direction) {
   }
 }
 
-function allEmptyCells(boardState, originX, originY) {
-  const moves = [];
-  for (let row = 0; row < BOARD_HEIGHT; row += 1) {
-    for (let col = 0; col < BOARD_WIDTH; col += 1) {
-      if (col === originX && row === originY) continue;
-      if (!boardState[row][col]) {
-        moves.push({ x: col, y: row });
-      }
-    }
-  }
-  return moves;
-}
-
 function orthogonalMoves(boardState, x, y, piece) {
-  return allEmptyCells(boardState, x, y);
-}
-
-function diagonalMoves(boardState, x, y, piece) {
-  return allEmptyCells(boardState, x, y);
-}
-
-function totemMoves(boardState, x, y, piece) {
-  const moves = allEmptyCells(boardState, x, y);
+  const moves = [];
   for (const dir of DIRECTIONS) {
     const nx = x + dir.dx;
     const ny = y + dir.dy;
     if (!inBounds(nx, ny)) continue;
     const target = boardState[ny][nx];
-    if (
-      target &&
+    if (!target) {
+      moves.push({ x: nx, y: ny });
+    }
+  }
+  return moves;
+}
+
+function diagonalMoves(boardState, x, y, piece) {
+  const moves = [];
+  for (const dir of DIAGONALS) {
+    const nx = x + dir.dx;
+    const ny = y + dir.dy;
+    if (!inBounds(nx, ny)) continue;
+    const target = boardState[ny][nx];
+    if (!target) {
+      moves.push({ x: nx, y: ny });
+    }
+  }
+  return moves;
+}
+
+function totemMoves(boardState, x, y, piece) {
+  const moves = [];
+  for (const dir of DIRECTIONS) {
+    const nx = x + dir.dx;
+    const ny = y + dir.dy;
+    if (!inBounds(nx, ny)) continue;
+    const target = boardState[ny][nx];
+    if (!target) {
+      moves.push({ x: nx, y: ny });
+    } else if (
       target.player === piece.player &&
       (target.type === "mirror" || target.type === "shield")
     ) {
@@ -600,6 +621,10 @@ function mod4(value) {
 
 function toNotation(x, y) {
   return `${FILES[x]}${BOARD_HEIGHT - y}`;
+}
+
+function updateTurnIndicator() {
+  elements.turn.textContent = `${turnCounter}. ${PLAYERS[currentPlayer].name}`;
 }
 
 function setStatus(message) {
