@@ -43,40 +43,42 @@ const PLAYERS = {
   }
 };
 
+// Поместите файлы PNG (laser.png, volhv.png, mirror.png, shield.png, totem.png)
+// в папку "pieces" рядом со script.js.
 const PIECE_DEFS = {
   laser: {
     name: "Лучезар",
-    glyph: "☼",
+    image: "pieces/laser.png",
     canRotate: true,
     description: "Излучает луч. Не двигается и неуязвим, можно лишь поворачивать направление луча.",
     movement: () => []
   },
   volhv: {
     name: "Волхв",
-    glyph: "✧",
+    image: "pieces/volhv.png",
     canRotate: false,
     description: "Главная фигура. Ходит на одну клетку в любом направлении. Попадание луча заканчивает партию.",
     movement: (board, x, y, piece) => adjacentMoves(board, x, y, piece)
   },
   mirror: {
     name: "Зерцало",
-    glyph: "◩",
+    image: "pieces/mirror.png",
     canRotate: true,
     description: "Один зеркальный фас. Отражает луч под прямым углом, уязвимо с открытых сторон.",
     movement: (board, x, y, piece) => adjacentMoves(board, x, y, piece)
   },
   shield: {
     name: "Щитоносец",
-    glyph: "🛡",
+    image: "pieces/shield.png",
     canRotate: true,
     description: "Щит гасит луч лицевой стороной. С боков и тыла может быть уничтожен.",
     movement: (board, x, y, piece) => adjacentMoves(board, x, y, piece)
   },
   totem: {
     name: "Тотем",
-    glyph: "✖️",
+    image: "pieces/totem.png",
     canRotate: true,
-    description: "Двуликое зеркало. Отражает с двух сторон и может сменяться местами с зерцалом или щитом поблизости.",
+    description: "Двуликое зеркало. Отражает с двух сторон и может сменяться местами с зерцалом или щитом поблизости, включая диагональ.",
     movement: (board, x, y, piece) => totemMoves(board, x, y, piece)
   }
 };
@@ -203,11 +205,12 @@ function renderBoard() {
         const def = PIECE_DEFS[piece.type];
         const wrapper = document.createElement("div");
         wrapper.className = `piece piece--${piece.player}`;
-        const glyph = document.createElement("span");
-        glyph.textContent = def.glyph;
-        glyph.className = "piece__glyph";
-        glyph.style.transform = `rotate(${piece.orientation * 90}deg)`;
-        wrapper.appendChild(glyph);
+        const image = document.createElement("img");
+        image.src = def.image;
+        image.alt = "";
+        image.className = "piece__image";
+        image.style.transform = `rotate(${piece.orientation * 90}deg)`;
+        wrapper.appendChild(image);
         wrapper.setAttribute("aria-label", `${def.name} (${PLAYERS[piece.player].name})`);
         cell.replaceChildren(wrapper);
       } else {
@@ -582,7 +585,7 @@ function adjacentMoves(boardState, x, y, piece) {
 
 function totemMoves(boardState, x, y, piece) {
   const moves = adjacentMoves(boardState, x, y, piece);
-  for (const dir of DIRECTIONS) {
+  for (const dir of ADJACENT) {
     const nx = x + dir.dx;
     const ny = y + dir.dy;
     if (!inBounds(nx, ny)) continue;
