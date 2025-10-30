@@ -125,7 +125,7 @@ const PIECE_DEFS = {
   },
   totem: {
     name: "Тотем",
-    icon: ICON_SVGS.totem,
+    glyph: "✖️",
     canRotate: true,
     description: "Двуликое зеркало. Отражает с двух сторон и может сменяться местами с зерцалом или щитом поблизости.",
     movement: (board, x, y, piece) => totemMoves(board, x, y, piece)
@@ -607,24 +607,29 @@ function computeExitPoint(previous, direction) {
   }
 }
 
-function radiusMoves(boardState, x, y) {
+function allEmptyCells(boardState, originX, originY) {
   const moves = [];
-  for (let dy = -1; dy <= 1; dy += 1) {
-    for (let dx = -1; dx <= 1; dx += 1) {
-      if (dx === 0 && dy === 0) continue;
-      const nx = x + dx;
-      const ny = y + dy;
-      if (!inBounds(nx, ny)) continue;
-      if (!boardState[ny][nx]) {
-        moves.push({ x: nx, y: ny });
+  for (let row = 0; row < BOARD_HEIGHT; row += 1) {
+    for (let col = 0; col < BOARD_WIDTH; col += 1) {
+      if (col === originX && row === originY) continue;
+      if (!boardState[row][col]) {
+        moves.push({ x: col, y: row });
       }
     }
   }
   return moves;
 }
 
+function orthogonalMoves(boardState, x, y, piece) {
+  return allEmptyCells(boardState, x, y);
+}
+
+function diagonalMoves(boardState, x, y, piece) {
+  return allEmptyCells(boardState, x, y);
+}
+
 function totemMoves(boardState, x, y, piece) {
-  const moves = radiusMoves(boardState, x, y);
+  const moves = allEmptyCells(boardState, x, y);
   for (const dir of DIRECTIONS) {
     const nx = x + dir.dx;
     const ny = y + dir.dy;
