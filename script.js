@@ -1,24 +1,26 @@
 const INITIAL_LAYOUT = [
-  ["Л1", "П", "П", "П", "Щ1", "В1", "Щ1", "З1", "П", "П"],
+  ["Л1", "П", "П", "П", "1Щ1", "В1", "2Щ1", "З1", "П", "П"],
   ["П", "П", "З1", "П", "П", "П", "П", "П", "П", "П"],
   ["П", "П", "П", "З2", "П", "П", "П", "П", "П", "П"],
   ["З1", "П", "З2", "П", "Т1", "Т1", "П", "З1", "П", "З2"],
   ["З1", "П", "З2", "П", "Т2", "Т2", "П", "З1", "П", "З2"],
   ["П", "П", "П", "П", "П", "П", "З1", "П", "П", "П"],
   ["П", "П", "П", "П", "П", "П", "П", "З2", "П", "П"],
-  ["П", "П", "З2", "Щ2", "В2", "Щ2", "П", "П", "П", "Л2"]
+  ["П", "П", "З2", "1Щ2", "В2", "2Щ2", "П", "П", "П", "Л2"]
 ];
 
 const TOKEN_MAP = {
   П: null,
-  "Л1": { type: "laser", player: "light", orientation: 1 },
-  "Л2": { type: "laser", player: "shadow", orientation: 3 },
+  "Л1": { type: "laser", player: "light", orientation: 3 },
+  "Л2": { type: "laser", player: "shadow", orientation: 1 },
   "В1": { type: "volhv", player: "light", orientation: 2 },
   "В2": { type: "volhv", player: "shadow", orientation: 0 },
   "З1": { type: "mirror", player: "light", orientation: 0 },
   "З2": { type: "mirror", player: "shadow", orientation: 2 },
-  "Щ1": { type: "shield", player: "light", orientation: 2 },
-  "Щ2": { type: "shield", player: "shadow", orientation: 0 },
+  "1Щ1": { type: "shield", player: "light", orientation: 3 },
+  "1Щ2": { type: "shield", player: "shadow", orientation: 1 },
+  "2Щ1": { type: "shield", player: "light", orientation: 3 },
+  "2Щ2": { type: "shield", player: "shadow", orientation: 1 },
   "Т1": { type: "totem", player: "light", orientation: 0 },
   "Т2": { type: "totem", player: "shadow", orientation: 2 }
 };
