@@ -11,8 +11,8 @@ const INITIAL_LAYOUT = [
 
 const TOKEN_MAP = {
   П: null,
-  "Л1": { type: "laser", player: "light", orientation: 2 },
-  "Л2": { type: "laser", player: "shadow", orientation: 0 },
+  "Л1": { type: "laser", player: "light", orientation: 3 },
+  "Л2": { type: "laser", player: "shadow", orientation: 1 },
   "В1": { type: "volhv", player: "light", orientation: 2 },
   "В2": { type: "volhv", player: "shadow", orientation: 0 },
   "З1": { type: "mirror", player: "light", orientation: 0 },
