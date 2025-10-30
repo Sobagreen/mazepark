@@ -148,33 +148,6 @@ body > * {
   color: var(--muted);
 }
 
-.panel__turn {
-  margin: 0;
-  font-size: 1.15rem;
-}
-
-.legend {
-  margin: 0;
-  padding-left: 1rem;
-  display: grid;
-  gap: 0.35rem;
-  font-size: 0.95rem;
-}
-
-.legend__glyph {
-  display: inline-grid;
-  place-items: center;
-  width: 1.5rem;
-  height: 1.5rem;
-  border-radius: 50%;
-  margin-right: 0.35rem;
-  background: rgba(255, 209, 102, 0.15);
-}
-
-.legend__glyph--light {
-  color: var(--accent-light);
-}
-
 .button {
   appearance: none;
   border: none;
@@ -579,10 +552,6 @@ body.theme-light .board-action {
 
   .panel {
     flex: 1 1 min(280px, 100%);
-  }
-
-  .panel--legend {
-    display: none;
   }
 
   .board {
