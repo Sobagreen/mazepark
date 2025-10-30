@@ -11,15 +11,15 @@ const INITIAL_LAYOUT = [
 
 const TOKEN_MAP = {
   П: null,
-  "Л1": { type: "laser", player: "light", orientation: 3 },
-  "Л2": { type: "laser", player: "shadow", orientation: 1 },
+  "Л1": { type: "laser", player: "light", orientation: 2 },
+  "Л2": { type: "laser", player: "shadow", orientation: 0 },
   "В1": { type: "volhv", player: "light", orientation: 2 },
   "В2": { type: "volhv", player: "shadow", orientation: 0 },
   "З1": { type: "mirror", player: "light", orientation: 0 },
   "З2": { type: "mirror", player: "shadow", orientation: 2 },
   "1Щ1": { type: "shield", player: "light", orientation: 3 },
-  "1Щ2": { type: "shield", player: "shadow", orientation: 1 },
-  "2Щ1": { type: "shield", player: "light", orientation: 3 },
+  "1Щ2": { type: "shield", player: "shadow", orientation: 3 },
+  "2Щ1": { type: "shield", player: "light", orientation: 1 },
   "2Щ2": { type: "shield", player: "shadow", orientation: 1 },
   "Т1": { type: "totem", player: "light", orientation: 0 },
   "Т2": { type: "totem", player: "shadow", orientation: 2 }
