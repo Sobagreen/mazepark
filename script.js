@@ -74,7 +74,7 @@ const PIECE_DEFS = {
   },
   totem: {
     name: "Тотем",
-    glyph: "⟁",
+    glyph: "🗿",
     canRotate: true,
     description: "Двуликое зеркало. Отражает с двух сторон и может сменяться местами с зерцалом или щитом поблизости.",
     movement: (board, x, y, piece) => totemMoves(board, x, y, piece)
@@ -445,10 +445,10 @@ function mirrorInteraction(orientation, face) {
 
 function totemInteraction(orientation, face) {
   const baseMap = {
-    0: 1,
-    1: 0,
-    2: 3,
-    3: 2
+    0: 3,
+    3: 0,
+    1: 2,
+    2: 1
   };
   const rotatedMap = rotateFaceMap(baseMap, orientation);
   if (face in rotatedMap) {
