@@ -43,34 +43,85 @@ const PLAYERS = {
   }
 };
 
+const ICON_SVGS = {
+  laser: `
+    <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+      <g fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round">
+        <path d="M8 32h16" />
+        <path d="M8 20h8" opacity="0.4" />
+        <path d="M8 44h8" opacity="0.4" />
+      </g>
+      <path d="M24 18v28" stroke="currentColor" stroke-width="10" stroke-linecap="round" opacity="0.65" />
+      <path d="M30 14l28 18-28 18z" fill="currentColor" />
+      <circle cx="24" cy="32" r="9" fill="currentColor" opacity="0.18" />
+    </svg>
+  `,
+  volhv: `
+    <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+      <path d="M32 6l9 12-9 6-9-6z" fill="currentColor" opacity="0.6" />
+      <path d="M20 26h24l4 24H16z" fill="currentColor" />
+      <path d="M24 28l-6 22" stroke="currentColor" stroke-width="4" stroke-linecap="round" opacity="0.45" />
+      <path d="M40 28l6 22" stroke="currentColor" stroke-width="4" stroke-linecap="round" opacity="0.45" />
+      <circle cx="32" cy="18" r="6" fill="currentColor" />
+      <circle cx="32" cy="18" r="3" fill="currentColor" opacity="0.35" />
+    </svg>
+  `,
+  mirror: `
+    <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+      <rect x="10" y="10" width="44" height="44" rx="10" ry="10" fill="none" stroke="currentColor" stroke-width="5" opacity="0.6" />
+      <path d="M20 20l36 24" stroke="currentColor" stroke-width="8" stroke-linecap="round" />
+      <path d="M12 26l18 12" stroke="currentColor" stroke-width="4" stroke-linecap="round" opacity="0.35" />
+      <path d="M34 14l18 12" stroke="currentColor" stroke-width="4" stroke-linecap="round" opacity="0.35" />
+    </svg>
+  `,
+  shield: `
+    <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+      <path d="M32 8l22 8v12c0 14-8.5 26-22 30-13.5-4-22-16-22-30V16z" fill="currentColor" />
+      <path d="M32 14l14 5v9c0 9-5.2 17.6-14 21-8.8-3.4-14-12-14-21v-9z" fill="currentColor" opacity="0.45" />
+      <path d="M32 18v30" stroke="currentColor" stroke-width="5" stroke-linecap="round" opacity="0.5" />
+    </svg>
+  `,
+  totem: `
+    <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+      <rect x="22" y="6" width="20" height="12" rx="6" fill="currentColor" opacity="0.7" />
+      <path d="M20 16h24l4 12-4 12H20l-4-12z" fill="currentColor" />
+      <path d="M18 40h28l-4 18H22z" fill="currentColor" opacity="0.65" />
+      <path d="M16 22h8l-4 6zM40 22h8l-4 6z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round" />
+      <circle cx="24" cy="28" r="3.2" fill="currentColor" opacity="0.25" />
+      <circle cx="40" cy="28" r="3.2" fill="currentColor" opacity="0.25" />
+      <path d="M24 46h16" stroke="currentColor" stroke-width="4" stroke-linecap="round" opacity="0.45" />
+    </svg>
+  `
+};
+
 const PIECE_DEFS = {
   laser: {
     name: "Лучезар",
-    glyph: "☼",
+    icon: ICON_SVGS.laser,
     canRotate: true,
     description: "Излучает луч. Не двигается и неуязвим, можно лишь поворачивать направление луча.",
     movement: () => []
   },
   volhv: {
     name: "Волхв",
-    glyph: "✧",
+    icon: ICON_SVGS.volhv,
     canRotate: false,
-    description: "Главная фигура. Ходит на одну клетку по ортогоналям. Попадание луча заканчивает партию.",
-    movement: (board, x, y, piece) => orthogonalMoves(board, x, y, piece)
+    description: "Главная фигура. Ходит на одну свободную клетку вокруг себя. Попадание луча заканчивает партию.",
+    movement: (board, x, y, piece) => radiusMoves(board, x, y)
   },
   mirror: {
     name: "Зерцало",
-    glyph: "◩",
+    icon: ICON_SVGS.mirror,
     canRotate: true,
     description: "Один зеркальный фас. Отражает луч под прямым углом, уязвимо с открытых сторон.",
-    movement: (board, x, y, piece) => diagonalMoves(board, x, y, piece)
+    movement: (board, x, y, piece) => radiusMoves(board, x, y)
   },
   shield: {
     name: "Щитоносец",
-    glyph: "🛡",
+    icon: ICON_SVGS.shield,
     canRotate: true,
     description: "Щит гасит луч лицевой стороной. С боков и тыла может быть уничтожен.",
-    movement: (board, x, y, piece) => orthogonalMoves(board, x, y, piece)
+    movement: (board, x, y, piece) => radiusMoves(board, x, y)
   },
   totem: {
     name: "Тотем",
@@ -190,11 +241,16 @@ function renderBoard() {
         const def = PIECE_DEFS[piece.type];
         const wrapper = document.createElement("div");
         wrapper.className = `piece piece--${piece.player}`;
-        const glyph = document.createElement("span");
-        glyph.textContent = def.glyph;
-        glyph.className = "piece__glyph";
-        glyph.style.transform = `rotate(${piece.orientation * 90}deg)`;
-        wrapper.appendChild(glyph);
+        const iconWrapper = document.createElement("div");
+        iconWrapper.className = "piece__icon";
+        iconWrapper.innerHTML = def.icon;
+        const svg = iconWrapper.firstElementChild;
+        if (svg) {
+          svg.setAttribute("aria-hidden", "true");
+          svg.setAttribute("focusable", "false");
+          svg.style.transform = `rotate(${piece.orientation * 90}deg)`;
+        }
+        wrapper.appendChild(iconWrapper);
         wrapper.setAttribute("aria-label", `${def.name} (${PLAYERS[piece.player].name})`);
         cell.replaceChildren(wrapper);
       } else {
