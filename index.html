@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Лучезарная сечь</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="theme-dark">
+  <main class="game">
+    <section class="board-area">
+      <div class="board-toolbar">
+        <button type="button" id="new-game" class="toolbar-button toolbar-button--primary" title="Начать заново">New</button>
+        <button type="button" id="theme-toggle" class="toolbar-button toolbar-button--icon" aria-pressed="false" aria-label="Переключить тему">
+          <span aria-hidden="true">🌙</span>
+        </button>
+      </div>
+      <div class="board-wrapper">
+        <div id="board" class="board" role="grid" aria-label="Поле лучезарной сечи"></div>
+        <div id="laser-overlay" class="laser-overlay" aria-hidden="true"></div>
+        <div id="endgame" class="endgame" hidden>
+          <h2 id="endgame-title"></h2>
+          <p id="endgame-subtitle"></p>
+          <button type="button" id="play-again" class="button button--primary">Сыграть ещё раз</button>
+        </div>
+      </div>
+      <div class="board-actions">
+        <button type="button" id="rotate-left" class="board-action" disabled aria-label="Повернуть против часовой стрелки">↺</button>
+        <button type="button" id="rotate-right" class="board-action" disabled aria-label="Повернуть по часовой стрелке">↻</button>
+      </div>
+      <p id="status" class="status" aria-live="assertive"></p>
+    </section>
+    <aside class="sidebar">
+      <section class="panel">
+        <h2>Ход</h2>
+        <p id="turn-indicator" class="panel__turn">—</p>
+      </section>
+
+      <section class="panel panel--piece" aria-live="polite">
+        <h2>Фигура</h2>
+        <p id="piece-name" class="piece-panel__name">—</p>
+        <p id="piece-details" class="piece-panel__details">Коснитесь своей фигуры, чтобы узнать её свойства.</p>
+      </section>
+
+      <section class="panel panel--legend">
+        <h2>Легенда орденов</h2>
+        <ul class="legend">
+          <li><span class="legend__glyph legend__glyph--light">☼</span> Лучезар (излучает лазер)</li>
+          <li><span class="legend__glyph legend__glyph--light">✧</span> Волхв (главная цель)</li>
+          <li><span class="legend__glyph legend__glyph--light">◩</span> Зерцало (одна отражающая грань)</li>
+          <li><span class="legend__glyph legend__glyph--light">🛡</span> Щитоносец (останавливает луч щитом)</li>
+          <li><span class="legend__glyph legend__glyph--light">⟁</span> Тотем (двойное зерцало, меняется местами с союзниками)</li>
+        </ul>
+      </section>
+    </aside>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
