@@ -55,22 +55,22 @@ const PIECE_DEFS = {
     name: "Волхв",
     glyph: "✧",
     canRotate: false,
-    description: "Главная фигура. Ходит на одну клетку по ортогоналям. Попадание луча заканчивает партию.",
-    movement: (board, x, y, piece) => orthogonalMoves(board, x, y, piece)
+    description: "Главная фигура. Ходит на одну клетку в любом направлении. Попадание луча заканчивает партию.",
+    movement: (board, x, y, piece) => adjacentMoves(board, x, y, piece)
   },
   mirror: {
     name: "Зерцало",
     glyph: "◩",
     canRotate: true,
     description: "Один зеркальный фас. Отражает луч под прямым углом, уязвимо с открытых сторон.",
-    movement: (board, x, y, piece) => diagonalMoves(board, x, y, piece)
+    movement: (board, x, y, piece) => adjacentMoves(board, x, y, piece)
   },
   shield: {
     name: "Щитоносец",
     glyph: "🛡",
     canRotate: true,
     description: "Щит гасит луч лицевой стороной. С боков и тыла может быть уничтожен.",
-    movement: (board, x, y, piece) => orthogonalMoves(board, x, y, piece)
+    movement: (board, x, y, piece) => adjacentMoves(board, x, y, piece)
   },
   totem: {
     name: "Тотем",
@@ -94,6 +94,8 @@ const DIAGONALS = [
   { dx: -1, dy: -1 },
   { dx: -1, dy: 1 }
 ];
+
+const ADJACENT = [...DIRECTIONS, ...DIAGONALS];
 
 let board = createEmptyBoard();
 let currentPlayer = "light";
@@ -564,23 +566,9 @@ function computeExitPoint(previous, direction) {
   }
 }
 
-function orthogonalMoves(boardState, x, y, piece) {
+function adjacentMoves(boardState, x, y, piece) {
   const moves = [];
-  for (const dir of DIRECTIONS) {
-    const nx = x + dir.dx;
-    const ny = y + dir.dy;
-    if (!inBounds(nx, ny)) continue;
-    const target = boardState[ny][nx];
-    if (!target) {
-      moves.push({ x: nx, y: ny });
-    }
-  }
-  return moves;
-}
-
-function diagonalMoves(boardState, x, y, piece) {
-  const moves = [];
-  for (const dir of DIAGONALS) {
+  for (const dir of ADJACENT) {
     const nx = x + dir.dx;
     const ny = y + dir.dy;
     if (!inBounds(nx, ny)) continue;
@@ -593,15 +581,14 @@ function diagonalMoves(boardState, x, y, piece) {
 }
 
 function totemMoves(boardState, x, y, piece) {
-  const moves = [];
+  const moves = adjacentMoves(boardState, x, y, piece);
   for (const dir of DIRECTIONS) {
     const nx = x + dir.dx;
     const ny = y + dir.dy;
     if (!inBounds(nx, ny)) continue;
     const target = boardState[ny][nx];
-    if (!target) {
-      moves.push({ x: nx, y: ny });
-    } else if (
+    if (
+      target &&
       target.player === piece.player &&
       (target.type === "mirror" || target.type === "shield")
     ) {
@@ -624,6 +611,7 @@ function toNotation(x, y) {
 }
 
 function updateTurnIndicator() {
+  if (!elements.turn) return;
   elements.turn.textContent = `${turnCounter}. ${PLAYERS[currentPlayer].name}`;
 }
 

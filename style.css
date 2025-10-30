@@ -148,11 +148,6 @@ body > * {
   color: var(--muted);
 }
 
-.panel__turn {
-  margin: 0;
-  font-size: 1.15rem;
-}
-
 .legend {
   margin: 0;
   padding-left: 1rem;
