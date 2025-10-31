@@ -7,10 +7,64 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body class="theme-dark">
+  <div id="connection-overlay" class="connection-overlay" role="dialog" aria-modal="true" aria-labelledby="connection-title">
+    <form id="connection-form" class="connection-card" autocomplete="off">
+      <h1 id="connection-title" class="connection-card__title">Сетевая партия</h1>
+      <p class="connection-card__intro">Выберите комнату и сторону, чтобы сыграть вдвоём. Второй игрок должен указать тот же идентификатор комнаты.</p>
+
+      <label class="connection-field">
+        <span class="connection-field__label">Адрес сервера</span>
+        <input id="server-url" name="server" type="text" class="connection-field__input" required value="ws://localhost:8787" spellcheck="false">
+      </label>
+
+      <label class="connection-field">
+        <span class="connection-field__label">Комната</span>
+        <input id="room-id" name="room" type="text" class="connection-field__input" required placeholder="Например, perun" maxlength="32" spellcheck="false">
+      </label>
+
+      <fieldset class="connection-fieldset">
+        <legend class="connection-fieldset__legend">Ваша сторона</legend>
+        <label class="connection-role">
+          <input type="radio" name="role" value="light" required>
+          <span class="connection-role__content">
+            <span class="connection-role__glyph">☼</span>
+            <span class="connection-role__label">Дружина Перуна</span>
+          </span>
+        </label>
+        <label class="connection-role">
+          <input type="radio" name="role" value="shadow" required>
+          <span class="connection-role__content">
+            <span class="connection-role__glyph">☽</span>
+            <span class="connection-role__label">Полк Чернобога</span>
+          </span>
+        </label>
+      </fieldset>
+
+      <ul id="connection-players" class="connection-players" aria-live="polite">
+        <li class="connection-players__item" data-role="light">
+          <span class="connection-players__name">☼ Дружина Перуна</span>
+          <span class="connection-players__status">свободно</span>
+        </li>
+        <li class="connection-players__item" data-role="shadow">
+          <span class="connection-players__name">☽ Полк Чернобога</span>
+          <span class="connection-players__status">свободно</span>
+        </li>
+      </ul>
+
+      <p id="connection-status" class="connection-status" role="status"></p>
+
+      <div class="connection-actions">
+        <button type="submit" id="connect-button" class="button button--primary">Подключиться</button>
+        <button type="button" id="offline-button" class="button button--ghost">Играть офлайн</button>
+      </div>
+    </form>
+  </div>
+
   <main class="game">
     <section class="board-area">
       <div class="board-toolbar">
         <button type="button" id="new-game" class="toolbar-button toolbar-button--primary" title="Начать заново">New</button>
+        <button type="button" id="open-connection" class="toolbar-button" title="Настройки мультиплеера">Сеть</button>
         <button type="button" id="theme-toggle" class="toolbar-button toolbar-button--icon" aria-pressed="false" aria-label="Переключить тему">
           <span aria-hidden="true">🌙</span>
         </button>
