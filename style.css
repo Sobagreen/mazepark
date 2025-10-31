@@ -357,8 +357,8 @@ body.theme-light .piece {
 
 .piece__image {
   display: block;
-  width: 100%;
-  height: 100%;
+  width: 110%;
+  height: 110%;
   max-width: none;
   pointer-events: none;
   user-select: none;
