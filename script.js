@@ -159,7 +159,6 @@ const elements = {
   connectButton: document.getElementById("connect-button"),
   offlineButton: document.getElementById("offline-button"),
   serverInput: document.getElementById("server-url"),
-  serverPortInput: document.getElementById("server-port"),
   roomInput: document.getElementById("room-id")
 };
 
@@ -914,12 +913,9 @@ function createMultiplayerController() {
     }
     showOverlay();
     updatePlayersUI();
-    const defaults = deriveDefaultServerAddress();
+    const defaultUrl = deriveDefaultServerUrl();
     if (elements.serverInput && !elements.serverInput.value) {
-      elements.serverInput.value = defaults.url;
-    }
-    if (elements.serverPortInput && !elements.serverPortInput.value && defaults.port) {
-      elements.serverPortInput.value = defaults.port;
+      elements.serverInput.value = defaultUrl;
     }
     setOverlayStatus("Подключитесь к комнате или продолжите офлайн.");
     window.addEventListener("beforeunload", () => {
@@ -931,25 +927,11 @@ function createMultiplayerController() {
     if (!elements.connectionForm) return;
     const formData = new FormData(elements.connectionForm);
     const server = (formData.get("server") || "").toString().trim();
-    const portRaw = (formData.get("port") || "").toString().trim();
     const room = (formData.get("room") || "").toString().trim().toLowerCase();
     const role = (formData.get("role") || "").toString();
     if (!server) {
       setOverlayStatus("Укажите адрес сервера.");
       return;
-    }
-    let port = "";
-    if (portRaw) {
-      if (!/^\d{1,5}$/.test(portRaw)) {
-        setOverlayStatus("Порт должен быть числом от 1 до 65535.");
-        return;
-      }
-      const numericPort = Number(portRaw);
-      if (numericPort < 1 || numericPort > 65535) {
-        setOverlayStatus("Порт должен быть числом от 1 до 65535.");
-        return;
-      }
-      port = String(numericPort);
     }
     if (!room || room.length < 2) {
       setOverlayStatus("Название комнаты должно содержать минимум 2 символа.");
@@ -961,7 +943,7 @@ function createMultiplayerController() {
     }
     state.role = role;
     updatePlayersUI();
-    connectToServer(server, port, room, role);
+    connectToServer(server, room, role);
   }
 
   function handleOfflineSelection() {
@@ -971,12 +953,10 @@ function createMultiplayerController() {
     setOverlayStatus("");
   }
 
-  function connectToServer(serverUrl, portOverride, roomId, role) {
-    const fallbackScheme = window.location.protocol === "https:" ? "wss" : "ws";
-    const rawUrl = /^[a-z]+:\/\//i.test(serverUrl) ? serverUrl : `${fallbackScheme}://${serverUrl}`;
+  function connectToServer(serverUrl, roomId, role) {
     let parsedUrl;
     try {
-      parsedUrl = new URL(rawUrl);
+      parsedUrl = new URL(serverUrl);
     } catch (err) {
       setOverlayStatus("Некорректный адрес сервера.");
       return;
@@ -984,9 +964,6 @@ function createMultiplayerController() {
     if (parsedUrl.protocol !== "ws:" && parsedUrl.protocol !== "wss:") {
       setOverlayStatus("Используйте протокол ws:// или wss://.");
       return;
-    }
-    if (portOverride) {
-      parsedUrl.port = portOverride;
     }
 
     cleanupSocket(true);
@@ -998,14 +975,6 @@ function createMultiplayerController() {
 
     const ws = new WebSocket(state.serverUrl);
     state.ws = ws;
-
-    if (elements.serverInput) {
-      const displayUrl = state.serverUrl.replace(/\/$/, "");
-      elements.serverInput.value = displayUrl;
-    }
-    if (elements.serverPortInput) {
-      elements.serverPortInput.value = parsedUrl.port;
-    }
 
     ws.onopen = () => {
       setOverlayStatus("Соединение установлено. Ожидаем подтверждения...");
@@ -1140,31 +1109,6 @@ function createMultiplayerController() {
   function openOverlay() {
     showOverlay();
     updatePlayersUI();
-    if (elements.serverInput) {
-      if (state.serverUrl) {
-        elements.serverInput.value = state.serverUrl.replace(/\/$/, "");
-      } else {
-        const defaults = deriveDefaultServerAddress();
-        if (!elements.serverInput.value) {
-          elements.serverInput.value = defaults.url;
-        }
-      }
-    }
-    if (elements.serverPortInput) {
-      if (state.serverUrl) {
-        try {
-          const currentUrl = new URL(state.serverUrl);
-          elements.serverPortInput.value = currentUrl.port;
-        } catch (err) {
-          // если разбор не удался, оставляем текущее значение
-        }
-      } else {
-        const defaults = deriveDefaultServerAddress();
-        if (!elements.serverPortInput.value && defaults.port) {
-          elements.serverPortInput.value = defaults.port;
-        }
-      }
-    }
     const roleName = state.role && PLAYERS[state.role] ? PLAYERS[state.role].name : null;
     const message = state.connected
       ? `Соединение активно${roleName ? `: вы играете за «${roleName}».` : "."}`
@@ -1204,18 +1148,17 @@ function createMultiplayerController() {
     state.ws.send(JSON.stringify(payload));
   }
 
-  function deriveDefaultServerAddress() {
+  function deriveDefaultServerUrl() {
     const { protocol, hostname, port } = window.location;
     if (protocol === "http:" || protocol === "https:") {
       const scheme = protocol === "https:" ? "wss" : "ws";
       const host = hostname || "localhost";
-      const derivedPort = port || (scheme === "ws" ? "8787" : "");
-      return {
-        url: `${scheme}://${host}`,
-        port: derivedPort
-      };
+      if (port) {
+        return `${scheme}://${host}:${port}`;
+      }
+      return `${scheme}://${host}${scheme === "ws" ? ":8787" : ""}`;
     }
-    return { url: "ws://localhost", port: "8787" };
+    return "ws://localhost:8787";
   }
 
   return {

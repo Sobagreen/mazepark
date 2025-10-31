@@ -12,16 +12,10 @@
       <h1 id="connection-title" class="connection-card__title">Сетевая партия</h1>
       <p class="connection-card__intro">Выберите комнату и сторону, чтобы сыграть вдвоём. Второй игрок должен указать тот же идентификатор комнаты.</p>
 
-      <div class="connection-field-row">
-        <label class="connection-field connection-field--grow">
-          <span class="connection-field__label">Адрес сервера</span>
-          <input id="server-url" name="server" type="text" class="connection-field__input" required placeholder="ws://localhost" spellcheck="false">
-        </label>
-        <label class="connection-field connection-field--port">
-          <span class="connection-field__label">Порт</span>
-          <input id="server-port" name="port" type="text" class="connection-field__input" inputmode="numeric" pattern="[0-9]*" placeholder="8787" spellcheck="false">
-        </label>
-      </div>
+      <label class="connection-field">
+        <span class="connection-field__label">Адрес сервера</span>
+        <input id="server-url" name="server" type="text" class="connection-field__input" required value="ws://localhost:8787" spellcheck="false">
+      </label>
 
       <label class="connection-field">
         <span class="connection-field__label">Комната</span>
