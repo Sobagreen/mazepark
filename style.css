@@ -357,12 +357,14 @@ body.theme-light .piece {
 
 .piece__image {
   display: block;
-  width: clamp(56%, calc(60% + 1vw), 68%);
-  max-width: clamp(64px, 8vw, 80px);
+  width: 100%;
+  height: 100%;
+  max-width: none;
   pointer-events: none;
   user-select: none;
   transition: transform 0.2s ease;
   transform-origin: center;
+  object-fit: contain;
 }
 
 .legend__glyph img {
