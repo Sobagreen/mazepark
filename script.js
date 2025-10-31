@@ -29,13 +29,13 @@ const TOKEN_MAP = {
   "5З2": { type: "mirror", player: "shadow", orientation: 3 },
   "6З2": { type: "mirror", player: "shadow", orientation: 0 },
   "7З2": { type: "mirror", player: "shadow", orientation: 0 },
-  "1Щ1": { type: "shield", player: "light", orientation: 2 },
+  "1Щ1": { type: "shield", player: "light", orientation: 3 },
   "1Щ2": { type: "shield", player: "shadow", orientation: 0 },
   "2Щ1": { type: "shield", player: "light", orientation: 2 },
   "2Щ2": { type: "shield", player: "shadow", orientation: 0 },
-  "1Т1": { type: "totem", player: "light", orientation: 0 },
+  "1Т1": { type: "totem", player: "light", orientation: 1 },
   "2Т2": { type: "totem", player: "shadow", orientation: 2 },
-  "2Т1": { type: "totem", player: "light", orientation: 0 },
+  "2Т1": { type: "totem", player: "light", orientation: 1 },
   "1Т2": { type: "totem", player: "shadow", orientation: 2 }
 };
 
