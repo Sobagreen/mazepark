@@ -34,7 +34,7 @@ const TOKEN_MAP = {
   "2Щ1": { type: "shield", player: "light", orientation: 2 },
   "2Щ2": { type: "shield", player: "shadow", orientation: 0 },
   "1Т1": { type: "totem", player: "light", orientation: 0 },
-  "2Т2": { type: "totem", player: "shadow", orientation: 2 }
+  "2Т2": { type: "totem", player: "shadow", orientation: 2 },
   "2Т1": { type: "totem", player: "light", orientation: 0 },
   "1Т2": { type: "totem", player: "shadow", orientation: 2 }
 };
