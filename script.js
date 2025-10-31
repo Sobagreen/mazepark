@@ -134,6 +134,8 @@ let selectedCell = null;
 let currentOptions = [];
 let turnCounter = 1;
 let currentTheme = "dark";
+let lastStatusMessage = "";
+let lastLaserResult = null;
 
 const elements = {
   board: document.getElementById("board"),
@@ -146,16 +148,28 @@ const elements = {
   endgameSubtitle: document.getElementById("endgame-subtitle"),
   playAgain: document.getElementById("play-again"),
   themeToggle: document.getElementById("theme-toggle"),
+  openConnection: document.getElementById("open-connection"),
   laserOverlay: document.getElementById("laser-overlay"),
   pieceName: document.getElementById("piece-name"),
-  pieceDetails: document.getElementById("piece-details")
+  pieceDetails: document.getElementById("piece-details"),
+  connectionOverlay: document.getElementById("connection-overlay"),
+  connectionForm: document.getElementById("connection-form"),
+  connectionStatus: document.getElementById("connection-status"),
+  connectionPlayers: document.getElementById("connection-players"),
+  connectButton: document.getElementById("connect-button"),
+  offlineButton: document.getElementById("offline-button"),
+  serverInput: document.getElementById("server-url"),
+  serverPortInput: document.getElementById("server-port"),
+  roomInput: document.getElementById("room-id")
 };
 
 const cells = [];
+const multiplayer = createMultiplayerController();
 
 initialiseBoardGrid();
 attachEventListeners();
 initialiseTheme();
+multiplayer.init();
 startNewGame();
 
 function startNewGame() {
@@ -169,6 +183,7 @@ function startNewGame() {
   setStatus("Дружина Перуна начинает дуэль: выберите фигуру или поверните зеркало.");
   elements.endgame.hidden = true;
   elements.endgame.setAttribute("aria-hidden", "true");
+  broadcastGameState("new-game");
 }
 
 function createEmptyBoard() {
@@ -220,6 +235,22 @@ function attachEventListeners() {
   if (elements.themeToggle) {
     elements.themeToggle.addEventListener("click", toggleTheme);
   }
+  if (elements.connectionForm) {
+    elements.connectionForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      multiplayer.handleConnectSubmission();
+    });
+  }
+  if (elements.offlineButton) {
+    elements.offlineButton.addEventListener("click", () => {
+      multiplayer.handleOfflineSelection();
+    });
+  }
+  if (elements.openConnection) {
+    elements.openConnection.addEventListener("click", () => {
+      multiplayer.openOverlay();
+    });
+  }
 }
 
 function renderBoard() {
@@ -258,6 +289,14 @@ function renderBoard() {
 
 function handleCellInteraction(x, y) {
   if (elements.endgame.hidden === false) return;
+  if (!multiplayer.canAct()) {
+    if (multiplayer.isWaitingForOpponent()) {
+      setStatus("Ожидаем подключения второго игрока.");
+    } else if (multiplayer.isActive()) {
+      setStatus(`${PLAYERS[currentPlayer].name}: сейчас ход соперника.`);
+    }
+    return;
+  }
 
   const piece = board[y][x];
   const current = selectedCell ? board[selectedCell.y][selectedCell.x] : null;
@@ -308,7 +347,12 @@ function clearSelection({ silent = false } = {}) {
 
 function updateRotateControls(enabled) {
   const piece = selectedCell ? board[selectedCell.y][selectedCell.x] : null;
-  const canRotate = Boolean(enabled && piece && piece.player === currentPlayer);
+  const canRotate = Boolean(
+    enabled &&
+    piece &&
+    piece.player === currentPlayer &&
+    multiplayer.canAct()
+  );
   elements.rotateLeft.disabled = !canRotate;
   elements.rotateRight.disabled = !canRotate;
 }
@@ -324,6 +368,7 @@ function executeMove(option, piece, from) {
     board[option.y][option.x] = piece;
     setStatus(`${PLAYERS[currentPlayer].name}: ${PIECE_DEFS[piece.type].name} меняется местами с ${PIECE_DEFS[targetPiece.type].name} на ${toNotation(option.x, option.y)}.`);
     endTurn();
+    broadcastGameState("swap");
     return;
   }
 
@@ -338,6 +383,7 @@ function executeMove(option, piece, from) {
   setStatus(`${PLAYERS[currentPlayer].name}: ${PIECE_DEFS[piece.type].name} перемещён на ${toNotation(option.x, option.y)}.`);
 
   endTurn();
+  broadcastGameState(option.swap ? "swap" : "move");
 }
 
 function rotateSelected(delta) {
@@ -345,18 +391,26 @@ function rotateSelected(delta) {
   const piece = board[selectedCell.y][selectedCell.x];
   const def = PIECE_DEFS[piece.type];
   if (!def.canRotate || piece.player !== currentPlayer) return;
+  if (!multiplayer.canAct()) {
+    if (multiplayer.isActive()) {
+      setStatus(`${PLAYERS[currentPlayer].name}: сейчас ход соперника.`);
+    }
+    return;
+  }
 
   piece.orientation = mod4(piece.orientation + delta);
   renderBoard();
   const dirSymbol = delta > 0 ? "↻" : "↺";
   setStatus(`${PLAYERS[currentPlayer].name}: ${def.name} на ${toNotation(selectedCell.x, selectedCell.y)} повёрнут ${delta > 0 ? "по" : "против"} часовой стрелки.`);
   endTurn();
+  broadcastGameState(delta > 0 ? "rotate-cw" : "rotate-ccw");
 }
 
 function endTurn() {
   clearSelection({ silent: true });
   const activePlayer = currentPlayer;
-  const laserResult = fireLaser(activePlayer);
+  const laserResult = normaliseLaserResult(fireLaser(activePlayer));
+  lastLaserResult = laserResult;
   renderBoard();
   highlightLaserPath(laserResult);
   if (laserResult.hit) {
@@ -522,7 +576,7 @@ function findEmitter(player) {
 }
 
 function highlightLaserPath(result) {
-  clearLaserPath();
+  clearLaserPath({ preserveState: true });
   if (!result || !result.origin) {
     return;
   }
@@ -530,9 +584,12 @@ function highlightLaserPath(result) {
   drawLaserBeam(result);
 }
 
-function clearLaserPath() {
+function clearLaserPath({ preserveState = false } = {}) {
   if (elements.laserOverlay) {
     elements.laserOverlay.replaceChildren();
+  }
+  if (!preserveState) {
+    lastLaserResult = null;
   }
 }
 
@@ -648,7 +705,10 @@ function updateTurnIndicator() {
 }
 
 function setStatus(message) {
-  elements.status.textContent = message;
+  lastStatusMessage = message;
+  if (elements.status) {
+    elements.status.textContent = message;
+  }
 }
 
 function initialiseTheme() {
@@ -718,4 +778,473 @@ function orientationToText(orientation) {
     default:
       return "к западу";
   }
+}
+
+function normaliseLaserResult(result) {
+  if (!result) {
+    return null;
+  }
+  const copy = {
+    firer: result.firer,
+    origin: result.origin ? { x: result.origin.x, y: result.origin.y } : null,
+    path: Array.isArray(result.path)
+      ? result.path.map(({ x, y }) => ({ x, y }))
+      : [],
+    termination: result.termination
+      ? { x: result.termination.x, y: result.termination.y }
+      : null
+  };
+  if (result.hit) {
+    copy.hit = {
+      x: result.hit.x,
+      y: result.hit.y,
+      piece: result.hit.piece ? clonePiece(result.hit.piece) : null
+    };
+  }
+  if (result.blocked) {
+    copy.blocked = {
+      x: result.blocked.x,
+      y: result.blocked.y,
+      piece: result.blocked.piece ? clonePiece(result.blocked.piece) : null
+    };
+  }
+  return copy;
+}
+
+function clonePiece(piece) {
+  if (!piece) {
+    return null;
+  }
+  return {
+    type: piece.type,
+    player: piece.player,
+    orientation: mod4(piece.orientation || 0)
+  };
+}
+
+function cloneBoardState(boardState) {
+  const next = createEmptyBoard();
+  if (!Array.isArray(boardState)) {
+    return next;
+  }
+  for (let y = 0; y < Math.min(boardState.length, BOARD_HEIGHT); y += 1) {
+    const row = boardState[y];
+    if (!Array.isArray(row)) continue;
+    for (let x = 0; x < Math.min(row.length, BOARD_WIDTH); x += 1) {
+      const piece = row[x];
+      next[y][x] = piece ? clonePiece(piece) : null;
+    }
+  }
+  return next;
+}
+
+function serialiseGameState() {
+  return {
+    board: cloneBoardState(board),
+    currentPlayer,
+    turnCounter,
+    status: lastStatusMessage,
+    endgame: {
+      visible: elements.endgame ? elements.endgame.hidden === false : false,
+      title: elements.endgameTitle ? elements.endgameTitle.textContent : "",
+      subtitle: elements.endgameSubtitle ? elements.endgameSubtitle.textContent : ""
+    },
+    laser: lastLaserResult ? normaliseLaserResult(lastLaserResult) : null
+  };
+}
+
+function applyRemoteState(state) {
+  if (!state) return;
+  multiplayer.suppress(() => {
+    board = cloneBoardState(state.board);
+    currentPlayer = state.currentPlayer === "shadow" ? "shadow" : "light";
+    if (typeof state.turnCounter === "number" && Number.isFinite(state.turnCounter)) {
+      turnCounter = state.turnCounter;
+    }
+    clearSelection({ silent: true });
+    updateTurnIndicator();
+    if (state.endgame && state.endgame.visible) {
+      elements.endgame.hidden = false;
+      elements.endgame.setAttribute("aria-hidden", "false");
+      if (elements.endgameTitle) {
+        elements.endgameTitle.textContent = state.endgame.title || "";
+      }
+      if (elements.endgameSubtitle) {
+        elements.endgameSubtitle.textContent = state.endgame.subtitle || "";
+      }
+    } else {
+      elements.endgame.hidden = true;
+      elements.endgame.setAttribute("aria-hidden", "true");
+    }
+    if (typeof state.status === "string") {
+      setStatus(state.status);
+    } else if (multiplayer.canAct()) {
+      setStatus(`${PLAYERS[currentPlayer].name}: выберите фигуру.`);
+    }
+    lastLaserResult = state.laser ? normaliseLaserResult(state.laser) : null;
+    if (lastLaserResult) {
+      highlightLaserPath(lastLaserResult);
+    } else {
+      clearLaserPath();
+    }
+  });
+}
+
+function broadcastGameState(reason) {
+  if (!multiplayer.canBroadcast()) {
+    return;
+  }
+  multiplayer.sendState(reason, serialiseGameState());
+}
+
+function createMultiplayerController() {
+  const state = {
+    ws: null,
+    connected: false,
+    role: null,
+    roomId: null,
+    serverUrl: null,
+    players: { light: false, shadow: false },
+    suppressDepth: 0
+  };
+
+  function init() {
+    if (!elements.connectionOverlay) {
+      return;
+    }
+    showOverlay();
+    updatePlayersUI();
+    const defaults = deriveDefaultServerAddress();
+    if (elements.serverInput && !elements.serverInput.value) {
+      elements.serverInput.value = defaults.url;
+    }
+    if (elements.serverPortInput && !elements.serverPortInput.value && defaults.port) {
+      elements.serverPortInput.value = defaults.port;
+    }
+    setOverlayStatus("Подключитесь к комнате или продолжите офлайн.");
+    window.addEventListener("beforeunload", () => {
+      cleanupSocket(true);
+    });
+  }
+
+  function handleConnectSubmission() {
+    if (!elements.connectionForm) return;
+    const formData = new FormData(elements.connectionForm);
+    const server = (formData.get("server") || "").toString().trim();
+    const portRaw = (formData.get("port") || "").toString().trim();
+    const room = (formData.get("room") || "").toString().trim().toLowerCase();
+    const role = (formData.get("role") || "").toString();
+    if (!server) {
+      setOverlayStatus("Укажите адрес сервера.");
+      return;
+    }
+    let port = "";
+    if (portRaw) {
+      if (!/^\d{1,5}$/.test(portRaw)) {
+        setOverlayStatus("Порт должен быть числом от 1 до 65535.");
+        return;
+      }
+      const numericPort = Number(portRaw);
+      if (numericPort < 1 || numericPort > 65535) {
+        setOverlayStatus("Порт должен быть числом от 1 до 65535.");
+        return;
+      }
+      port = String(numericPort);
+    }
+    if (!room || room.length < 2) {
+      setOverlayStatus("Название комнаты должно содержать минимум 2 символа.");
+      return;
+    }
+    if (role !== "light" && role !== "shadow") {
+      setOverlayStatus("Выберите сторону для игры.");
+      return;
+    }
+    state.role = role;
+    updatePlayersUI();
+    connectToServer(server, port, room, role);
+  }
+
+  function handleOfflineSelection() {
+    cleanupSocket(true);
+    resetConnectionState();
+    hideOverlay();
+    setOverlayStatus("");
+  }
+
+  function connectToServer(serverUrl, portOverride, roomId, role) {
+    const fallbackScheme = window.location.protocol === "https:" ? "wss" : "ws";
+    const rawUrl = /^[a-z]+:\/\//i.test(serverUrl) ? serverUrl : `${fallbackScheme}://${serverUrl}`;
+    let parsedUrl;
+    try {
+      parsedUrl = new URL(rawUrl);
+    } catch (err) {
+      setOverlayStatus("Некорректный адрес сервера.");
+      return;
+    }
+    if (parsedUrl.protocol !== "ws:" && parsedUrl.protocol !== "wss:") {
+      setOverlayStatus("Используйте протокол ws:// или wss://.");
+      return;
+    }
+    if (portOverride) {
+      parsedUrl.port = portOverride;
+    }
+
+    cleanupSocket(true);
+    setFormDisabled(true);
+    setOverlayStatus("Подключение...");
+
+    state.serverUrl = parsedUrl.toString();
+    state.roomId = roomId;
+
+    const ws = new WebSocket(state.serverUrl);
+    state.ws = ws;
+
+    if (elements.serverInput) {
+      const displayUrl = state.serverUrl.replace(/\/$/, "");
+      elements.serverInput.value = displayUrl;
+    }
+    if (elements.serverPortInput) {
+      elements.serverPortInput.value = parsedUrl.port;
+    }
+
+    ws.onopen = () => {
+      setOverlayStatus("Соединение установлено. Ожидаем подтверждения...");
+      send({ type: "join", roomId, role });
+    };
+    ws.onmessage = (event) => {
+      handleMessage(event);
+    };
+    ws.onerror = () => {
+      setOverlayStatus("Не удалось установить соединение.");
+    };
+    ws.onclose = (event) => {
+      const reason = event.wasClean ? "Соединение закрыто." : "Соединение потеряно.";
+      handleSocketClosure(reason);
+    };
+  }
+
+  function handleMessage(event) {
+    let payload;
+    try {
+      payload = JSON.parse(event.data);
+    } catch (err) {
+      return;
+    }
+
+    switch (payload.type) {
+      case "joined":
+        state.connected = true;
+        setFormDisabled(false);
+        hideOverlay();
+        updatePlayers(payload.players);
+        if (payload.state) {
+          applyRemoteState(payload.state);
+        } else {
+          broadcastGameState("sync");
+        }
+        if (typeof payload.message === "string" && payload.message) {
+          setStatus(payload.message);
+        }
+        break;
+      case "players":
+        updatePlayers(payload.players);
+        break;
+      case "state":
+        if (payload.state) {
+          applyRemoteState(payload.state);
+        }
+        if (payload.players) {
+          updatePlayers(payload.players);
+        }
+        break;
+      case "error":
+        setOverlayStatus(payload.message || "Сервер отклонил подключение.");
+        handleSocketClosure("Соединение закрыто.");
+        break;
+      default:
+        break;
+    }
+  }
+
+  function handleSocketClosure(message) {
+    const wasConnected = state.connected;
+    cleanupSocket(true);
+    resetConnectionState();
+    showOverlay();
+    setFormDisabled(false);
+    if (message) {
+      setOverlayStatus(message);
+    }
+    if (wasConnected) {
+      setStatus("Соединение с сервером потеряно. Игра продолжается локально.");
+    }
+  }
+
+  function updatePlayers(players) {
+    state.players = {
+      light: Boolean(players && players.light),
+      shadow: Boolean(players && players.shadow)
+    };
+    if (state.connected && state.role) {
+      state.players[state.role] = true;
+    }
+    updatePlayersUI();
+  }
+
+  function updatePlayersUI() {
+    if (!elements.connectionPlayers) return;
+    const items = elements.connectionPlayers.querySelectorAll("[data-role]");
+    items.forEach((item) => {
+      const role = item.dataset.role;
+      const occupied = Boolean(state.players[role]);
+      item.classList.toggle("connection-players__item--occupied", occupied);
+      item.classList.toggle("connection-players__item--self", state.role === role && state.connected);
+      const statusEl = item.querySelector(".connection-players__status");
+      if (statusEl) {
+        if (occupied) {
+          statusEl.textContent = state.role === role && state.connected ? "вы" : "занято";
+        } else {
+          statusEl.textContent = "свободно";
+        }
+      }
+    });
+  }
+
+  function setOverlayStatus(message) {
+    if (elements.connectionStatus) {
+      elements.connectionStatus.textContent = message;
+    }
+  }
+
+  function showOverlay() {
+    if (!elements.connectionOverlay) return;
+    elements.connectionOverlay.hidden = false;
+    elements.connectionOverlay.setAttribute("aria-hidden", "false");
+  }
+
+  function hideOverlay() {
+    if (!elements.connectionOverlay) return;
+    elements.connectionOverlay.hidden = true;
+    elements.connectionOverlay.setAttribute("aria-hidden", "true");
+  }
+
+  function setFormDisabled(disabled) {
+    if (!elements.connectionForm) return;
+    const controls = elements.connectionForm.querySelectorAll("input, button");
+    controls.forEach((control) => {
+      if (control.id === "offline-button") return;
+      control.disabled = disabled;
+    });
+  }
+
+  function openOverlay() {
+    showOverlay();
+    updatePlayersUI();
+    if (elements.serverInput) {
+      if (state.serverUrl) {
+        elements.serverInput.value = state.serverUrl.replace(/\/$/, "");
+      } else {
+        const defaults = deriveDefaultServerAddress();
+        if (!elements.serverInput.value) {
+          elements.serverInput.value = defaults.url;
+        }
+      }
+    }
+    if (elements.serverPortInput) {
+      if (state.serverUrl) {
+        try {
+          const currentUrl = new URL(state.serverUrl);
+          elements.serverPortInput.value = currentUrl.port;
+        } catch (err) {
+          // если разбор не удался, оставляем текущее значение
+        }
+      } else {
+        const defaults = deriveDefaultServerAddress();
+        if (!elements.serverPortInput.value && defaults.port) {
+          elements.serverPortInput.value = defaults.port;
+        }
+      }
+    }
+    const roleName = state.role && PLAYERS[state.role] ? PLAYERS[state.role].name : null;
+    const message = state.connected
+      ? `Соединение активно${roleName ? `: вы играете за «${roleName}».` : "."}`
+      : "Подключитесь к комнате или продолжите офлайн.";
+    setOverlayStatus(message);
+    setFormDisabled(false);
+  }
+
+  function cleanupSocket(silent = false) {
+    if (!state.ws) return;
+    const ws = state.ws;
+    state.ws = null;
+    if (silent) {
+      ws.onopen = null;
+      ws.onmessage = null;
+      ws.onerror = null;
+      ws.onclose = null;
+    }
+    try {
+      ws.close();
+    } catch (err) {
+      // игнорируем ошибки закрытия
+    }
+  }
+
+  function resetConnectionState() {
+    state.connected = false;
+    state.roomId = null;
+    state.players = { light: false, shadow: false };
+    updatePlayersUI();
+  }
+
+  function send(payload) {
+    if (!state.ws || state.ws.readyState !== WebSocket.OPEN) {
+      return;
+    }
+    state.ws.send(JSON.stringify(payload));
+  }
+
+  function deriveDefaultServerAddress() {
+    const { protocol, hostname, port } = window.location;
+    if (protocol === "http:" || protocol === "https:") {
+      const scheme = protocol === "https:" ? "wss" : "ws";
+      const host = hostname || "localhost";
+      const derivedPort = port || (scheme === "ws" ? "8787" : "");
+      return {
+        url: `${scheme}://${host}`,
+        port: derivedPort
+      };
+    }
+    return { url: "ws://localhost", port: "8787" };
+  }
+
+  return {
+    init,
+    handleConnectSubmission,
+    handleOfflineSelection,
+    openOverlay,
+    sendState(reason, statePayload) {
+      send({ type: "state", roomId: state.roomId, role: state.role, reason, state: statePayload });
+    },
+    canBroadcast() {
+      return Boolean(state.connected && state.ws && state.ws.readyState === WebSocket.OPEN && state.suppressDepth === 0);
+    },
+    suppress(callback) {
+      state.suppressDepth += 1;
+      try {
+        callback();
+      } finally {
+        state.suppressDepth = Math.max(0, state.suppressDepth - 1);
+      }
+    },
+    canAct() {
+      return !state.connected || state.role === currentPlayer;
+    },
+    isActive() {
+      return state.connected;
+    },
+    isWaitingForOpponent() {
+      return state.connected && !(state.players.light && state.players.shadow);
+    }
+  };
 }
