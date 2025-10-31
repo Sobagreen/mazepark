@@ -227,6 +227,154 @@ body.theme-light .button--primary {
   color: #432006;
 }
 
+.connection-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2.5rem 1.5rem;
+  background: rgba(10, 14, 18, 0.82);
+  backdrop-filter: blur(8px);
+  z-index: 20;
+  overflow-y: auto;
+}
+
+.connection-card {
+  width: min(100%, 460px);
+  display: grid;
+  gap: 1rem;
+  padding: clamp(1.5rem, 3vw, 2rem);
+  border-radius: 18px;
+  background: var(--bg-panel);
+  box-shadow: inset 0 0 0 1px var(--panel-border-color), 0 30px 60px rgba(0, 0, 0, 0.35);
+}
+
+.connection-card__title {
+  margin: 0;
+  font-size: 1.35rem;
+  text-align: center;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.connection-card__intro {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--muted);
+}
+
+.connection-field,
+.connection-fieldset {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.connection-field__label,
+.connection-fieldset__legend {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+}
+
+.connection-field__input {
+  width: 100%;
+  border-radius: 12px;
+  border: 1px solid var(--panel-border-color);
+  background: rgba(0, 0, 0, 0.08);
+  color: var(--text);
+  font: inherit;
+  padding: 0.65rem 0.75rem;
+}
+
+.connection-field__input:focus {
+  outline: 2px solid var(--accent-dark);
+  outline-offset: 2px;
+}
+
+.connection-role {
+  display: block;
+  position: relative;
+  border-radius: 12px;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid transparent;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.connection-role input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+}
+
+.connection-role__content {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.connection-role__glyph {
+  font-size: 1.4rem;
+}
+
+.connection-role__label {
+  font-weight: 600;
+}
+
+.connection-role:has(input:checked) {
+  border-color: var(--accent-dark);
+  background: rgba(98, 146, 255, 0.15);
+}
+
+.connection-role:has(input:focus-visible) {
+  outline: 2px solid var(--accent-dark);
+  outline-offset: 3px;
+}
+
+.connection-players {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.9rem;
+}
+
+.connection-players__item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.45rem 0.75rem;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.connection-players__item--occupied {
+  background: rgba(255, 94, 94, 0.12);
+}
+
+.connection-players__item--self {
+  border: 1px solid var(--accent-dark);
+}
+
+.connection-players__status {
+  font-weight: 600;
+}
+
+.connection-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: space-between;
+}
+
+.connection-status {
+  min-height: 1.2rem;
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
 .board-area {
   position: relative;
   display: flex;
