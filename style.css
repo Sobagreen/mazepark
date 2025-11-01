@@ -254,10 +254,10 @@ body.theme-light .button--primary {
 }
 
 .connection-card {
-  width: min(100%, 460px);
+  width: min(100%, 520px);
   display: grid;
-  gap: 1rem;
-  padding: clamp(1.5rem, 3vw, 2rem);
+  gap: 1.1rem;
+  padding: clamp(1.6rem, 3vw, 2.2rem);
   border-radius: 18px;
   background: var(--bg-panel);
   box-shadow: inset 0 0 0 1px var(--panel-border-color), 0 30px 60px rgba(0, 0, 0, 0.35);
@@ -457,6 +457,14 @@ body.theme-light .button--primary {
   display: flex;
   gap: 0.75rem;
   justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.connection-actions__secondary {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .connection-warning {

@@ -152,14 +152,18 @@
           <span aria-hidden="true">🌙</span>
         </button>
       </div>
+      <div id="endgame" class="endgame" hidden>
+        <div class="endgame__content">
+          <div>
+            <h2 id="endgame-title"></h2>
+            <p id="endgame-subtitle"></p>
+          </div>
+          <button type="button" id="play-again" class="button button--primary">Сыграть ещё раз</button>
+        </div>
+      </div>
       <div class="board-wrapper">
         <div id="board" class="board" role="grid" aria-label="Поле лучезарной сечи"></div>
         <div id="laser-overlay" class="laser-overlay" aria-hidden="true"></div>
-        <div id="endgame" class="endgame" hidden>
-          <h2 id="endgame-title"></h2>
-          <p id="endgame-subtitle"></p>
-          <button type="button" id="play-again" class="button button--primary">Сыграть ещё раз</button>
-        </div>
       </div>
       <div class="board-actions">
         <button type="button" id="rotate-left" class="board-action" disabled aria-label="Повернуть против часовой стрелки">↺</button>
