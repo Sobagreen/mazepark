@@ -240,6 +240,19 @@ body.theme-light .button--primary {
   overflow-y: auto;
 }
 
+.start-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2.5rem 1.5rem;
+  background: rgba(10, 14, 18, 0.82);
+  backdrop-filter: blur(10px);
+  z-index: 24;
+  overflow-y: auto;
+}
+
 .connection-card {
   width: min(100%, 460px);
   display: grid;
@@ -248,6 +261,84 @@ body.theme-light .button--primary {
   border-radius: 18px;
   background: var(--bg-panel);
   box-shadow: inset 0 0 0 1px var(--panel-border-color), 0 30px 60px rgba(0, 0, 0, 0.35);
+}
+
+.start-card {
+  width: min(100%, 480px);
+  display: grid;
+  gap: 1.2rem;
+  padding: clamp(1.75rem, 4vw, 2.5rem);
+  border-radius: 20px;
+  background: var(--bg-panel);
+  box-shadow: inset 0 0 0 1px var(--panel-border-color), 0 32px 72px rgba(0, 0, 0, 0.38);
+  text-align: center;
+}
+
+.start-card h1,
+.start-card h2 {
+  margin: 0;
+}
+
+.start-card--wide {
+  width: min(760px, 95vw);
+  text-align: left;
+}
+
+.start-card__intro {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--muted);
+}
+
+.start-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: center;
+}
+
+.start-card__actions--end {
+  justify-content: flex-end;
+}
+
+.skin-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.skin-card {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-radius: 16px;
+  border: 1px solid var(--panel-border-color);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.skin-card h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.skin-preview {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.skin-preview img {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+}
+
+.skin-preview--inline {
+  margin-top: 0.5rem;
+  justify-content: flex-start;
 }
 
 .connection-card__title {
@@ -366,6 +457,20 @@ body.theme-light .button--primary {
   display: flex;
   gap: 0.75rem;
   justify-content: space-between;
+}
+
+.connection-warning {
+  margin: 0;
+  padding: 0.65rem 0.8rem;
+  border-radius: 12px;
+  background: rgba(255, 94, 94, 0.12);
+  color: #ffd1d1;
+  font-size: 0.9rem;
+}
+
+body.theme-light .connection-warning {
+  background: rgba(215, 38, 61, 0.1);
+  color: #991b1b;
 }
 
 .connection-status {
@@ -531,16 +636,28 @@ body.theme-light .piece {
 
 .endgame {
   position: absolute;
-  inset: 10%;
+  top: 1.25rem;
+  right: 1.25rem;
+  max-width: min(260px, 80%);
   border-radius: 18px;
-  padding: 2rem;
-  background: rgba(15, 20, 23, 0.95);
-  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45);
+  padding: 1rem 1.25rem 1.15rem;
+  background: rgba(15, 20, 23, 0.92);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.35);
   display: grid;
-  gap: 1rem;
-  place-items: center;
-  text-align: center;
+  gap: 0.75rem;
+  text-align: left;
   z-index: 4;
+}
+
+.endgame h2 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.endgame p {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--muted);
 }
 
 .laser-overlay {
