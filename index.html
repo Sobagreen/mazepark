@@ -7,14 +7,91 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body class="theme-dark">
-  <div id="connection-overlay" class="connection-overlay" role="dialog" aria-modal="true" aria-labelledby="connection-title">
+  <div id="start-overlay" class="connection-overlay menu-overlay" role="dialog" aria-modal="true" aria-labelledby="start-title">
+    <div class="menu-card" role="document">
+      <h1 id="start-title" class="menu-card__title">Лучезарная сечь</h1>
+      <p class="menu-card__subtitle">Выберите режим, чтобы продолжить.</p>
+      <div class="menu-card__actions">
+        <button type="button" id="start-online" class="button button--primary">Online</button>
+        <button type="button" id="start-offline" class="button button--ghost">Offline</button>
+        <button type="button" id="start-training" class="button button--ghost">Training</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="training-overlay" class="connection-overlay menu-overlay" role="dialog" aria-modal="true" aria-labelledby="training-title" hidden>
+    <div class="menu-card" role="document">
+      <h1 id="training-title" class="menu-card__title">Обучение</h1>
+      <p class="menu-card__subtitle">Обучение в разработке.</p>
+      <div class="menu-card__actions">
+        <button type="button" id="training-back" class="button button--ghost">Назад</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="offline-overlay" class="connection-overlay menu-overlay" role="dialog" aria-modal="true" aria-labelledby="offline-title" hidden>
+    <form id="offline-form" class="menu-card menu-card--form" autocomplete="off">
+      <h1 id="offline-title" class="menu-card__title">Офлайн партия</h1>
+      <p class="menu-card__subtitle">Подберите оформление фигур для каждого игрока.</p>
+      <div class="skin-config" data-player="light">
+        <h2 class="skin-config__title">☼ Дружина Перуна</h2>
+        <div class="skin-config__controls">
+          <label class="connection-field">
+            <span class="connection-field__label">Скин</span>
+            <select id="offline-light-skin" class="connection-field__input connection-field__input--select"></select>
+          </label>
+          <label class="connection-field">
+            <span class="connection-field__label">Тип</span>
+            <select id="offline-light-type" class="connection-field__input connection-field__input--select"></select>
+          </label>
+        </div>
+        <div class="skin-preview" data-preview-player="light">
+          <div class="skin-preview__images">
+            <img data-piece="laser" alt="Превью лазера">
+            <img data-piece="volhv" alt="Превью волхва">
+            <img data-piece="mirror" alt="Превью зерцала">
+            <img data-piece="shield" alt="Превью щитоносца">
+            <img data-piece="totem" alt="Превью тотема">
+          </div>
+        </div>
+      </div>
+      <div class="skin-config" data-player="shadow">
+        <h2 class="skin-config__title">☽ Полк Чернобога</h2>
+        <div class="skin-config__controls">
+          <label class="connection-field">
+            <span class="connection-field__label">Скин</span>
+            <select id="offline-shadow-skin" class="connection-field__input connection-field__input--select"></select>
+          </label>
+          <label class="connection-field">
+            <span class="connection-field__label">Тип</span>
+            <select id="offline-shadow-type" class="connection-field__input connection-field__input--select"></select>
+          </label>
+        </div>
+        <div class="skin-preview" data-preview-player="shadow">
+          <div class="skin-preview__images">
+            <img data-piece="laser" alt="Превью лазера">
+            <img data-piece="volhv" alt="Превью волхва">
+            <img data-piece="mirror" alt="Превью зерцала">
+            <img data-piece="shield" alt="Превью щитоносца">
+            <img data-piece="totem" alt="Превью тотема">
+          </div>
+        </div>
+      </div>
+      <div class="menu-card__actions">
+        <button type="button" id="offline-back" class="button button--ghost">Назад</button>
+        <button type="submit" id="offline-start" class="button button--primary">Начать игру</button>
+      </div>
+    </form>
+  </div>
+
+  <div id="connection-overlay" class="connection-overlay" role="dialog" aria-modal="true" aria-labelledby="connection-title" hidden>
     <form id="connection-form" class="connection-card" autocomplete="off">
       <h1 id="connection-title" class="connection-card__title">Сетевая партия</h1>
-      <p class="connection-card__intro">Выберите комнату и сторону, чтобы сыграть вдвоём. Второй игрок должен указать тот же идентификатор комнаты.</p>
+      <p class="connection-card__intro">Укажите комнату, выберите сторону и оформите фигуры перед подключением.</p>
 
       <label class="connection-field">
         <span class="connection-field__label">Адрес сервера</span>
-        <input id="server-url" name="server" type="text" class="connection-field__input" required value="ws://localhost:8787" spellcheck="false">
+        <input id="server-url" name="server" type="text" class="connection-field__input" required value="wss://mazepark-1.onrender.com" spellcheck="false">
       </label>
 
       <label class="connection-field">
@@ -40,6 +117,30 @@
         </label>
       </fieldset>
 
+      <fieldset class="connection-fieldset connection-fieldset--appearance">
+        <legend class="connection-fieldset__legend">Оформление</legend>
+        <div class="skin-config__controls skin-config__controls--inline">
+          <label class="connection-field">
+            <span class="connection-field__label">Скин</span>
+            <select id="online-skin" name="skin" class="connection-field__input connection-field__input--select" disabled></select>
+          </label>
+          <label class="connection-field">
+            <span class="connection-field__label">Тип</span>
+            <select id="online-type" name="skinType" class="connection-field__input connection-field__input--select" disabled></select>
+          </label>
+        </div>
+        <div class="skin-preview" data-preview-context="online">
+          <div class="skin-preview__images">
+            <img data-piece="laser" alt="Превью лазера">
+            <img data-piece="volhv" alt="Превью волхва">
+            <img data-piece="mirror" alt="Превью зерцала">
+            <img data-piece="shield" alt="Превью щитоносца">
+            <img data-piece="totem" alt="Превью тотема">
+          </div>
+          <p class="skin-preview__hint">Выбор типов недоступен, если противоположная сторона уже заняла их.</p>
+        </div>
+      </fieldset>
+
       <ul id="connection-players" class="connection-players" aria-live="polite">
         <li class="connection-players__item" data-role="light">
           <span class="connection-players__name">☼ Дружина Перуна</span>
@@ -55,7 +156,10 @@
 
       <div class="connection-actions">
         <button type="submit" id="connect-button" class="button button--primary">Подключиться</button>
-        <button type="button" id="offline-button" class="button button--ghost">Играть офлайн</button>
+        <div class="connection-actions__secondary">
+          <button type="button" id="offline-button" class="button button--ghost">Играть офлайн</button>
+          <button type="button" id="connection-back" class="button button--ghost">Назад</button>
+        </div>
       </div>
     </form>
   </div>
@@ -69,14 +173,18 @@
           <span aria-hidden="true">🌙</span>
         </button>
       </div>
+      <div id="endgame" class="endgame" hidden>
+        <div class="endgame__content">
+          <div>
+            <h2 id="endgame-title"></h2>
+            <p id="endgame-subtitle"></p>
+          </div>
+          <button type="button" id="play-again" class="button button--primary">Сыграть ещё раз</button>
+        </div>
+      </div>
       <div class="board-wrapper">
         <div id="board" class="board" role="grid" aria-label="Поле лучезарной сечи"></div>
         <div id="laser-overlay" class="laser-overlay" aria-hidden="true"></div>
-        <div id="endgame" class="endgame" hidden>
-          <h2 id="endgame-title"></h2>
-          <p id="endgame-subtitle"></p>
-          <button type="button" id="play-again" class="button button--primary">Сыграть ещё раз</button>
-        </div>
       </div>
       <div class="board-actions">
         <button type="button" id="rotate-left" class="board-action" disabled aria-label="Повернуть против часовой стрелки">↺</button>
@@ -94,11 +202,11 @@
       <section class="panel panel--legend">
         <h2>Легенда орденов</h2>
         <ul class="legend">
-          <li><span class="legend__glyph legend__glyph--light"><img src="pieces/light/laser.png" alt=""></span> Лучезар (излучает лазер)</li>
-          <li><span class="legend__glyph legend__glyph--light"><img src="pieces/light/volhv.png" alt=""></span> Волхв (главная цель)</li>
-          <li><span class="legend__glyph legend__glyph--light"><img src="pieces/light/mirror.png" alt=""></span> Зерцало (одна отражающая грань)</li>
-          <li><span class="legend__glyph legend__glyph--light"><img src="pieces/light/shield.png" alt=""></span> Щитоносец (останавливает луч щитом)</li>
-          <li><span class="legend__glyph legend__glyph--light"><img src="pieces/light/totem.png" alt=""></span> Тотем (двойное зерцало, меняется местами с союзниками, включая диагональ)</li>
+          <li><span class="legend__glyph legend__glyph--light"><img data-legend-player="light" data-piece="laser" alt=""></span> Лучезар (излучает лазер)</li>
+          <li><span class="legend__glyph legend__glyph--light"><img data-legend-player="light" data-piece="volhv" alt=""></span> Волхв (главная цель)</li>
+          <li><span class="legend__glyph legend__glyph--light"><img data-legend-player="light" data-piece="mirror" alt=""></span> Зерцало (одна отражающая грань)</li>
+          <li><span class="legend__glyph legend__glyph--light"><img data-legend-player="light" data-piece="shield" alt=""></span> Щитоносец (останавливает луч щитом)</li>
+          <li><span class="legend__glyph legend__glyph--light"><img data-legend-player="light" data-piece="totem" alt=""></span> Тотем (двойное зерцало, меняется местами с союзниками, включая диагональ)</li>
         </ul>
       </section>
     </aside>
