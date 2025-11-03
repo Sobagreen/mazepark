@@ -104,16 +104,16 @@ const SKINS = {
     label: "Япония",
     preview: "pieces/skins/Japan/Type1/preview.png",
     types: {
-      Type1: { label: "Type 1", preview: "pieces/skins/Japan/Type1/preview.png" },
-      Type2: { label: "Type 2", preview: "pieces/skins/Japan/Type2/preview.png" }
+      Type1: { label: "Гейша", preview: "pieces/skins/Japan/Type1/preview.png" },
+      Type2: { label: "Сëгун", preview: "pieces/skins/Japan/Type2/preview.png" }
     }
   },
   Greece: {
     label: "Греция",
     preview: "pieces/skins/Greece/Type1/preview.png",
     types: {
-      Type1: { label: "Type 1", preview: "pieces/skins/Greece/Type1/preview.png" },
-      Type2: { label: "Type 2", preview: "pieces/skins/Greece/Type2/preview.png" }
+      Type1: { label: "Легионер", preview: "pieces/skins/Greece/Type1/preview.png" },
+      Type2: { label: "Амазонка", preview: "pieces/skins/Greece/Type2/preview.png" }
     }
   },  
   Lavcraft: {
@@ -122,6 +122,14 @@ const SKINS = {
     types: {
       Type1: { label: "Ктулху", preview: "pieces/skins/Lavcraft/Type1/preview.png" },
       Type2: { label: "Жрец Ордена", preview: "pieces/skins/Lavcraft/Type2/preview.png" }
+    }
+  },
+  Egypt: {
+    label: "Египет",
+    preview: "pieces/skins/Egypt/Type1/preview.png",
+    types: {
+      Type1: { label: "Наложница", preview: "pieces/skins/Egypt/Type1/preview.png" },
+      Type2: { label: "Фараон", preview: "pieces/skins/Egypt/Type2/preview.png" }
     }
   },
 };
