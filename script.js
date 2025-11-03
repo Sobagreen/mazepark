@@ -94,10 +94,10 @@ const PIECE_DEFS = {
 const SKINS = {
   Slavic: {
     label: "Славянский орден",
-    preview: "pieces/skins/Slavic/Type1/preview.png",
+    preview: "pieces/skins/Slavic/Type1/volhv.png",
     types: {
-      Type1: { label: "Перун", preview: "pieces/skins/Slavic/Type1/preview.png" },
-      Type2: { label: "Чернобог", preview: "pieces/skins/Slavic/Type2/preview.png" }
+      Type1: { label: "Перун", preview: "pieces/skins/Slavic/Type1/volhv.png" },
+      Type2: { label: "Чернобог", preview: "pieces/skins/Slavic/Type2/volhv.png" }
     }
   },
   Japan: {
