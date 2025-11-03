@@ -1411,14 +1411,17 @@ function finishGame(winner) {
   updateRotateControls(false);
 }
 
-function fireLaser(player) {
-  const emitterPos = findEmitter(player);
+function traceLaserPath(boardState, player) {
+  const grid = Array.isArray(boardState) ? boardState : board;
+  const emitterPos = findEmitter(player, grid);
   if (!emitterPos) {
     return { path: [], firer: PLAYERS[player].laserName, origin: null };
   }
 
   let { x, y } = emitterPos;
-  let direction = board[y][x].orientation % 4;
+  const originRow = Array.isArray(grid[y]) ? grid[y] : null;
+  const originPiece = originRow && originRow[x] ? originRow[x] : null;
+  let direction = originPiece ? originPiece.orientation % 4 : 0;
   const path = [];
   let previous = { x, y };
 
@@ -1438,31 +1441,49 @@ function fireLaser(player) {
     x = nextX;
     y = nextY;
     path.push({ x, y });
-    const target = board[y][x];
+    const row = Array.isArray(grid[y]) ? grid[y] : null;
+    const target = row && row[x] ? row[x] : null;
     if (!target) {
       previous = { x, y };
       continue;
     }
+
     const interaction = resolveLaserInteraction(target, direction);
+    const termination = { x: x + 0.5, y: y + 0.5 };
     if (interaction.destroy) {
-      board[y][x] = null;
-    }
-    if (interaction.stop) {
-      const result = {
+      return {
         path,
-        hit: interaction.destroy ? { piece: target, x, y } : null,
+        hit: { piece: clonePiece(target), x, y },
         firer: PLAYERS[player].laserName,
         origin: emitterPos,
-        termination: { x: x + 0.5, y: y + 0.5 }
+        termination
       };
-      if (!interaction.destroy) {
-        result.blocked = { piece: target, x, y };
-      }
-      return result;
     }
+    if (interaction.stop) {
+      return {
+        path,
+        hit: null,
+        blocked: { piece: clonePiece(target), x, y },
+        firer: PLAYERS[player].laserName,
+        origin: emitterPos,
+        termination
+      };
+    }
+
     previous = { x, y };
     direction = interaction.nextDirection;
   }
+}
+
+function fireLaser(player) {
+  const result = traceLaserPath(board, player);
+  if (result && result.hit) {
+    const { x, y } = result.hit;
+    if (inBounds(x, y)) {
+      board[y][x] = null;
+    }
+  }
+  return result;
 }
 
 function resolveLaserInteraction(piece, incomingDirection) {
@@ -1527,10 +1548,12 @@ function rotateFaceMap(map, orientation) {
   return rotated;
 }
 
-function findEmitter(player) {
+function findEmitter(player, boardState = board) {
   for (let y = 0; y < BOARD_HEIGHT; y++) {
+    const row = Array.isArray(boardState) ? boardState[y] : null;
+    if (!Array.isArray(row)) continue;
     for (let x = 0; x < BOARD_WIDTH; x++) {
-      const piece = board[y][x];
+      const piece = row[x];
       if (piece && piece.player === player && piece.type === "laser") {
         return { x, y };
       }
@@ -1851,7 +1874,14 @@ function applyRemoteState(state) {
       setStatus(`${PLAYERS[currentPlayer].name}: выберите фигуру.`);
     }
     lastLaserResult = state.laser ? normaliseLaserResult(state.laser) : null;
-    if (lastLaserResult) {
+    if ((!lastLaserResult || !lastLaserResult.origin) && turnCounter > 1) {
+      const previousPlayer = getOpponent(currentPlayer);
+      const simulated = traceLaserPath(board, previousPlayer);
+      if (simulated && simulated.origin) {
+        lastLaserResult = normaliseLaserResult(simulated);
+      }
+    }
+    if (lastLaserResult && lastLaserResult.origin) {
       highlightLaserPath(lastLaserResult);
     } else {
       clearLaserPath();
