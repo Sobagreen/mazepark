@@ -47,46 +47,46 @@ const DEFAULT_SERVER_URL = "wss://mazepark-1.onrender.com";
 
 const PLAYERS = {
   light: {
-    name: "Дружина Перуна",
+    name: "Первый игрок",
     glyph: "☼",
-    laserName: "Лучезар Перуна"
+    laserName: "Луч первого Игрока"
   },
   shadow: {
-    name: "Полк Чернобога",
+    name: "Второй Игрок",
     glyph: "☽",
-    laserName: "Луч Чернобога"
+    laserName: "Луч второго игрока"
   }
 };
 
 const PIECE_DEFS = {
   laser: {
-    name: "Лучезар",
+    name: "Луч",
     canRotate: true,
-    description: "Излучает луч. Не двигается и неуязвим, можно лишь поворачивать направление луча.",
+    description: "После действия активного игрока излучает свет. Не двигается и неуязвим, можно лишь поворачивать направление луча.",
     movement: () => []
   },
   volhv: {
-    name: "Волхв",
+    name: "Герой",
     canRotate: false,
-    description: "Главная фигура. Ходит на одну клетку в любом направлении. Попадание луча заканчивает партию.",
+    description: "Главная фигура. Ходит на одну клетку в любом направлении. Попадание луча в Героя заканчивает партию.",
     movement: (board, x, y, piece) => adjacentMoves(board, x, y, piece)
   },
   mirror: {
-    name: "Зерцало",
+    name: "Зеркало",
     canRotate: true,
-    description: "Один зеркальный фас. Отражает луч под прямым углом, уязвимо с открытых сторон.",
+    description: "Вещь с отражательным эффектом. Одна зеркальная сторона. Отражает луч под прямым углом,уязвимо с открытых сторон.",
     movement: (board, x, y, piece) => adjacentMoves(board, x, y, piece)
   },
   shield: {
-    name: "Щитоносец",
+    name: "Щит",
     canRotate: true,
-    description: "Щит гасит луч лицевой стороной. С боков и тыла может быть уничтожен.",
+    description: "Вещь с защитным эффектом, может гасить луч,но только лицевой стороной. С боков и тыла может быть уничтожена.",
     movement: (board, x, y, piece) => adjacentMoves(board, x, y, piece)
   },
   totem: {
     name: "Тотем",
     canRotate: true,
-    description: "Двуликое зеркало. Отражает с двух сторон и может сменяться местами с зерцалом или щитом поблизости, включая диагональ.",
+    description: "Двустороннее зеркало. Отражает луч на 90 градусов с двух сторон. МОЖЕТ МЕНЯТЬСЯ МЕСТАМИ С ЗЕРКАЛОМ ИЛИ ЩИТОМ ПОБЛИЗОСТИ.",
     movement: (board, x, y, piece) => totemMoves(board, x, y, piece)
   }
 };
@@ -251,7 +251,7 @@ function startNewGame() {
   clearLaserPath();
   updateTurnIndicator();
   clearSelection({ silent: true });
-  setStatus("Дружина Перуна начинает дуэль: выберите фигуру или поверните зеркало.");
+  setStatus("Первый игрок начинает ход. Переместите фигуру или поверните лазер.");
   elements.endgame.hidden = true;
   elements.endgame.setAttribute("aria-hidden", "true");
   broadcastGameState("new-game");
