@@ -200,13 +200,14 @@ const DEFAULT_FACTION_LEGEND = [
 
 SKINS.Slavic.legend = DEFAULT_FACTION_LEGEND;
 
-const AVAILABLE_SKINS = SKINS;
-const DEFAULT_PLAYER_SKINS = cloneSkinSelection(DEFAULT_SKIN_SELECTION);
-let playerSkins = cloneSkinSelection(DEFAULT_SKIN_SELECTION);
-
 const DEFAULT_SKIN_SELECTION = {
   light: { skin: "Slavic", type: "Type1" },
   shadow: { skin: "Slavic", type: "Type2" }
+};
+
+const AVAILABLE_SKINS = SKINS;
+const DEFAULT_PLAYER_SKINS = cloneSkinSelection(DEFAULT_SKIN_SELECTION);
+let playerSkins = cloneSkinSelection(DEFAULT_SKIN_SELECTION);
 };
 
 const DIRECTIONS = [
@@ -1620,8 +1621,10 @@ function finishGame(winner) {
 function traceLaserPath(boardState, player) {
   const grid = Array.isArray(boardState) ? boardState : board;
   const emitterPos = findEmitter(player, grid);
+  const laserName = getPlayerLaserName(player);
+
   if (!emitterPos) {
-    return { path: [], firer: getPlayerLaserName(player), origin: null };
+    return { path: [], firer: laserName, origin: null };
   }
 
   let { x, y } = emitterPos;
@@ -1634,11 +1637,12 @@ function traceLaserPath(boardState, player) {
   while (true) {
     const nextX = x + DIRECTIONS[direction].dx;
     const nextY = y + DIRECTIONS[direction].dy;
+
     if (!inBounds(nextX, nextY)) {
       return {
         path,
         hit: null,
-        firer: getPlayerLaserName(player),
+        firer: laserName,
         origin: emitterPos,
         termination: computeExitPoint(previous, direction)
       };
@@ -1647,8 +1651,10 @@ function traceLaserPath(boardState, player) {
     x = nextX;
     y = nextY;
     path.push({ x, y });
+
     const row = Array.isArray(grid[y]) ? grid[y] : null;
     const target = row && row[x] ? row[x] : null;
+
     if (!target) {
       previous = { x, y };
       continue;
@@ -1656,20 +1662,22 @@ function traceLaserPath(boardState, player) {
 
     const interaction = resolveLaserInteraction(target, direction);
     const termination = { x: x + 0.5, y: y + 0.5 };
+
     if (interaction.destroy) {
       return {
         path,
         hit: { piece: clonePiece(target), x, y },
-        firer: PLAYERS[player].laserName,
+        firer: laserName,
         origin: emitterPos,
         termination
       };
     }
+
     if (interaction.stop) {
       return {
         path,
-        hit: interaction.destroy ? { piece: target, x, y } : null,
-        firer: getPlayerLaserName(player),
+        blocked: { piece: clonePiece(target), x, y },
+        firer: laserName,
         origin: emitterPos,
         termination
       };
@@ -1679,6 +1687,7 @@ function traceLaserPath(boardState, player) {
     direction = interaction.nextDirection;
   }
 }
+
 
 function fireLaser(player) {
   const result = traceLaserPath(board, player);
@@ -2051,7 +2060,6 @@ function applyRemoteState(state) {
   multiplayer.suppress(() => {
     board = cloneBoardState(state.board);
     if (state.skins) {
-      applySkinSelection(state.skins, { broadcast: false });
     }
     currentPlayer = state.currentPlayer === "shadow" ? "shadow" : "light";
     if (typeof state.turnCounter === "number" && Number.isFinite(state.turnCounter)) {
