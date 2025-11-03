@@ -47,14 +47,14 @@ const DEFAULT_SERVER_URL = "wss://mazepark-1.onrender.com";
 
 const PLAYERS = {
   light: {
-    name: "Дружина Перуна",
+    name: "Герой света",
     glyph: "☼",
-    laserName: "Лучезар Перуна"
+    laserName: "Луч света"
   },
   shadow: {
-    name: "Полк Чернобога",
+    name: "Герой тьмы",
     glyph: "☽",
-    laserName: "Луч Чернобога"
+    laserName: "Луч тьмы"
   }
 };
 
@@ -95,9 +95,16 @@ const SKINS = {
   Slavic: {
     label: "Славянский орден",
     preview: "pieces/skins/Slavic/preview.png",
+    legend: null,
     types: {
-      Type1: { label: "Type 1", preview: "pieces/skins/Slavic/Type1/preview.png" },
-      Type2: { label: "Type 2", preview: "pieces/skins/Slavic/Type2/preview.png" }
+      Type1: {
+        label: "Светлый герой",
+        preview: "pieces/skins/Slavic/Type1/preview.png"
+      },
+      Type2: {
+        label: "Теневой герой",
+        preview: "pieces/skins/Slavic/Type2/preview.png"
+      }
     }
   },
   Japan: {
@@ -112,11 +119,90 @@ const SKINS = {
     label: "Греция",
     preview: "pieces/skins/Greece/preview.png",
     types: {
-      Type1: { label: "Type 1", preview: "pieces/skins/Greece/Type1/preview.png" },
-      Type2: { label: "Type 2", preview: "pieces/skins/Greece/Type2/preview.png" }
+      Type1: { label: "Легионер", preview: "pieces/skins/Greece/Type1/preview.png" },
+      Type2: { label: "Амазонка", preview: "pieces/skins/Greece/Type2/preview.png" }
+    }
+  },
+  Lovecraft: {
+    label: "Лавкрафт",
+    preview: "pieces/skins/Slavic/preview.png",
+    assetsFrom: "Slavic",
+    types: {
+      Type1: { label: "Светлый герой", preview: "pieces/skins/Slavic/Type1/preview.png" },
+      Type2: { label: "Теневой герой", preview: "pieces/skins/Slavic/Type2/preview.png" }
+    }
+  },
+  Egypt: {
+    label: "Египет",
+    preview: "pieces/skins/Slavic/preview.png",
+    assetsFrom: "Slavic",
+    types: {
+      Type1: { label: "Светлый герой", preview: "pieces/skins/Slavic/Type1/preview.png" },
+      Type2: { label: "Теневой герой", preview: "pieces/skins/Slavic/Type2/preview.png" }
+    }
+  },
+  WIPAlpha: {
+    label: "В разработке",
+    preview: "pieces/skins/Slavic/preview.png",
+    assetsFrom: "Slavic",
+    types: {
+      Type1: { label: "Светлый герой", preview: "pieces/skins/Slavic/Type1/preview.png" },
+      Type2: { label: "Теневой герой", preview: "pieces/skins/Slavic/Type2/preview.png" }
+    }
+  },
+  WIPBeta: {
+    label: "В разработке",
+    preview: "pieces/skins/Slavic/preview.png",
+    assetsFrom: "Slavic",
+    types: {
+      Type1: { label: "Светлый герой", preview: "pieces/skins/Slavic/Type1/preview.png" },
+      Type2: { label: "Теневой герой", preview: "pieces/skins/Slavic/Type2/preview.png" }
+    }
+  },
+  WIPGamma: {
+    label: "В разработке",
+    preview: "pieces/skins/Slavic/preview.png",
+    assetsFrom: "Slavic",
+    types: {
+      Type1: { label: "Светлый герой", preview: "pieces/skins/Slavic/Type1/preview.png" },
+      Type2: { label: "Теневой герой", preview: "pieces/skins/Slavic/Type2/preview.png" }
     }
   }
 };
+
+const DEFAULT_FACTION_LEGEND = [
+  {
+    piece: "laser",
+    name: "Лучезар",
+    description: "Излучает лазер и задаёт направление атаки."
+  },
+  {
+    piece: "volhv",
+    name: "Волхв",
+    description: "Главная цель. Уничтожение завершает партию."
+  },
+  {
+    piece: "mirror",
+    name: "Зерцало",
+    description: "Одна отражающая грань, разворачивает луч под прямым углом."
+  },
+  {
+    piece: "shield",
+    name: "Щитоносец",
+    description: "Щит гасит луч фронтально, но фигура уязвима с боков и тыла."
+  },
+  {
+    piece: "totem",
+    name: "Тотем",
+    description: "Двуликое зеркало. Может меняться местами с союзниками по соседству, включая диагональ."
+  }
+];
+
+SKINS.Slavic.legend = DEFAULT_FACTION_LEGEND;
+
+const AVAILABLE_SKINS = SKINS;
+const DEFAULT_PLAYER_SKINS = cloneSkinSelection(DEFAULT_SKIN_SELECTION);
+let playerSkins = cloneSkinSelection(DEFAULT_SKIN_SELECTION);
 
 const DEFAULT_SKIN_SELECTION = {
   light: { skin: "Slavic", type: "Type1" },
@@ -213,8 +299,130 @@ const elements = {
       label: document.getElementById("offline-shadow-preview-label")
     }
   },
-  legendImages: Array.from(document.querySelectorAll("[data-piece-image]"))
+  legendContainer: document.getElementById("legend-content"),
+  heroLabels: Array.from(document.querySelectorAll("[data-hero-label]"))
 };
+
+function getHeroSelection(player, source = "active") {
+  const reference = source === "pending" ? pendingSkins : skinSelection;
+  if (reference && reference[player]) {
+    return reference[player];
+  }
+  return DEFAULT_SKIN_SELECTION[player];
+}
+
+function getHeroDefinition(player, source = "active") {
+  const selection = getHeroSelection(player, source);
+  const skinDef = SKINS[selection.skin];
+  const typeDef = skinDef?.types?.[selection.type];
+  return { selection, skinDef, typeDef };
+}
+
+function getHeroLabel(player, source = "active") {
+  const { selection } = getHeroDefinition(player, source);
+  return getTypeLabel(selection.skin, selection.type) || PLAYERS[player]?.name || player;
+}
+
+function getPlayerDisplayName(player, source = "active") {
+  return getHeroLabel(player, source);
+}
+
+function getPlayerLaserName(player, source = "active") {
+  const { skinDef, typeDef } = getHeroDefinition(player, source);
+  return typeDef?.laserName || skinDef?.laserName || PLAYERS[player]?.laserName || "Луч";
+}
+
+function getLegendEntriesForPlayer(player) {
+  const { skinDef, typeDef } = getHeroDefinition(player);
+  if (typeDef && Array.isArray(typeDef.legend) && typeDef.legend.length > 0) {
+    return typeDef.legend;
+  }
+  if (skinDef && Array.isArray(skinDef.legend) && skinDef.legend.length > 0) {
+    return skinDef.legend;
+  }
+  return DEFAULT_FACTION_LEGEND;
+}
+
+function getAssetSkinKey(skinKey) {
+  return SKINS[skinKey]?.assetsFrom || skinKey;
+}
+
+function getAssetTypeKey(skinKey, typeKey) {
+  const skin = SKINS[skinKey];
+  return skin?.types?.[typeKey]?.assetsFrom || typeKey;
+}
+
+function buildAssetPath(skinKey, typeKey, pieceType) {
+  const safePiece = pieceType || "laser";
+  const skinFolder = getAssetSkinKey(skinKey);
+  const typeFolder = getAssetTypeKey(skinKey, typeKey);
+  return `pieces/skins/${skinFolder}/${typeFolder}/${safePiece}.png`;
+}
+
+function updateHeroLabels() {
+  if (!elements.heroLabels) return;
+  elements.heroLabels.forEach((node) => {
+    const player = node.getAttribute("data-hero-label");
+    if (player !== "light" && player !== "shadow") return;
+    const sourceAttr = node.getAttribute("data-hero-label-source");
+    const source = sourceAttr === "pending" ? "pending" : "active";
+    node.textContent = getHeroLabel(player, source);
+  });
+}
+
+function renderLegend() {
+  if (!elements.legendContainer) return;
+  elements.legendContainer.innerHTML = "";
+  ["light", "shadow"].forEach((player) => {
+    const group = document.createElement("section");
+    group.className = "legend__group";
+
+    const title = document.createElement("h3");
+    title.className = "legend__group-title";
+
+    const glyph = document.createElement("span");
+    glyph.className = "legend__group-glyph";
+    glyph.textContent = PLAYERS[player]?.glyph || "";
+
+    const name = document.createElement("span");
+    name.textContent = getPlayerDisplayName(player);
+
+    title.append(glyph, name);
+    group.appendChild(title);
+
+    const list = document.createElement("ul");
+    list.className = "legend__list";
+
+    const selection = getHeroSelection(player);
+    getLegendEntriesForPlayer(player).forEach((entry) => {
+      const item = document.createElement("li");
+      item.className = "legend__entry";
+
+      const icon = document.createElement("span");
+      icon.className = `legend__glyph legend__glyph--${player}`;
+      const img = document.createElement("img");
+      img.src = buildAssetPath(selection.skin, selection.type, entry.piece);
+      img.alt = entry.name;
+      icon.appendChild(img);
+
+      const text = document.createElement("div");
+      text.className = "legend__text";
+      const nameEl = document.createElement("span");
+      nameEl.className = "legend__name";
+      nameEl.textContent = entry.name;
+      const descriptionEl = document.createElement("p");
+      descriptionEl.className = "legend__description";
+      descriptionEl.textContent = entry.description;
+      text.append(nameEl, descriptionEl);
+
+      item.append(icon, text);
+      list.appendChild(item);
+    });
+
+    group.appendChild(list);
+    elements.legendContainer.appendChild(group);
+  });
+}
 
 const cells = [];
 const multiplayer = createMultiplayerController();
@@ -235,7 +443,9 @@ function startNewGame() {
   clearLaserPath();
   updateTurnIndicator();
   clearSelection({ silent: true });
-  setStatus("Дружина Перуна начинает дуэль: выберите фигуру или поверните зеркало.");
+  updateHeroLabels();
+  renderLegend();
+  setStatus(`${getPlayerDisplayName("light")} начинает дуэль: выберите фигуру или поверните зеркало.`);
   elements.endgame.hidden = true;
   elements.endgame.setAttribute("aria-hidden", "true");
   broadcastGameState("new-game");
@@ -388,19 +598,14 @@ function updateSkinPreviews() {
     const role = selectedOnlineRole || "light";
     updatePreviewContainer(onlineContainer, getPlayerSkin(role));
   }
-
-  document.querySelectorAll("img[data-legend-player]").forEach((img) => {
-    const player = img.getAttribute("data-legend-player");
-    const piece = img.getAttribute("data-piece");
-    img.src = getPieceAssetPath(piece, player);
-  });
 }
 
 function updatePreviewContainer(container, selection) {
   if (!container) return;
+  const chosen = selection || DEFAULT_SKIN_SELECTION.light;
   container.querySelectorAll("img[data-piece]").forEach((img) => {
     const piece = img.getAttribute("data-piece");
-    img.src = getSkinAssetPath(selection, piece);
+    img.src = getSkinAssetPath(chosen, piece);
   });
 }
 
@@ -449,6 +654,8 @@ function assignPlayerSkin(player, skinKey, typeKey, options = {}) {
   }
 
   playerSkins[player] = requested;
+  skinSelection[player] = { ...requested };
+  pendingSkins[player] = { ...requested };
   refreshPieceArt({ silent: options.silent });
   updateSkinControls();
   if (!options.silent && !options.suppressBroadcast) {
@@ -460,13 +667,18 @@ function assignPlayerSkin(player, skinKey, typeKey, options = {}) {
 function refreshPieceArt({ silent = false } = {}) {
   renderBoard();
   updateSkinPreviews();
+  renderLegend();
+  updateHeroLabels();
   if (!silent) {
     updatePiecePanel();
   }
 }
 
 function getSkinAssetPath(selection, pieceType) {
-  return `pieces/skins/${selection.skin}/${selection.type}/${pieceType}.png`;
+  if (!selection) {
+    return buildAssetPath(DEFAULT_SKIN_SELECTION.light.skin, DEFAULT_SKIN_SELECTION.light.type, pieceType);
+  }
+  return buildAssetPath(selection.skin, selection.type, pieceType);
 }
 
 function getPieceAssetPath(pieceType, player) {
@@ -815,7 +1027,8 @@ function setupSkinSelectionUI() {
 
   syncOfflineSelectorsWithPending();
   handleOnlineRoleChange(onlineSelectedRole);
-  updateLegendImages();
+  renderLegend();
+  updateHeroLabels();
   updateOfflineConflict();
   updateOnlineWarning();
 }
@@ -1087,7 +1300,8 @@ function applyOfflineSelection() {
   }
   multiplayer.handleOfflineSelection();
   applyAllPendingSkins({ broadcast: false });
-  updateLegendImages();
+  renderLegend();
+  updateHeroLabels();
   return true;
 }
 
@@ -1133,6 +1347,7 @@ function setPendingSkin(player, skin, type) {
   const skinKey = SKINS[skin] ? skin : DEFAULT_SKIN_SELECTION[player].skin;
   const typeKey = SKINS[skinKey].types[type] ? type : Object.keys(SKINS[skinKey].types)[0];
   pendingSkins[player] = { skin: skinKey, type: typeKey };
+  updateHeroLabels();
 }
 
 function applyPendingSkin(player, { broadcast = true } = {}) {
@@ -1148,7 +1363,9 @@ function applyAllPendingSkins({ broadcast = true } = {}) {
 function applySkinSelection(selection, { broadcast = true } = {}) {
   skinSelection = cloneSkinSelection(selection);
   pendingSkins = cloneSkinSelection(skinSelection);
-  updateLegendImages();
+  playerSkins = cloneSkinSelection(skinSelection);
+  renderLegend();
+  updateHeroLabels();
   renderBoard();
   updateOnlineWarning();
   if (broadcast) {
@@ -1156,22 +1373,11 @@ function applySkinSelection(selection, { broadcast = true } = {}) {
   }
 }
 
-function updateLegendImages() {
-  if (!elements.legendImages) return;
-  elements.legendImages.forEach((img) => {
-    const player = img.dataset.player || "light";
-    const piece = img.dataset.piece;
-    if (!piece) return;
-    const selection = skinSelection[player] || DEFAULT_SKIN_SELECTION[player];
-    img.src = `pieces/skins/${selection.skin}/${selection.type}/${piece}.png`;
-  });
-}
-
 function getSkinPreviewPath(skin, type) {
   const skinDef = SKINS[skin];
   if (!skinDef) {
     const fallback = DEFAULT_SKIN_SELECTION.light;
-    return `pieces/skins/${fallback.skin}/${fallback.type}/laser.png`;
+    return buildAssetPath(fallback.skin, fallback.type, "laser");
   }
   const typeDef = skinDef.types[type];
   if (typeDef && typeDef.preview) {
@@ -1181,7 +1387,7 @@ function getSkinPreviewPath(skin, type) {
     return skinDef.preview;
   }
   const typeKey = typeDef ? type : Object.keys(skinDef.types)[0];
-  return `pieces/skins/${skin}/${typeKey}/laser.png`;
+  return buildAssetPath(skin, typeKey, "laser");
 }
 
 function getSkinLabel(skin) {
@@ -1235,7 +1441,7 @@ function renderBoard() {
         image.className = "piece__image";
         image.style.transform = `rotate(${piece.orientation * 90}deg)`;
         wrapper.appendChild(image);
-        wrapper.setAttribute("aria-label", `${def.name} (${PLAYERS[piece.player].name})`);
+        wrapper.setAttribute("aria-label", `${def.name} (${getPlayerDisplayName(piece.player)})`);
         cell.replaceChildren(wrapper);
       } else {
         cell.replaceChildren();
@@ -1257,7 +1463,7 @@ function handleCellInteraction(x, y) {
     if (multiplayer.isWaitingForOpponent()) {
       setStatus("Ожидаем подключения второго игрока.");
     } else if (multiplayer.isActive()) {
-      setStatus(`${PLAYERS[currentPlayer].name}: сейчас ход соперника.`);
+      setStatus(`${getPlayerDisplayName(currentPlayer)}: сейчас ход соперника.`);
     }
     return;
   }
@@ -1274,7 +1480,7 @@ function handleCellInteraction(x, y) {
   if (piece && piece.player === currentPlayer) {
     selectCell(x, y);
   } else if (piece && piece.player !== currentPlayer) {
-    setStatus(`${PLAYERS[currentPlayer].name}: нельзя управлять фигурой соперника.`);
+    setStatus(`${getPlayerDisplayName(currentPlayer)}: нельзя управлять фигурой соперника.`);
   } else {
     clearSelection();
   }
@@ -1294,7 +1500,7 @@ function selectCell(x, y) {
     : def.canRotate
       ? "Можно только повернуть выбранную фигуру."
       : "Для этой фигуры доступных действий нет.";
-  setStatus(`${PLAYERS[currentPlayer].name}: ${def.name} на ${toNotation(x, y)}. ${movesText}`);
+  setStatus(`${getPlayerDisplayName(currentPlayer)}: ${def.name} на ${toNotation(x, y)}. ${movesText}`);
   updatePiecePanel(piece, toNotation(x, y));
 }
 
@@ -1305,7 +1511,7 @@ function clearSelection({ silent = false } = {}) {
   updateRotateControls(false);
   updatePiecePanel();
   if (!silent) {
-    setStatus(`${PLAYERS[currentPlayer].name}: выберите фигуру.`);
+    setStatus(`${getPlayerDisplayName(currentPlayer)}: выберите фигуру.`);
   }
 }
 
@@ -1330,21 +1536,21 @@ function executeMove(option, piece, from) {
     }
     board[from.y][from.x] = targetPiece;
     board[option.y][option.x] = piece;
-    setStatus(`${PLAYERS[currentPlayer].name}: ${PIECE_DEFS[piece.type].name} меняется местами с ${PIECE_DEFS[targetPiece.type].name} на ${toNotation(option.x, option.y)}.`);
+    setStatus(`${getPlayerDisplayName(currentPlayer)}: ${PIECE_DEFS[piece.type].name} меняется местами с ${PIECE_DEFS[targetPiece.type].name} на ${toNotation(option.x, option.y)}.`);
     endTurn();
     broadcastGameState("swap");
     return;
   }
 
   if (targetPiece) {
-    setStatus(`${PLAYERS[currentPlayer].name}: клетка ${toNotation(option.x, option.y)} уже занята.`);
+    setStatus(`${getPlayerDisplayName(currentPlayer)}: клетка ${toNotation(option.x, option.y)} уже занята.`);
     renderBoard();
     return;
   }
 
   board[from.y][from.x] = null;
   board[option.y][option.x] = piece;
-  setStatus(`${PLAYERS[currentPlayer].name}: ${PIECE_DEFS[piece.type].name} перемещён на ${toNotation(option.x, option.y)}.`);
+  setStatus(`${getPlayerDisplayName(currentPlayer)}: ${PIECE_DEFS[piece.type].name} перемещён на ${toNotation(option.x, option.y)}.`);
 
   endTurn();
   broadcastGameState(option.swap ? "swap" : "move");
@@ -1357,7 +1563,7 @@ function rotateSelected(delta) {
   if (!def.canRotate || piece.player !== currentPlayer) return;
   if (!multiplayer.canAct()) {
     if (multiplayer.isActive()) {
-      setStatus(`${PLAYERS[currentPlayer].name}: сейчас ход соперника.`);
+      setStatus(`${getPlayerDisplayName(currentPlayer)}: сейчас ход соперника.`);
     }
     return;
   }
@@ -1365,7 +1571,7 @@ function rotateSelected(delta) {
   piece.orientation = mod4(piece.orientation + delta);
   renderBoard();
   const dirSymbol = delta > 0 ? "↻" : "↺";
-  setStatus(`${PLAYERS[currentPlayer].name}: ${def.name} на ${toNotation(selectedCell.x, selectedCell.y)} повёрнут ${delta > 0 ? "по" : "против"} часовой стрелки.`);
+  setStatus(`${getPlayerDisplayName(currentPlayer)}: ${def.name} на ${toNotation(selectedCell.x, selectedCell.y)} повёрнут ${delta > 0 ? "по" : "против"} часовой стрелки.`);
   endTurn();
   broadcastGameState(delta > 0 ? "rotate-cw" : "rotate-ccw");
 }
@@ -1379,7 +1585,7 @@ function endTurn() {
   highlightLaserPath(laserResult);
   if (laserResult.hit) {
     const hitPiece = laserResult.hit.piece;
-    const owner = PLAYERS[hitPiece.player].name;
+    const owner = getPlayerDisplayName(hitPiece.player);
     const pieceName = PIECE_DEFS[hitPiece.type].name;
     const cell = toNotation(laserResult.hit.x, laserResult.hit.y);
     setStatus(`${laserResult.firer} испепеляет ${pieceName} (${owner}) на ${cell}.`);
@@ -1389,7 +1595,7 @@ function endTurn() {
     }
   } else if (laserResult.blocked) {
     const blockPiece = laserResult.blocked.piece;
-    const owner = PLAYERS[blockPiece.player].name;
+    const owner = getPlayerDisplayName(blockPiece.player);
     const cell = toNotation(laserResult.blocked.x, laserResult.blocked.y);
     setStatus(`${laserResult.firer} не проходит через ${PIECE_DEFS[blockPiece.type].name} на ${cell}.`);
   }
@@ -1397,7 +1603,7 @@ function endTurn() {
   turnCounter += 1;
   updateTurnIndicator();
   if (!laserResult.hit) {
-    setStatus(`${PLAYERS[currentPlayer].name} готовит ход.`);
+    setStatus(`${getPlayerDisplayName(currentPlayer)} готовит ход.`);
   }
 }
 
@@ -1405,16 +1611,16 @@ function finishGame(winner) {
   const loser = winner === "light" ? "shadow" : "light";
   elements.endgame.hidden = false;
   elements.endgame.setAttribute("aria-hidden", "false");
-  elements.endgameTitle.textContent = `${PLAYERS[winner].name} побеждает!`;
-  elements.endgameSubtitle.textContent = `Волхв ${PLAYERS[loser].name} уничтожен лучом.`;
-  setStatus(`${PLAYERS[winner].name} добились победы.`);
+  elements.endgameTitle.textContent = `${getPlayerDisplayName(winner)} побеждает!`;
+  elements.endgameSubtitle.textContent = `Волхв ${getPlayerDisplayName(loser)} уничтожен лучом.`;
+  setStatus(`${getPlayerDisplayName(winner)} добились победы.`);
   updateRotateControls(false);
 }
 
 function fireLaser(player) {
   const emitterPos = findEmitter(player);
   if (!emitterPos) {
-    return { path: [], firer: PLAYERS[player].laserName, origin: null };
+    return { path: [], firer: getPlayerLaserName(player), origin: null };
   }
 
   let { x, y } = emitterPos;
@@ -1429,7 +1635,7 @@ function fireLaser(player) {
       return {
         path,
         hit: null,
-        firer: PLAYERS[player].laserName,
+        firer: getPlayerLaserName(player),
         origin: emitterPos,
         termination: computeExitPoint(previous, direction)
       };
@@ -1451,7 +1657,7 @@ function fireLaser(player) {
       const result = {
         path,
         hit: interaction.destroy ? { piece: target, x, y } : null,
-        firer: PLAYERS[player].laserName,
+        firer: getPlayerLaserName(player),
         origin: emitterPos,
         termination: { x: x + 0.5, y: y + 0.5 }
       };
@@ -1665,7 +1871,7 @@ function toNotation(x, y) {
 
 function updateTurnIndicator() {
   if (!elements.turn) return;
-  elements.turn.textContent = `${turnCounter}. ${PLAYERS[currentPlayer].name}`;
+  elements.turn.textContent = `${turnCounter}. ${getPlayerDisplayName(currentPlayer)}`;
 }
 
 function setStatus(message) {
@@ -1723,7 +1929,7 @@ function updatePiecePanel(piece = null, position = null) {
     return;
   }
   const def = PIECE_DEFS[piece.type];
-  const owner = PLAYERS[piece.player].name;
+  const owner = getPlayerDisplayName(piece.player);
   const facing = orientationToText(piece.orientation);
   elements.pieceName.textContent = `${def.name} • ${owner}`;
   const positionText = position ? `Позиция ${position}. ` : "";
@@ -1848,7 +2054,7 @@ function applyRemoteState(state) {
     if (typeof state.status === "string") {
       setStatus(state.status);
     } else if (multiplayer.canAct()) {
-      setStatus(`${PLAYERS[currentPlayer].name}: выберите фигуру.`);
+      setStatus(`${getPlayerDisplayName(currentPlayer)}: выберите фигуру.`);
     }
     lastLaserResult = state.laser ? normaliseLaserResult(state.laser) : null;
     if (lastLaserResult) {
@@ -2080,7 +2286,7 @@ function createMultiplayerController() {
   function openOverlay() {
     showOverlay();
     updatePlayersUI();
-    const roleName = state.role && PLAYERS[state.role] ? PLAYERS[state.role].name : null;
+    const roleName = state.role ? getPlayerDisplayName(state.role) : null;
     const message = state.connected
       ? `Соединение активно${roleName ? `: вы играете за «${roleName}».` : "."}`
       : "Подключитесь к комнате или продолжите офлайн.";
