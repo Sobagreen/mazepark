@@ -2,14 +2,14 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>Лучезарная сечь</title>
+  <title>Mirrors Fight</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="style.css">
 </head>
 <body class="theme-dark">
   <div id="start-screen" class="start-overlay" role="dialog" aria-modal="true" aria-labelledby="start-title">
     <div class="start-card">
-      <h1 id="start-title">Лучезарная сечь</h1>
+      <h1 id="start-title">Зеркальная Битва</h1>
       <p class="start-card__intro">Выберите режим, чтобы начать дуэль.</p>
       <div class="start-card__actions">
         <button type="button" id="start-online" class="button button--primary">Онлайн</button>
@@ -35,7 +35,7 @@
       <p class="start-card__intro">Выберите скины и типы для обоих игроков.</p>
       <div class="skin-grid">
         <section class="skin-card" aria-labelledby="offline-light-title">
-          <h3 id="offline-light-title">☼ Дружина Перуна</h3>
+          <h3 id="offline-light-title">☼ Первый Игрок</h3>
           <label class="connection-field">
             <span class="connection-field__label">Скин</span>
             <select id="offline-light-skin" class="connection-field__input"></select>
@@ -50,7 +50,7 @@
           </div>
         </section>
         <section class="skin-card" aria-labelledby="offline-shadow-title">
-          <h3 id="offline-shadow-title">☽ Полк Чернобога</h3>
+          <h3 id="offline-shadow-title">☽ Второй Игрок</h3>
           <label class="connection-field">
             <span class="connection-field__label">Скин</span>
             <select id="offline-shadow-skin" class="connection-field__input"></select>
@@ -94,14 +94,14 @@
           <input type="radio" name="role" value="light" required>
           <span class="connection-role__content">
             <span class="connection-role__glyph">☼</span>
-            <span class="connection-role__label">Дружина Перуна</span>
+            <span class="connection-role__label">Первый Игрок</span>
           </span>
         </label>
         <label class="connection-role">
           <input type="radio" name="role" value="shadow" required>
           <span class="connection-role__content">
             <span class="connection-role__glyph">☽</span>
-            <span class="connection-role__label">Полк Чернобога</span>
+            <span class="connection-role__label">Второй Игрок</span>
           </span>
         </label>
       </fieldset>
@@ -123,11 +123,11 @@
 
       <ul id="connection-players" class="connection-players" aria-live="polite">
         <li class="connection-players__item" data-role="light">
-          <span class="connection-players__name">☼ Дружина Перуна</span>
+          <span class="connection-players__name">☼ Перый Игрок</span>
           <span class="connection-players__status">свободно</span>
         </li>
         <li class="connection-players__item" data-role="shadow">
-          <span class="connection-players__name">☽ Полк Чернобога</span>
+          <span class="connection-players__name">☽ Второй Игрок</span>
           <span class="connection-players__status">свободно</span>
         </li>
       </ul>
