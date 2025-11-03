@@ -94,15 +94,15 @@ const PIECE_DEFS = {
 const SKINS = {
   Slavic: {
     label: "Славянский орден",
-    preview: "pieces/skins/Slavic/preview.png",
+    preview: "pieces/skins/Slavic/Type1/preview.png",
     types: {
-      Type1: { label: "Type 1", preview: "pieces/skins/Slavic/Type1/preview.png" },
-      Type2: { label: "Type 2", preview: "pieces/skins/Slavic/Type2/preview.png" }
+      Type1: { label: "Перун", preview: "pieces/skins/Slavic/Type1/preview.png" },
+      Type2: { label: "Чернобог", preview: "pieces/skins/Slavic/Type2/preview.png" }
     }
   },
   Japan: {
     label: "Япония",
-    preview: "pieces/skins/Japan/preview.png",
+    preview: "pieces/skins/Japan/Type1/preview.png",
     types: {
       Type1: { label: "Type 1", preview: "pieces/skins/Japan/Type1/preview.png" },
       Type2: { label: "Type 2", preview: "pieces/skins/Japan/Type2/preview.png" }
@@ -110,12 +110,20 @@ const SKINS = {
   },
   Greece: {
     label: "Греция",
-    preview: "pieces/skins/Greece/preview.png",
+    preview: "pieces/skins/Greece/Type1/preview.png",
     types: {
       Type1: { label: "Type 1", preview: "pieces/skins/Greece/Type1/preview.png" },
       Type2: { label: "Type 2", preview: "pieces/skins/Greece/Type2/preview.png" }
     }
-  }
+  },  
+  Lavcraft: {
+    label: "Говард Лавкрафт",
+    preview: "pieces/skins/Lavcraft/Type1/preview.png",
+    types: {
+      Type1: { label: "Ктулху", preview: "pieces/skins/Lavcraft/Type1/preview.png" },
+      Type2: { label: "Жрец Ордена", preview: "pieces/skins/Lavcraft/Type2/preview.png" }
+    }
+  },
 };
 
 const DEFAULT_SKIN_SELECTION = {
