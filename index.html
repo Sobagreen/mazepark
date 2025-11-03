@@ -2,14 +2,14 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>Лучезарная сечь</title>
+  <title>Mirrors Fight</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="style.css">
 </head>
 <body class="theme-dark">
   <div id="start-screen" class="start-overlay" role="dialog" aria-modal="true" aria-labelledby="start-title">
     <div class="start-card">
-      <h1 id="start-title">Лучезарная сечь</h1>
+      <h1 id="start-title">Mirrors Fight</h1>
       <p class="start-card__intro">Выберите режим, чтобы начать дуэль.</p>
       <div class="start-card__actions">
         <button type="button" id="start-online" class="button button--primary">Онлайн</button>
@@ -35,7 +35,10 @@
       <p class="start-card__intro">Выберите скины и типы для обоих игроков.</p>
       <div class="skin-grid">
         <section class="skin-card" aria-labelledby="offline-light-title">
-          <h3 id="offline-light-title">☼ Дружина Перуна</h3>
+          <h3 id="offline-light-title" class="hero-title">
+            <span class="hero-title__glyph">☼</span>
+            <span class="hero-title__name" data-hero-label="light" data-hero-label-source="pending">Светлый герой</span>
+          </h3>
           <label class="connection-field">
             <span class="connection-field__label">Скин</span>
             <select id="offline-light-skin" class="connection-field__input"></select>
@@ -50,7 +53,10 @@
           </div>
         </section>
         <section class="skin-card" aria-labelledby="offline-shadow-title">
-          <h3 id="offline-shadow-title">☽ Полк Чернобога</h3>
+          <h3 id="offline-shadow-title" class="hero-title">
+            <span class="hero-title__glyph">☽</span>
+            <span class="hero-title__name" data-hero-label="shadow" data-hero-label-source="pending">Теневой герой</span>
+          </h3>
           <label class="connection-field">
             <span class="connection-field__label">Скин</span>
             <select id="offline-shadow-skin" class="connection-field__input"></select>
@@ -94,14 +100,14 @@
           <input type="radio" name="role" value="light" required>
           <span class="connection-role__content">
             <span class="connection-role__glyph">☼</span>
-            <span class="connection-role__label">Дружина Перуна</span>
+            <span class="connection-role__label" data-hero-label="light" data-hero-label-source="pending">Светлый герой</span>
           </span>
         </label>
         <label class="connection-role">
           <input type="radio" name="role" value="shadow" required>
           <span class="connection-role__content">
             <span class="connection-role__glyph">☽</span>
-            <span class="connection-role__label">Полк Чернобога</span>
+            <span class="connection-role__label" data-hero-label="shadow" data-hero-label-source="pending">Теневой герой</span>
           </span>
         </label>
       </fieldset>
@@ -123,11 +129,17 @@
 
       <ul id="connection-players" class="connection-players" aria-live="polite">
         <li class="connection-players__item" data-role="light">
-          <span class="connection-players__name">☼ Дружина Перуна</span>
+          <span class="connection-players__name">
+            <span class="connection-players__glyph">☼</span>
+            <span data-hero-label="light" data-hero-label-source="pending">Светлый герой</span>
+          </span>
           <span class="connection-players__status">свободно</span>
         </li>
         <li class="connection-players__item" data-role="shadow">
-          <span class="connection-players__name">☽ Полк Чернобога</span>
+          <span class="connection-players__name">
+            <span class="connection-players__glyph">☽</span>
+            <span data-hero-label="shadow" data-hero-label-source="pending">Теневой герой</span>
+          </span>
           <span class="connection-players__status">свободно</span>
         </li>
       </ul>
@@ -162,7 +174,7 @@
         </div>
       </div>
       <div class="board-wrapper">
-        <div id="board" class="board" role="grid" aria-label="Поле лучезарной сечи"></div>
+        <div id="board" class="board" role="grid" aria-label="Поле Mirrors Fight"></div>
         <div id="laser-overlay" class="laser-overlay" aria-hidden="true"></div>
       </div>
       <div class="board-actions">
@@ -180,13 +192,7 @@
 
       <section class="panel panel--legend">
         <h2>Легенда орденов</h2>
-        <ul class="legend">
-          <li><span class="legend__glyph legend__glyph--light"><img data-piece-image data-player="light" data-piece="laser" src="pieces/skins/Slavic/Type1/laser.png" alt=""></span> Лучезар (излучает лазер)</li>
-          <li><span class="legend__glyph legend__glyph--light"><img data-piece-image data-player="light" data-piece="volhv" src="pieces/skins/Slavic/Type1/volhv.png" alt=""></span> Волхв (главная цель)</li>
-          <li><span class="legend__glyph legend__glyph--light"><img data-piece-image data-player="light" data-piece="mirror" src="pieces/skins/Slavic/Type1/mirror.png" alt=""></span> Зерцало (одна отражающая грань)</li>
-          <li><span class="legend__glyph legend__glyph--light"><img data-piece-image data-player="light" data-piece="shield" src="pieces/skins/Slavic/Type1/shield.png" alt=""></span> Щитоносец (останавливает луч щитом)</li>
-          <li><span class="legend__glyph legend__glyph--light"><img data-piece-image data-player="light" data-piece="totem" src="pieces/skins/Slavic/Type1/totem.png" alt=""></span> Тотем (двойное зерцало, меняется местами с союзниками, включая диагональ)</li>
-        </ul>
+        <div id="legend-content" class="legend" aria-live="polite"></div>
       </section>
     </aside>
   </main>
