@@ -86,16 +86,36 @@ wss.on("connection", (socket) => {
     room.clients.set(role, ws);
     membership = { roomId, role };
 
+    const desiredSkin = sanitiseSkinEntry({ skin: payload.skin, type: payload.skinType });
+    room.skins = mergeSkins(room.skins, { [role]: desiredSkin });
+    if (room.state) {
+      const mergedSkins = mergeSkins(room.state.skins || {}, room.skins);
+      room.state = { ...room.state, skins: mergedSkins };
+    }
+
     send(ws, {
       type: "joined",
       roomId,
       role,
       players: getPlayersSnapshot(roomId),
       state: room.state,
+      laser: room.lastLaser,
       message: `Подключено к комнате ${roomId}.`
     });
 
     broadcastPlayers(roomId);
+    if (room.state && room.clients.size > 1) {
+      const mergedSkins = mergeSkins(room.state.skins || {}, room.skins);
+      room.state = { ...room.state, skins: mergedSkins };
+      broadcast(roomId, {
+        type: "state",
+        state: room.state,
+        players: getPlayersSnapshot(roomId),
+        author: role,
+        reason: "skin-sync",
+        laser: room.lastLaser
+      });
+    }
   }
 
   function handleStateUpdate(member, payload) {
@@ -107,11 +127,26 @@ wss.on("connection", (socket) => {
       return;
     }
     room.state = payload.state;
+    const mergedSkins = mergeSkins(room.skins, payload.state && payload.state.skins ? payload.state.skins : {});
+    room.skins = mergedSkins;
+    if (room.state) {
+      room.state.skins = mergedSkins;
+    }
+    let laserSnapshot;
+    if (Object.prototype.hasOwnProperty.call(payload, "laser")) {
+      laserSnapshot = payload.laser;
+    } else if (payload.state && Object.prototype.hasOwnProperty.call(payload.state, "laser")) {
+      laserSnapshot = payload.state.laser;
+    }
+    if (laserSnapshot !== undefined) {
+      room.lastLaser = laserSnapshot;
+    }
     const message = {
       type: "state",
       state: room.state,
       players: getPlayersSnapshot(member.roomId),
-      author: member.role
+      author: member.role,
+      laser: room.lastLaser
     };
     if (typeof payload.reason === "string" && payload.reason) {
       message.reason = payload.reason;
@@ -142,7 +177,7 @@ server.listen(PORT, () => {
 function getRoom(roomId) {
   let room = rooms.get(roomId);
   if (!room) {
-    room = { clients: new Map(), state: null };
+    room = { clients: new Map(), state: null, lastLaser: null, skins: { light: null, shadow: null } };
     rooms.set(roomId, room);
   }
   return room;
@@ -173,6 +208,41 @@ function getPlayersSnapshot(roomId) {
     light: room.clients.has("light"),
     shadow: room.clients.has("shadow")
   };
+}
+
+function sanitiseSkinValue(value) {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  return trimmed.slice(0, 48);
+}
+
+function sanitiseSkinEntry(entry) {
+  if (!entry || typeof entry !== "object") {
+    return null;
+  }
+  const skin = sanitiseSkinValue(entry.skin);
+  const type = sanitiseSkinValue(entry.type);
+  if (!skin && !type) {
+    return null;
+  }
+  return { skin: skin || null, type: type || null };
+}
+
+function mergeSkins(current = {}, incoming = {}) {
+  const roles = ["light", "shadow"];
+  const result = {};
+  for (const role of roles) {
+    const incomingEntry = sanitiseSkinEntry(incoming[role]);
+    if (incomingEntry) {
+      result[role] = incomingEntry;
+    } else if (current && current[role]) {
+      result[role] = sanitiseSkinEntry(current[role]) || null;
+    } else {
+      result[role] = null;
+    }
+  }
+  return result;
 }
 
 function normaliseRoomId(value) {
