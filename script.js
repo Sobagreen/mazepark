@@ -1161,9 +1161,14 @@ function applyAllPendingSkins({ broadcast = true } = {}) {
   applySkinSelection(pendingSkins, { broadcast });
 }
 
-function applySkinSelection(selection, { broadcast = true } = {}) {
+function applySkinSelection(selection, { broadcast = true, preservePendingFor = null } = {}) {
+  const previousPending = cloneSkinSelection(pendingSkins);
   skinSelection = cloneSkinSelection(selection);
-  pendingSkins = cloneSkinSelection(skinSelection);
+  const nextPending = cloneSkinSelection(skinSelection);
+  if (preservePendingFor && previousPending[preservePendingFor]) {
+    nextPending[preservePendingFor] = { ...previousPending[preservePendingFor] };
+  }
+  pendingSkins = nextPending;
   updateLegendImages();
   renderBoard();
   updateOnlineWarning();
@@ -1834,12 +1839,29 @@ function serialiseGameState() {
   };
 }
 
-function applyRemoteState(state) {
+function applyRemoteState(state, options = {}) {
   if (!state) return;
+  const preserveRole = options.preservePendingFor
+    ? options.preservePendingFor
+    : typeof multiplayer.getRole === "function"
+      ? multiplayer.getRole()
+      : null;
+  const hasLaserOverride = Object.prototype.hasOwnProperty.call(options, "laser");
+  const hasLaserInState = state && Object.prototype.hasOwnProperty.call(state, "laser");
+  const incomingLaser = hasLaserOverride
+    ? options.laser
+    : hasLaserInState
+      ? state.laser
+      : null;
+
   multiplayer.suppress(() => {
     board = cloneBoardState(state.board);
     if (state.skins) {
-      applySkinSelection(state.skins, { broadcast: false });
+      const skinOptions = { broadcast: false };
+      if (preserveRole) {
+        skinOptions.preservePendingFor = preserveRole;
+      }
+      applySkinSelection(state.skins, skinOptions);
     }
     currentPlayer = state.currentPlayer === "shadow" ? "shadow" : "light";
     if (typeof state.turnCounter === "number" && Number.isFinite(state.turnCounter)) {
@@ -1866,7 +1888,7 @@ function applyRemoteState(state) {
     } else if (multiplayer.canAct()) {
       setStatus(`${PLAYERS[currentPlayer].name}: выберите фигуру.`);
     }
-    lastLaserResult = state.laser ? normaliseLaserResult(state.laser) : null;
+    lastLaserResult = incomingLaser ? normaliseLaserResult(incomingLaser) : null;
     if (lastLaserResult) {
       highlightLaserPath(lastLaserResult);
     } else {
@@ -2000,9 +2022,11 @@ function createMultiplayerController() {
         hideOverlay();
         updatePlayers(payload.players);
         if (payload.state) {
-          applyRemoteState(payload.state);
+          applyRemoteState(payload.state, { laser: payload.laser, preservePendingFor: state.role });
+          reconcileLocalSkinSelection();
         } else {
           broadcastGameState("sync");
+          reconcileLocalSkinSelection();
         }
         if (typeof payload.message === "string" && payload.message) {
           setStatus(payload.message);
@@ -2013,7 +2037,15 @@ function createMultiplayerController() {
         break;
       case "state":
         if (payload.state) {
-          applyRemoteState(payload.state);
+          applyRemoteState(payload.state, { laser: payload.laser, preservePendingFor: state.role });
+          reconcileLocalSkinSelection();
+        } else if (Object.prototype.hasOwnProperty.call(payload, "laser")) {
+          lastLaserResult = payload.laser ? normaliseLaserResult(payload.laser) : null;
+          if (lastLaserResult) {
+            highlightLaserPath(lastLaserResult);
+          } else {
+            clearLaserPath();
+          }
         }
         if (payload.players) {
           updatePlayers(payload.players);
@@ -2051,6 +2083,30 @@ function createMultiplayerController() {
       state.players[state.role] = true;
     }
     updatePlayersUI();
+  }
+
+  function reconcileLocalSkinSelection({ broadcast = true } = {}) {
+    if (!state.connected || !state.role) {
+      return;
+    }
+    const role = state.role;
+    const desired = pendingSkins[role];
+    if (!desired) {
+      return;
+    }
+    const actual = skinSelection[role] || DEFAULT_SKIN_SELECTION[role];
+    if (actual.skin === desired.skin && actual.type === desired.type) {
+      return;
+    }
+    if (isCombinationTaken(role, desired.skin, desired.type, { mode: "actual" })) {
+      pendingSkins[role] = { skin: actual.skin, type: actual.type };
+      handleOnlineRoleChange(role);
+      updateOnlinePreview();
+      updateOnlineWarning();
+      syncOfflineSelectorsWithPending();
+      return;
+    }
+    applyPendingSkin(role, { broadcast });
   }
 
   function updatePlayersUI() {
@@ -2160,7 +2216,19 @@ function createMultiplayerController() {
       return state.role;
     },
     sendState(reason, statePayload) {
-      send({ type: "state", roomId: state.roomId, role: state.role, reason, state: statePayload });
+      const laserSnapshot = statePayload && Object.prototype.hasOwnProperty.call(statePayload, "laser")
+        ? statePayload.laser
+        : lastLaserResult
+          ? normaliseLaserResult(lastLaserResult)
+          : null;
+      send({
+        type: "state",
+        roomId: state.roomId,
+        role: state.role,
+        reason,
+        state: statePayload,
+        laser: laserSnapshot
+      });
     },
     canBroadcast() {
       return Boolean(state.connected && state.ws && state.ws.readyState === WebSocket.OPEN && state.suppressDepth === 0);

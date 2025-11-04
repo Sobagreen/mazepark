@@ -92,6 +92,7 @@ wss.on("connection", (socket) => {
       role,
       players: getPlayersSnapshot(roomId),
       state: room.state,
+      laser: room.lastLaser,
       message: `Подключено к комнате ${roomId}.`
     });
 
@@ -107,11 +108,21 @@ wss.on("connection", (socket) => {
       return;
     }
     room.state = payload.state;
+    let laserSnapshot;
+    if (Object.prototype.hasOwnProperty.call(payload, "laser")) {
+      laserSnapshot = payload.laser;
+    } else if (payload.state && Object.prototype.hasOwnProperty.call(payload.state, "laser")) {
+      laserSnapshot = payload.state.laser;
+    }
+    if (laserSnapshot !== undefined) {
+      room.lastLaser = laserSnapshot;
+    }
     const message = {
       type: "state",
       state: room.state,
       players: getPlayersSnapshot(member.roomId),
-      author: member.role
+      author: member.role,
+      laser: room.lastLaser
     };
     if (typeof payload.reason === "string" && payload.reason) {
       message.reason = payload.reason;
@@ -142,7 +153,7 @@ server.listen(PORT, () => {
 function getRoom(roomId) {
   let room = rooms.get(roomId);
   if (!room) {
-    room = { clients: new Map(), state: null };
+    room = { clients: new Map(), state: null, lastLaser: null };
     rooms.set(roomId, room);
   }
   return room;
