@@ -1906,6 +1906,36 @@ function cloneBoardState(boardState) {
   return next;
 }
 
+function findRemovedPieces(previousBoard, currentBoard) {
+  if (!previousBoard || !currentBoard) {
+    return [];
+  }
+  const removed = [];
+  for (let y = 0; y < BOARD_HEIGHT; y += 1) {
+    for (let x = 0; x < BOARD_WIDTH; x += 1) {
+      const before = previousBoard[y][x];
+      const after = currentBoard[y][x];
+      if (before && !after) {
+        removed.push({ x, y, piece: clonePiece(before) });
+      }
+    }
+  }
+  return removed;
+}
+
+function reconstructLaserSimulation(previousBoard, currentBoard, player) {
+  const removedPieces = findRemovedPieces(previousBoard, currentBoard);
+  for (const candidate of removedPieces) {
+    const restoredBoard = cloneBoardState(currentBoard);
+    restoredBoard[candidate.y][candidate.x] = clonePiece(candidate.piece);
+    const result = simulateLaserTrace(restoredBoard, player);
+    if (result && result.hit && result.hit.x === candidate.x && result.hit.y === candidate.y) {
+      return result;
+    }
+  }
+  return null;
+}
+
 function serialiseGameState() {
   return {
     board: cloneBoardState(board),
@@ -1924,6 +1954,7 @@ function serialiseGameState() {
 
 function applyRemoteState(state, options = {}) {
   if (!state) return;
+  const previousBoard = cloneBoardState(board);
   const preserveRole = options.preservePendingFor
     ? options.preservePendingFor
     : typeof multiplayer.getRole === "function"
@@ -1974,7 +2005,8 @@ function applyRemoteState(state, options = {}) {
     const lastMover = state.currentPlayer === "shadow" ? "light" : "shadow";
     lastLaserResult = incomingLaser ? normaliseLaserResult(incomingLaser) : null;
     if (!lastLaserResult) {
-      const simulated = simulateLaserTrace(board, lastMover);
+      const reconstructed = reconstructLaserSimulation(previousBoard, board, lastMover);
+      const simulated = reconstructed || simulateLaserTrace(board, lastMover);
       if (simulated) {
         lastLaserResult = normaliseLaserResult(simulated);
       }
