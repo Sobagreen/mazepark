@@ -1906,6 +1906,34 @@ function cloneBoardState(boardState) {
   return next;
 }
 
+function piecesEqual(a, b) {
+  if (!a && !b) {
+    return true;
+  }
+  if (!a || !b) {
+    return false;
+  }
+  return a.type === b.type && a.player === b.player && mod4(a.orientation || 0) === mod4(b.orientation || 0);
+}
+
+function boardsEqual(a, b) {
+  if (!a || !b) {
+    return false;
+  }
+  for (let y = 0; y < BOARD_HEIGHT; y += 1) {
+    const rowA = Array.isArray(a[y]) ? a[y] : [];
+    const rowB = Array.isArray(b[y]) ? b[y] : [];
+    for (let x = 0; x < BOARD_WIDTH; x += 1) {
+      const pieceA = rowA[x] || null;
+      const pieceB = rowB[x] || null;
+      if (!piecesEqual(pieceA, pieceB)) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
 function findRemovedPieces(previousBoard, currentBoard) {
   if (!previousBoard || !currentBoard) {
     return [];
@@ -1955,6 +1983,7 @@ function serialiseGameState() {
 function applyRemoteState(state, options = {}) {
   if (!state) return;
   const previousBoard = cloneBoardState(board);
+  const previousLaserResult = lastLaserResult;
   const preserveRole = options.preservePendingFor
     ? options.preservePendingFor
     : typeof multiplayer.getRole === "function"
@@ -2003,14 +2032,20 @@ function applyRemoteState(state, options = {}) {
       setStatus(`${PLAYERS[currentPlayer].name}: выберите фигуру.`);
     }
     const lastMover = state.currentPlayer === "shadow" ? "light" : "shadow";
-    lastLaserResult = incomingLaser ? normaliseLaserResult(incomingLaser) : null;
-    if (!lastLaserResult) {
+    const boardChanged = !boardsEqual(previousBoard, board);
+    let nextLaserResult = null;
+    if (incomingLaser) {
+      nextLaserResult = normaliseLaserResult(incomingLaser);
+    } else if (boardChanged) {
       const reconstructed = reconstructLaserSimulation(previousBoard, board, lastMover);
       const simulated = reconstructed || simulateLaserTrace(board, lastMover);
       if (simulated) {
-        lastLaserResult = normaliseLaserResult(simulated);
+        nextLaserResult = normaliseLaserResult(simulated);
       }
+    } else if (previousLaserResult) {
+      nextLaserResult = normaliseLaserResult(previousLaserResult);
     }
+    lastLaserResult = nextLaserResult;
     if (lastLaserResult) {
       highlightLaserPath(lastLaserResult);
     } else {
