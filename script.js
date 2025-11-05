@@ -1472,18 +1472,23 @@ function fireLaser(player) {
     const interaction = resolveLaserInteraction(target, direction);
     if (interaction.destroy) {
       board[y][x] = null;
-    }
-    if (interaction.stop) {
-      const result = {
+      return {
         path,
-        hit: interaction.destroy ? { piece: target, x, y } : null,
+        hit: { piece: target, x, y },
         firer: PLAYERS[player].laserName,
         origin: emitterPos,
         termination: { x: x + 0.5, y: y + 0.5 }
       };
-      if (!interaction.destroy) {
-        result.blocked = { piece: target, x, y };
-      }
+    }
+    if (interaction.stop) {
+      const result = {
+        path,
+        hit: null,
+        firer: PLAYERS[player].laserName,
+        origin: emitterPos,
+        termination: { x: x + 0.5, y: y + 0.5 }
+      };
+      result.blocked = { piece: target, x, y };
       return result;
     }
     previous = { x, y };
