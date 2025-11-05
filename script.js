@@ -1472,18 +1472,23 @@ function fireLaser(player) {
     const interaction = resolveLaserInteraction(target, direction);
     if (interaction.destroy) {
       board[y][x] = null;
-    }
-    if (interaction.stop) {
-      const result = {
+      return {
         path,
-        hit: interaction.destroy ? { piece: target, x, y } : null,
+        hit: { piece: target, x, y },
         firer: PLAYERS[player].laserName,
         origin: emitterPos,
         termination: { x: x + 0.5, y: y + 0.5 }
       };
-      if (!interaction.destroy) {
-        result.blocked = { piece: target, x, y };
-      }
+    }
+    if (interaction.stop) {
+      const result = {
+        path,
+        hit: null,
+        firer: PLAYERS[player].laserName,
+        origin: emitterPos,
+        termination: { x: x + 0.5, y: y + 0.5 }
+      };
+      result.blocked = { piece: target, x, y };
       return result;
     }
     previous = { x, y };
@@ -1901,6 +1906,64 @@ function cloneBoardState(boardState) {
   return next;
 }
 
+function piecesEqual(a, b) {
+  if (!a && !b) {
+    return true;
+  }
+  if (!a || !b) {
+    return false;
+  }
+  return a.type === b.type && a.player === b.player && mod4(a.orientation || 0) === mod4(b.orientation || 0);
+}
+
+function boardsEqual(a, b) {
+  if (!a || !b) {
+    return false;
+  }
+  for (let y = 0; y < BOARD_HEIGHT; y += 1) {
+    const rowA = Array.isArray(a[y]) ? a[y] : [];
+    const rowB = Array.isArray(b[y]) ? b[y] : [];
+    for (let x = 0; x < BOARD_WIDTH; x += 1) {
+      const pieceA = rowA[x] || null;
+      const pieceB = rowB[x] || null;
+      if (!piecesEqual(pieceA, pieceB)) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+function findRemovedPieces(previousBoard, currentBoard) {
+  if (!previousBoard || !currentBoard) {
+    return [];
+  }
+  const removed = [];
+  for (let y = 0; y < BOARD_HEIGHT; y += 1) {
+    for (let x = 0; x < BOARD_WIDTH; x += 1) {
+      const before = previousBoard[y][x];
+      const after = currentBoard[y][x];
+      if (before && !after) {
+        removed.push({ x, y, piece: clonePiece(before) });
+      }
+    }
+  }
+  return removed;
+}
+
+function reconstructLaserSimulation(previousBoard, currentBoard, player) {
+  const removedPieces = findRemovedPieces(previousBoard, currentBoard);
+  for (const candidate of removedPieces) {
+    const restoredBoard = cloneBoardState(currentBoard);
+    restoredBoard[candidate.y][candidate.x] = clonePiece(candidate.piece);
+    const result = simulateLaserTrace(restoredBoard, player);
+    if (result && result.hit && result.hit.x === candidate.x && result.hit.y === candidate.y) {
+      return result;
+    }
+  }
+  return null;
+}
+
 function serialiseGameState() {
   return {
     board: cloneBoardState(board),
@@ -1919,6 +1982,8 @@ function serialiseGameState() {
 
 function applyRemoteState(state, options = {}) {
   if (!state) return;
+  const previousBoard = cloneBoardState(board);
+  const previousLaserResult = lastLaserResult;
   const preserveRole = options.preservePendingFor
     ? options.preservePendingFor
     : typeof multiplayer.getRole === "function"
@@ -1967,13 +2032,20 @@ function applyRemoteState(state, options = {}) {
       setStatus(`${PLAYERS[currentPlayer].name}: выберите фигуру.`);
     }
     const lastMover = state.currentPlayer === "shadow" ? "light" : "shadow";
-    lastLaserResult = incomingLaser ? normaliseLaserResult(incomingLaser) : null;
-    if (!lastLaserResult) {
-      const simulated = simulateLaserTrace(board, lastMover);
+    const boardChanged = !boardsEqual(previousBoard, board);
+    let nextLaserResult = null;
+    if (incomingLaser) {
+      nextLaserResult = normaliseLaserResult(incomingLaser);
+    } else if (boardChanged) {
+      const reconstructed = reconstructLaserSimulation(previousBoard, board, lastMover);
+      const simulated = reconstructed || simulateLaserTrace(board, lastMover);
       if (simulated) {
-        lastLaserResult = normaliseLaserResult(simulated);
+        nextLaserResult = normaliseLaserResult(simulated);
       }
+    } else if (previousLaserResult) {
+      nextLaserResult = normaliseLaserResult(previousLaserResult);
     }
+    lastLaserResult = nextLaserResult;
     if (lastLaserResult) {
       highlightLaserPath(lastLaserResult);
     } else {
