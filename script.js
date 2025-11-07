@@ -13,12 +13,25 @@ const BASE_LAYOUT = [
   ["П", "П", "1З2", "1Щ2", "В2", "2Щ2", "П", "П", "П", "Л2"]
 ];
 
+const MODERN_LAYOUT = BASE_LAYOUT.map((row) => row.map(() => "П"));
+
+const LEGACY_LAYOUT = [
+  ["Л1", "П", "П", "П", "1З1", "В1", "2З1", "П", "П", "П"],
+  ["П", "П", "П", "П", "П", "1Щ1", "П", "П", "П", "П"],
+  ["3З1", "П", "П", "П", "4З1", "2Щ1", "1Т1", "П", "П", "П"],
+  ["5З1", "П", "2Т1", "П", "1З2", "П", "2З2", "П", "П", "П"],
+  ["П", "П", "П", "6З1", "П", "7З1", "П", "1Т2", "П", "3З2"],
+  ["П", "П", "П", "2Т2", "1Щ2", "4З2", "П", "П", "П", "5З2"],
+  ["П", "П", "П", "П", "В2", "П", "П", "П", "П", "П"],
+  ["П", "П", "П", "6З2", "2Щ2", "7З2", "П", "П", "П", "Л2"]
+];
+
 const STARTING_LAYOUT_ORDER = ["basic", "modern", "legacy"];
 
 const STARTING_LAYOUTS = {
   basic: { label: "Базовая", tokens: BASE_LAYOUT },
-  modern: { label: "Модерн", tokens: duplicateLayout(BASE_LAYOUT) },
-  legacy: { label: "Легаси", tokens: duplicateLayout(BASE_LAYOUT) }
+  modern: { label: "Модерн", tokens: MODERN_LAYOUT },
+  legacy: { label: "Легаси", tokens: LEGACY_LAYOUT }
 };
 
 const DEFAULT_LAYOUT_KEY = "basic";

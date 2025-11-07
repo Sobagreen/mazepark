@@ -279,6 +279,19 @@ body.theme-light .button--primary {
   margin: 0;
 }
 
+.start-card__logo {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.start-card__logo img {
+  max-width: clamp(180px, 40vw, 260px);
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
 .start-card--wide {
   width: min(760px, 95vw);
   text-align: left;
