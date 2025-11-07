@@ -38,7 +38,7 @@ const STARTING_LAYOUT_ORDER = ["basic", "modern", "legacy"];
 const STARTING_LAYOUTS = {
   basic: { label: "Базовая", tokens: BASE_LAYOUT },
   modern: { label: "Модерн", tokens: MODERN_LAYOUT },
-  legacy: { label: "Легаси", tokens: LEGACY_LAYOUT) }
+  legacy: { label: "Легаси", tokens: LEGACY_LAYOUT }
 };
 
 const DEFAULT_LAYOUT_KEY = "basic";
