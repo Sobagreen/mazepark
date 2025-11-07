@@ -1,4 +1,8 @@
-const INITIAL_LAYOUT = [
+function duplicateLayout(layout) {
+  return layout.map((row) => row.slice());
+}
+
+const BASE_LAYOUT = [
   ["Л1", "П", "П", "П", "1Щ1", "В1", "2Щ1", "1З1", "П", "П"],
   ["П", "П", "2З1", "П", "П", "П", "П", "П", "П", "П"],
   ["П", "П", "П", "7З2", "П", "П", "П", "П", "П", "П"],
@@ -8,6 +12,16 @@ const INITIAL_LAYOUT = [
   ["П", "П", "П", "П", "П", "П", "П", "2З2", "П", "П"],
   ["П", "П", "1З2", "1Щ2", "В2", "2Щ2", "П", "П", "П", "Л2"]
 ];
+
+const STARTING_LAYOUT_ORDER = ["basic", "modern", "legacy"];
+
+const STARTING_LAYOUTS = {
+  basic: { label: "Базовая", tokens: BASE_LAYOUT },
+  modern: { label: "Модерн", tokens: duplicateLayout(BASE_LAYOUT) },
+  legacy: { label: "Легаси", tokens: duplicateLayout(BASE_LAYOUT) }
+};
+
+const DEFAULT_LAYOUT_KEY = "basic";
 
 const TOKEN_MAP = {
   П: null,
@@ -39,8 +53,8 @@ const TOKEN_MAP = {
   "1Т2": { type: "totem", player: "shadow", orientation: 2 }
 };
 
-const BOARD_HEIGHT = INITIAL_LAYOUT.length;
-const BOARD_WIDTH = INITIAL_LAYOUT[0].length;
+const BOARD_HEIGHT = STARTING_LAYOUTS[DEFAULT_LAYOUT_KEY].tokens.length;
+const BOARD_WIDTH = STARTING_LAYOUTS[DEFAULT_LAYOUT_KEY].tokens[0].length;
 const FILES = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".slice(0, BOARD_WIDTH);
 const THEME_STORAGE_KEY = "laser-theme";
 const DEFAULT_SERVER_URL = "wss://mazepark-1.onrender.com";
@@ -159,6 +173,7 @@ const DIAGONALS = [
 
 const ADJACENT = [...DIRECTIONS, ...DIAGONALS];
 
+let currentLayoutKey = DEFAULT_LAYOUT_KEY;
 let board = createEmptyBoard();
 let currentPlayer = "light";
 let selectedCell = null;
@@ -167,6 +182,7 @@ let turnCounter = 1;
 let currentTheme = "dark";
 let lastStatusMessage = "";
 let lastLaserResult = null;
+let lastMove = null;
 let skinSelection = cloneSkinSelection(DEFAULT_SKIN_SELECTION);
 let pendingSkins = cloneSkinSelection(DEFAULT_SKIN_SELECTION);
 let onlineSelectedRole = null;
@@ -205,6 +221,7 @@ const elements = {
   roomInput: document.getElementById("room-id"),
   onlineTypeSelect: document.getElementById("online-type"),
   onlineSkinSelect: document.getElementById("online-skin"),
+  onlineLayoutSelect: document.getElementById("online-layout"),
   onlinePreviewImage: document.getElementById("online-preview-image"),
   onlinePreviewLabel: document.getElementById("online-preview-label"),
   onlineTypeWarning: document.getElementById("online-type-warning"),
@@ -219,6 +236,7 @@ const elements = {
   offlineStart: document.getElementById("offline-start"),
   offlineCancel: document.getElementById("offline-cancel"),
   offlineConflict: document.getElementById("offline-conflict"),
+  offlineLayoutSelect: document.getElementById("offline-layout"),
   offlineFields: {
     light: {
       skin: document.getElementById("offline-light-skin"),
@@ -241,6 +259,7 @@ const multiplayer = createMultiplayerController();
 
 initialiseBoardGrid();
 setupSkinSelectionUI();
+initialiseLayoutControls();
 attachEventListeners();
 initialiseTheme();
 multiplayer.init();
@@ -248,6 +267,8 @@ startNewGame();
 showStartScreen();
 
 function startNewGame() {
+  applySelectedLayoutFromControls();
+  lastMove = null;
   board = createEmptyBoard();
   placeInitialPieces();
   currentPlayer = "light";
@@ -258,6 +279,7 @@ function startNewGame() {
   setStatus("Первый игрок начинает ход. Переместите фигуру или поверните лазер.");
   elements.endgame.hidden = true;
   elements.endgame.setAttribute("aria-hidden", "true");
+  updateLayoutSelectors();
   broadcastGameState("new-game");
 }
 
@@ -265,10 +287,21 @@ function createEmptyBoard() {
   return Array.from({ length: BOARD_HEIGHT }, () => Array(BOARD_WIDTH).fill(null));
 }
 
+function normaliseLayoutKey(key) {
+  return STARTING_LAYOUTS[key] ? key : DEFAULT_LAYOUT_KEY;
+}
+
+function getLayoutTokens(layoutKey) {
+  const key = normaliseLayoutKey(layoutKey);
+  return STARTING_LAYOUTS[key].tokens;
+}
+
 function placeInitialPieces() {
+  const layout = getLayoutTokens(currentLayoutKey);
   for (let y = 0; y < BOARD_HEIGHT; y++) {
     for (let x = 0; x < BOARD_WIDTH; x++) {
-      const token = INITIAL_LAYOUT[y][x];
+      const row = layout[y] || [];
+      const token = row[x];
       const spec = TOKEN_MAP[token];
       if (spec) {
         board[y][x] = {
@@ -564,6 +597,7 @@ function openOnlineMenu() {
   closeTrainingMenu();
   hideStartOverlay();
   multiplayer.openOverlay();
+  updateLayoutSelectors();
   updateOnlineSkinControls();
   updateSkinPreviews();
 }
@@ -576,6 +610,7 @@ function openOfflineMenu() {
     elements.offlineOverlay.hidden = false;
     elements.offlineOverlay.setAttribute("aria-hidden", "false");
   }
+  updateLayoutSelectors();
   updateSkinControls();
 }
 
@@ -603,6 +638,7 @@ function closeTrainingMenu() {
 }
 
 function handleOfflineFormSubmit() {
+  applySelectedLayoutFromControls();
   const lightSelection = {
     skin: elements.offlineLightSkin ? elements.offlineLightSkin.value : getPlayerSkin("light").skin,
     type: elements.offlineLightType ? elements.offlineLightType.value : getPlayerSkin("light").type
@@ -838,6 +874,71 @@ function setupSkinSelectionUI() {
   updateLegendImages();
   updateOfflineConflict();
   updateOnlineWarning();
+}
+
+function initialiseLayoutControls() {
+  const selects = [elements.offlineLayoutSelect, elements.onlineLayoutSelect].filter(Boolean);
+  selects.forEach((select) => populateLayoutOptions(select));
+  updateLayoutSelectors();
+  if (elements.offlineLayoutSelect) {
+    elements.offlineLayoutSelect.addEventListener("change", (event) => {
+      setCurrentLayout(event.target.value);
+    });
+  }
+  if (elements.onlineLayoutSelect) {
+    elements.onlineLayoutSelect.addEventListener("change", (event) => {
+      setCurrentLayout(event.target.value);
+    });
+  }
+}
+
+function populateLayoutOptions(select) {
+  if (!select) return;
+  const previous = select.value;
+  select.innerHTML = "";
+  STARTING_LAYOUT_ORDER.forEach((key) => {
+    const layout = STARTING_LAYOUTS[key];
+    if (!layout) return;
+    const option = document.createElement("option");
+    option.value = key;
+    option.textContent = layout.label;
+    select.appendChild(option);
+  });
+  const desired = STARTING_LAYOUTS[previous] ? previous : currentLayoutKey;
+  select.value = normaliseLayoutKey(desired);
+}
+
+function updateLayoutSelectors() {
+  const key = normaliseLayoutKey(currentLayoutKey);
+  if (elements.offlineLayoutSelect) {
+    elements.offlineLayoutSelect.value = key;
+  }
+  if (elements.onlineLayoutSelect) {
+    elements.onlineLayoutSelect.value = key;
+  }
+}
+
+function setCurrentLayout(layoutKey, { silent = false } = {}) {
+  const key = normaliseLayoutKey(layoutKey);
+  if (currentLayoutKey === key) {
+    updateLayoutSelectors();
+    return currentLayoutKey;
+  }
+  currentLayoutKey = key;
+  updateLayoutSelectors();
+  if (!silent && multiplayer.canBroadcast()) {
+    broadcastGameState("layout-change");
+  }
+  return currentLayoutKey;
+}
+
+function applySelectedLayoutFromControls() {
+  const candidates = [elements.offlineLayoutSelect, elements.onlineLayoutSelect];
+  for (const select of candidates) {
+    if (select && select.value) {
+      setCurrentLayout(select.value, { silent: true });
+    }
+  }
 }
 
 function populateSkinSelect(select) {
@@ -1095,6 +1196,7 @@ function updateOnlineWarning() {
 }
 
 function applyOfflineSelection() {
+  applySelectedLayoutFromControls();
   const conflict = Boolean(
     pendingSkins.light &&
     pendingSkins.shadow &&
@@ -1114,6 +1216,7 @@ function applyOfflineSelection() {
 function openOfflineSetup() {
   syncOfflineSelectorsWithPending();
   updateOfflineConflict();
+  updateLayoutSelectors();
   showOverlayElement(elements.offlineOverlay);
 }
 
@@ -1250,6 +1353,12 @@ function renderBoard() {
       const piece = board[y][x];
       cell.classList.toggle("cell--light", (x + y) % 2 === 0);
       cell.classList.toggle("cell--selected", selectedCell && selectedCell.x === x && selectedCell.y === y);
+      const isRecent = Boolean(
+        lastMove &&
+        ((lastMove.from && lastMove.from.x === x && lastMove.from.y === y) ||
+          (lastMove.to && lastMove.to.x === x && lastMove.to.y === y))
+      );
+      cell.classList.toggle("cell--recent", isRecent);
       cell.classList.remove("cell--option", "cell--swap");
       if (piece) {
         const def = PIECE_DEFS[piece.type];
@@ -1356,6 +1465,10 @@ function executeMove(option, piece, from) {
     }
     board[from.y][from.x] = targetPiece;
     board[option.y][option.x] = piece;
+    lastMove = {
+      from: { x: from.x, y: from.y },
+      to: { x: option.x, y: option.y }
+    };
     setStatus(`${PLAYERS[currentPlayer].name}: ${PIECE_DEFS[piece.type].name} меняется местами с ${PIECE_DEFS[targetPiece.type].name} на ${toNotation(option.x, option.y)}.`);
     endTurn();
     broadcastGameState("swap");
@@ -1370,6 +1483,10 @@ function executeMove(option, piece, from) {
 
   board[from.y][from.x] = null;
   board[option.y][option.x] = piece;
+  lastMove = {
+    from: { x: from.x, y: from.y },
+    to: { x: option.x, y: option.y }
+  };
   setStatus(`${PLAYERS[currentPlayer].name}: ${PIECE_DEFS[piece.type].name} перемещён на ${toNotation(option.x, option.y)}.`);
 
   endTurn();
@@ -1389,6 +1506,7 @@ function rotateSelected(delta) {
   }
 
   piece.orientation = mod4(piece.orientation + delta);
+  lastMove = null;
   renderBoard();
   const dirSymbol = delta > 0 ? "↻" : "↺";
   setStatus(`${PLAYERS[currentPlayer].name}: ${def.name} на ${toNotation(selectedCell.x, selectedCell.y)} повёрнут ${delta > 0 ? "по" : "против"} часовой стрелки.`);
@@ -1964,6 +2082,44 @@ function reconstructLaserSimulation(previousBoard, currentBoard, player) {
   return null;
 }
 
+function normaliseCoordinatePoint(point) {
+  if (!point || typeof point !== "object") {
+    return null;
+  }
+  const x = Number(point.x);
+  const y = Number(point.y);
+  if (!Number.isFinite(x) || !Number.isFinite(y)) {
+    return null;
+  }
+  if (x < 0 || x >= BOARD_WIDTH || y < 0 || y >= BOARD_HEIGHT) {
+    return null;
+  }
+  return { x, y };
+}
+
+function normaliseLastMove(move) {
+  if (!move || typeof move !== "object") {
+    return null;
+  }
+  const from = normaliseCoordinatePoint(move.from);
+  const to = normaliseCoordinatePoint(move.to);
+  if (!from || !to) {
+    return null;
+  }
+  return { from, to };
+}
+
+function cloneLastMove(move) {
+  const normalised = normaliseLastMove(move);
+  if (!normalised) {
+    return null;
+  }
+  return {
+    from: { x: normalised.from.x, y: normalised.from.y },
+    to: { x: normalised.to.x, y: normalised.to.y }
+  };
+}
+
 function serialiseGameState() {
   return {
     board: cloneBoardState(board),
@@ -1976,7 +2132,9 @@ function serialiseGameState() {
       subtitle: elements.endgameSubtitle ? elements.endgameSubtitle.textContent : ""
     },
     laser: lastLaserResult ? normaliseLaserResult(lastLaserResult) : null,
-    skins: cloneSkinSelection(skinSelection)
+    skins: cloneSkinSelection(skinSelection),
+    lastMove: cloneLastMove(lastMove),
+    layout: normaliseLayoutKey(currentLayoutKey)
   };
 }
 
@@ -1998,6 +2156,8 @@ function applyRemoteState(state, options = {}) {
       : null;
 
   multiplayer.suppress(() => {
+    setCurrentLayout(state.layout, { silent: true });
+    lastMove = normaliseLastMove(state.lastMove);
     board = cloneBoardState(state.board);
     if (state.skins) {
       const skinOptions = { broadcast: false };
@@ -2090,15 +2250,13 @@ function createMultiplayerController() {
   function handleConnectSubmission() {
     if (!elements.connectionForm) return;
     const formData = new FormData(elements.connectionForm);
-    const server = (formData.get("server") || "").toString().trim();
+    applySelectedLayoutFromControls();
+    const serverInput = (formData.get("server") || "").toString().trim();
+    const server = serverInput || deriveDefaultServerUrl();
     const room = (formData.get("room") || "").toString().trim().toLowerCase();
     const role = (formData.get("role") || "").toString();
     const skin = (formData.get("skin") || "").toString();
     const skinType = (formData.get("skinType") || "").toString();
-    if (!server) {
-      setOverlayStatus("Укажите адрес сервера.");
-      return;
-    }
     if (!room || room.length < 2) {
       setOverlayStatus("Название комнаты должно содержать минимум 2 символа.");
       return;

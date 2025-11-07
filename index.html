@@ -33,6 +33,10 @@
     <form id="offline-form" class="start-card start-card--wide" autocomplete="off">
       <h2 id="offline-title">Офлайн игра</h2>
       <p class="start-card__intro">Выберите скины и типы для обоих игроков.</p>
+      <label class="connection-field">
+        <span class="connection-field__label">Стартовая позиция</span>
+        <select id="offline-layout" class="connection-field__input"></select>
+      </label>
       <div class="skin-grid">
         <section class="skin-card" aria-labelledby="offline-light-title">
           <h3 id="offline-light-title">☼ Первый Игрок</h3>
@@ -78,10 +82,7 @@
       <h1 id="connection-title" class="connection-card__title">Сетевая партия</h1>
       <p class="connection-card__intro">Укажите комнату и сторону. Второй игрок должен выбрать другой тип скина.</p>
 
-      <label class="connection-field">
-        <span class="connection-field__label">Адрес сервера</span>
-        <input id="server-url" name="server" type="text" class="connection-field__input" required value="wss://mazepark-1.onrender.com" spellcheck="false">
-      </label>
+      <input id="server-url" name="server" type="hidden" value="wss://mazepark-1.onrender.com" spellcheck="false">
 
       <label class="connection-field">
         <span class="connection-field__label">Комната</span>
@@ -105,6 +106,11 @@
           </span>
         </label>
       </fieldset>
+
+      <label class="connection-field">
+        <span class="connection-field__label">Стартовая позиция</span>
+        <select id="online-layout" class="connection-field__input"></select>
+      </label>
 
       <label class="connection-field">
         <span class="connection-field__label">Скин</span>
