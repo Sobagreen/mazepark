@@ -286,7 +286,7 @@ body.theme-light .button--primary {
 }
 
 .start-card__logo img {
-  max-width: clamp(180px, 40vw, 260px);
+  max-width: clamp(180px, 40vw, 460px);
   width: 100%;
   height: auto;
   display: block;
