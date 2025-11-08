@@ -1682,7 +1682,7 @@ function finishGame(winner) {
   elements.endgame.hidden = false;
   elements.endgame.setAttribute("aria-hidden", "false");
   elements.endgameTitle.textContent = `${PLAYERS[winner].name} побеждает!`;
-  elements.endgameSubtitle.textContent = `Волхв ${PLAYERS[loser].name} уничтожен лучом.`;
+  elements.endgameSubtitle.textContent = `Поздравляем! ${PLAYERS[loser].name} уничтожен лучом.`;
   setStatus(`${PLAYERS[winner].name} добились победы.`);
   updateRotateControls(false);
 }
