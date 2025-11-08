@@ -278,6 +278,14 @@ const SKINS = {
       Type2: { label: "Фараон", preview: "pieces/skins/Egypt/Type2/volhv.png" }
     }
   },
+  Premium: {
+    label: "Премиум",
+    preview: "pieces/skins/premium/volhv.png",
+    types: {
+      Type1: { label: "Бета-тест", preview: "pieces/skins/premium/volhv.png" },
+      Type2: { label: "Бета-тест2", preview: "pieces/skins/premium/volhv.png" }
+    }
+  },
 };
 
 const DEFAULT_SKIN_SELECTION = {
