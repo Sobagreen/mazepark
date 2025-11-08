@@ -3,17 +3,26 @@ function duplicateLayout(layout) {
 }
 
 const BASE_LAYOUT = [
-  ["Л1", "П", "П", "П", "1Щ1", "В1", "2Щ1", "1З1", "П", "П"],
-  ["П", "П", "2З1", "П", "П", "П", "П", "П", "П", "П"],
-  ["П", "П", "П", "7З2", "П", "П", "П", "П", "П", "П"],
-  ["3З1", "П", "5З2", "П", "1Т1", "2Т1", "П", "4З1", "П", "6З2"],
-  ["5З1", "П", "3З2", "П", "1Т2", "2Т2", "П", "6З1", "П", "4З2"],
-  ["П", "П", "П", "П", "П", "П", "7З1", "П", "П", "П"],
-  ["П", "П", "П", "П", "П", "П", "П", "2З2", "П", "П"],
-  ["П", "П", "1З2", "1Щ2", "В2", "2Щ2", "П", "П", "П", "Л2"]
+  ["Л1ВН", "П", "П", "П", "1Щ1ВН", "В1ВВ", "2Щ1ВН", "1З1ВН", "П", "П"],
+  ["П", "П", "2З1Л", "П", "П", "П", "П", "П", "П", "П"],
+  ["П", "П", "П", "7З2ВВ", "П", "П", "П", "П", "П", "П"],
+  ["3З1П", "П", "5З2Л", "П", "1Т1П", "2Т1ВН", "П", "4З1ВН", "П", "6З2ВВ"],
+  ["5З1ВН", "П", "3З2ВВ", "П", "1Т2ВН", "2Т2П", "П", "6З1П", "П", "4З2Л"],
+  ["П", "П", "П", "П", "П", "П", "7З1ВН", "П", "П", "П"],
+  ["П", "П", "П", "П", "П", "П", "П", "2З2П", "П", "П"],
+  ["П", "П", "1З2ВВ", "1Щ2ВВ", "В2ВВ", "2Щ2ВВ", "П", "П", "П", "Л2ВВ"]
 ];
 
-const MODERN_LAYOUT = BASE_LAYOUT.map((row) => row.map(() => "П"));
+const MODERN_LAYOUT = [
+  ["П", "П", "П", "П", "П", "П", "П", "П", "П", "П"],
+  ["П", "П", "П", "П", "П", "П", "П", "П", "П", "П"],
+  ["П", "П", "П", "П", "П", "П", "П", "П", "П", "П"],
+  ["П", "П", "П", "П", "П", "П", "П", "П", "П", "П"],
+  ["П", "П", "П", "П", "П", "П", "П", "П", "П", "П"],
+  ["П", "П", "П", "П", "П", "П", "П", "П", "П", "П"],
+  ["П", "П", "П", "П", "В2", "П", "П", "П", "П", "П"],
+  ["П", "П", "П", "6З2", "2Щ2", "7З2", "П", "П", "П", "Л2"]
+];
 
 const LEGACY_LAYOUT = [
   ["Л1", "П", "П", "П", "1З1", "В1", "2З1", "П", "П", "П"],
@@ -38,32 +47,142 @@ const DEFAULT_LAYOUT_KEY = "basic";
 
 const TOKEN_MAP = {
   П: null,
-  "Л1": { type: "laser", player: "light", orientation: 2 },
-  "Л2": { type: "laser", player: "shadow", orientation: 0 },
-  "В1": { type: "volhv", player: "light", orientation: 0 },
-  "В2": { type: "volhv", player: "shadow", orientation: 0 },
-  "1З1": { type: "mirror", player: "light", orientation: 2 },
-  "2З1": { type: "mirror", player: "light", orientation: 3 },
-  "3З1": { type: "mirror", player: "light", orientation: 1 },
-  "4З1": { type: "mirror", player: "light", orientation: 2 },
-  "5З1": { type: "mirror", player: "light", orientation: 2 },
-  "6З1": { type: "mirror", player: "light", orientation: 1 },
-  "7З1": { type: "mirror", player: "light", orientation: 2 },
-  "1З2": { type: "mirror", player: "shadow", orientation: 0 },
-  "2З2": { type: "mirror", player: "shadow", orientation: 1 },
-  "3З2": { type: "mirror", player: "shadow", orientation: 0 },
-  "4З2": { type: "mirror", player: "shadow", orientation: 3 },
-  "5З2": { type: "mirror", player: "shadow", orientation: 3 },
-  "6З2": { type: "mirror", player: "shadow", orientation: 0 },
-  "7З2": { type: "mirror", player: "shadow", orientation: 0 },
-  "1Щ1": { type: "shield", player: "light", orientation: 2 },
-  "1Щ2": { type: "shield", player: "shadow", orientation: 0 },
-  "2Щ1": { type: "shield", player: "light", orientation: 2 },
-  "2Щ2": { type: "shield", player: "shadow", orientation: 0 },
-  "1Т1": { type: "totem", player: "light", orientation: 1 },
-  "2Т2": { type: "totem", player: "shadow", orientation: 1 },
-  "2Т1": { type: "totem", player: "light", orientation: 2 },
-  "1Т2": { type: "totem", player: "shadow", orientation: 2 }
+
+  // === Лазеры ===
+  "Л1ВВ": { type: "laser", player: "light", orientation: 0 },
+  "Л1П":  { type: "laser", player: "light", orientation: 1 },
+  "Л1ВН": { type: "laser", player: "light", orientation: 2 },
+  "Л1Л":  { type: "laser", player: "light", orientation: 3 },
+
+  "Л2ВВ": { type: "laser", player: "shadow", orientation: 0 },
+  "Л2П":  { type: "laser", player: "shadow", orientation: 1 },
+  "Л2ВН": { type: "laser", player: "shadow", orientation: 2 },
+  "Л2Л":  { type: "laser", player: "shadow", orientation: 3 },
+
+  // === Волхвы ===
+  "В1ВВ": { type: "volhv", player: "light", orientation: 0 },
+  "В1П":  { type: "volhv", player: "light", orientation: 1 },
+  "В1ВН": { type: "volhv", player: "light", orientation: 2 },
+  "В1Л":  { type: "volhv", player: "light", orientation: 3 },
+
+  "В2ВВ": { type: "volhv", player: "shadow", orientation: 0 },
+  "В2П":  { type: "volhv", player: "shadow", orientation: 1 },
+  "В2ВН": { type: "volhv", player: "shadow", orientation: 2 },
+  "В2Л":  { type: "volhv", player: "shadow", orientation: 3 },
+
+  // === Зеркала Light (З1) ===
+  "1З1ВВ": { type: "mirror", player: "light", orientation: 0 },
+  "1З1П":  { type: "mirror", player: "light", orientation: 1 },
+  "1З1ВН": { type: "mirror", player: "light", orientation: 2 },
+  "1З1Л":  { type: "mirror", player: "light", orientation: 3 },
+
+  "2З1ВВ": { type: "mirror", player: "light", orientation: 0 },
+  "2З1П":  { type: "mirror", player: "light", orientation: 1 },
+  "2З1ВН": { type: "mirror", player: "light", orientation: 2 },
+  "2З1Л":  { type: "mirror", player: "light", orientation: 3 },
+
+  "3З1ВВ": { type: "mirror", player: "light", orientation: 0 },
+  "3З1П":  { type: "mirror", player: "light", orientation: 1 },
+  "3З1ВН": { type: "mirror", player: "light", orientation: 2 },
+  "3З1Л":  { type: "mirror", player: "light", orientation: 3 },
+
+  "4З1ВВ": { type: "mirror", player: "light", orientation: 0 },
+  "4З1П":  { type: "mirror", player: "light", orientation: 1 },
+  "4З1ВН": { type: "mirror", player: "light", orientation: 2 },
+  "4З1Л":  { type: "mirror", player: "light", orientation: 3 },
+
+  "5З1ВВ": { type: "mirror", player: "light", orientation: 0 },
+  "5З1П":  { type: "mirror", player: "light", orientation: 1 },
+  "5З1ВН": { type: "mirror", player: "light", orientation: 2 },
+  "5З1Л":  { type: "mirror", player: "light", orientation: 3 },
+
+  "6З1ВВ": { type: "mirror", player: "light", orientation: 0 },
+  "6З1П":  { type: "mirror", player: "light", orientation: 1 },
+  "6З1ВН": { type: "mirror", player: "light", orientation: 2 },
+  "6З1Л":  { type: "mirror", player: "light", orientation: 3 },
+
+  "7З1ВВ": { type: "mirror", player: "light", orientation: 0 },
+  "7З1П":  { type: "mirror", player: "light", orientation: 1 },
+  "7З1ВН": { type: "mirror", player: "light", orientation: 2 },
+  "7З1Л":  { type: "mirror", player: "light", orientation: 3 },
+
+  // === Зеркала Shadow (З2) ===
+  "1З2ВВ": { type: "mirror", player: "shadow", orientation: 0 },
+  "1З2П":  { type: "mirror", player: "shadow", orientation: 1 },
+  "1З2ВН": { type: "mirror", player: "shadow", orientation: 2 },
+  "1З2Л":  { type: "mirror", player: "shadow", orientation: 3 },
+
+  "2З2ВВ": { type: "mirror", player: "shadow", orientation: 0 },
+  "2З2П":  { type: "mirror", player: "shadow", orientation: 1 },
+  "2З2ВН": { type: "mirror", player: "shadow", orientation: 2 },
+  "2З2Л":  { type: "mirror", player: "shadow", orientation: 3 },
+
+  "3З2ВВ": { type: "mirror", player: "shadow", orientation: 0 },
+  "3З2П":  { type: "mirror", player: "shadow", orientation: 1 },
+  "3З2ВН": { type: "mirror", player: "shadow", orientation: 2 },
+  "3З2Л":  { type: "mirror", player: "shadow", orientation: 3 },
+
+  "4З2ВВ": { type: "mirror", player: "shadow", orientation: 0 },
+  "4З2П":  { type: "mirror", player: "shadow", orientation: 1 },
+  "4З2ВН": { type: "mirror", player: "shadow", orientation: 2 },
+  "4З2Л":  { type: "mirror", player: "shadow", orientation: 3 },
+
+  "5З2ВВ": { type: "mirror", player: "shadow", orientation: 0 },
+  "5З2П":  { type: "mirror", player: "shadow", orientation: 1 },
+  "5З2ВН": { type: "mirror", player: "shadow", orientation: 2 },
+  "5З2Л":  { type: "mirror", player: "shadow", orientation: 3 },
+
+  "6З2ВВ": { type: "mirror", player: "shadow", orientation: 0 },
+  "6З2П":  { type: "mirror", player: "shadow", orientation: 1 },
+  "6З2ВН": { type: "mirror", player: "shadow", orientation: 2 },
+  "6З2Л":  { type: "mirror", player: "shadow", orientation: 3 },
+
+  "7З2ВВ": { type: "mirror", player: "shadow", orientation: 0 },
+  "7З2П":  { type: "mirror", player: "shadow", orientation: 1 },
+  "7З2ВН": { type: "mirror", player: "shadow", orientation: 2 },
+  "7З2Л":  { type: "mirror", player: "shadow", orientation: 3 },
+
+  // === Щиты ===
+  "1Щ1ВВ": { type: "shield", player: "light", orientation: 0 },
+  "1Щ1П":  { type: "shield", player: "light", orientation: 1 },
+  "1Щ1ВН": { type: "shield", player: "light", orientation: 2 },
+  "1Щ1Л":  { type: "shield", player: "light", orientation: 3 },
+
+  "1Щ2ВВ": { type: "shield", player: "shadow", orientation: 0 },
+  "1Щ2П":  { type: "shield", player: "shadow", orientation: 1 },
+  "1Щ2ВН": { type: "shield", player: "shadow", orientation: 2 },
+  "1Щ2Л":  { type: "shield", player: "shadow", orientation: 3 },
+
+  "2Щ1ВВ": { type: "shield", player: "light", orientation: 0 },
+  "2Щ1П":  { type: "shield", player: "light", orientation: 1 },
+  "2Щ1ВН": { type: "shield", player: "light", orientation: 2 },
+  "2Щ1Л":  { type: "shield", player: "light", orientation: 3 },
+
+  "2Щ2ВВ": { type: "shield", player: "shadow", orientation: 0 },
+  "2Щ2П":  { type: "shield", player: "shadow", orientation: 1 },
+  "2Щ2ВН": { type: "shield", player: "shadow", orientation: 2 },
+  "2Щ2Л":  { type: "shield", player: "shadow", orientation: 3 },
+
+  // === Тотемы ===
+  "1Т1ВВ": { type: "totem", player: "light", orientation: 0 },
+  "1Т1П":  { type: "totem", player: "light", orientation: 1 },
+  "1Т1ВН": { type: "totem", player: "light", orientation: 2 },
+  "1Т1Л":  { type: "totem", player: "light", orientation: 3 },
+
+  "1Т2ВВ": { type: "totem", player: "shadow", orientation: 0 },
+  "1Т2П":  { type: "totem", player: "shadow", orientation: 1 },
+  "1Т2ВН": { type: "totem", player: "shadow", orientation: 2 },
+  "1Т2Л":  { type: "totem", player: "shadow", orientation: 3 },
+
+  "2Т1ВВ": { type: "totem", player: "light", orientation: 0 },
+  "2Т1П":  { type: "totem", player: "light", orientation: 1 },
+  "2Т1ВН": { type: "totem", player: "light", orientation: 2 },
+  "2Т1Л":  { type: "totem", player: "light", orientation: 3 },
+
+  "2Т2ВВ": { type: "totem", player: "shadow", orientation: 0 },
+  "2Т2П":  { type: "totem", player: "shadow", orientation: 1 },
+  "2Т2ВН": { type: "totem", player: "shadow", orientation: 2 },
+  "2Т2Л":  { type: "totem", player: "shadow", orientation: 3 }
 };
 
 const BOARD_HEIGHT = STARTING_LAYOUTS[DEFAULT_LAYOUT_KEY].tokens.length;
