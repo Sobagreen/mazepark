@@ -278,7 +278,7 @@ const SKINS = {
       Type2: { label: "Фараон", preview: "pieces/skins/Egypt/Type2/volhv.png" }
     }
   },
-  Premium: {
+  premium: {
     label: "Премиум",
     preview: "pieces/skins/premium/Type1/volhv.png",
     types: {
