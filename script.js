@@ -280,10 +280,10 @@ const SKINS = {
   },
   Premium: {
     label: "Премиум",
-    preview: "pieces/skins/premium/volhv.png",
+    preview: "pieces/skins/premium/Type1/volhv.png",
     types: {
-      Type1: { label: "Бета-тест", preview: "pieces/skins/premium/volhv.png" },
-      Type2: { label: "Бета-тест2", preview: "pieces/skins/premium/volhv.png" }
+      Type1: { label: "Бета-тест", preview: "pieces/skins/premium/Type1/volhv.png" },
+      Type2: { label: "Бета-тест2", preview: "pieces/skins/premium/Type1/volhv.png" }
     }
   },
 };
