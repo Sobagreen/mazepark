@@ -241,6 +241,7 @@ const SKINS = {
   Slavic: {
     label: "Славянский орден",
     preview: "pieces/skins/Slavic/Type1/volhv.png",
+    configPath: "pieces/skins/Slavic/config.json",
     types: {
       Type1: { label: "Перун", preview: "pieces/skins/Slavic/Type1/volhv.png" },
       Type2: { label: "Чернобог", preview: "pieces/skins/Slavic/Type2/volhv.png" }
@@ -258,14 +259,16 @@ const SKINS = {
   Greece: {
     label: "Греция",
     preview: "pieces/skins/Greece/Type1/preview.png",
+    configPath: "pieces/skins/Greece/config.json",
     types: {
       Type1: { label: "Легионер", preview: "pieces/skins/Greece/Type1/volhv.png" },
       Type2: { label: "Амазонка", preview: "pieces/skins/Greece/Type2/volhv.png" }
     }
-  },  
+  },
   Lavcraft: {
     label: "Говард Лавкрафт",
     preview: "pieces/skins/Lavcraft/Type1/preview.png",
+    configPath: "pieces/skins/Lavcraft/config.json",
     types: {
       Type1: { label: "Ктулху", preview: "pieces/skins/Lavcraft/Type1/volhv.png" },
       Type2: { label: "Жрец Ордена", preview: "pieces/skins/Lavcraft/Type2/volhv.png" }
@@ -274,6 +277,7 @@ const SKINS = {
   Egypt: {
     label: "Египет",
     preview: "pieces/skins/Egypt/Type1/preview.png",
+    configPath: "pieces/skins/Egypt/config.json",
     types: {
       Type1: { label: "Наложница", preview: "pieces/skins/Egypt/Type1/volhv.png" },
       Type2: { label: "Фараон", preview: "pieces/skins/Egypt/Type2/volhv.png" }
@@ -2096,19 +2100,34 @@ function triggerPieceDestructionEffects({ attackerSelection, victimSelection, ce
 
 function spawnEffectForSelection(selection, classKey, center) {
   if (!selection || !selection.skin || !elements.effectsOverlay) return;
-  ensureSkinConfig(selection.skin);
+  const snapshot = { skin: selection.skin, type: selection.type };
+  const spawnIfReady = () => spawnEffectFromConfig(snapshot, classKey, center);
+  if (spawnIfReady()) {
+    return;
+  }
+  const pending = ensureSkinConfig(snapshot.skin);
+  if (pending && typeof pending.then === "function") {
+    pending
+      .then(() => {
+        spawnIfReady();
+      })
+      .catch(() => {});
+  }
+}
+
+function spawnEffectFromConfig(selection, classKey, center) {
   const config = getSkinConfig(selection);
   const animations = config && config.animations;
-  if (!animations) return;
+  if (!animations) return false;
   const classValue = animations[classKey];
-  if (!classValue) return;
+  if (!classValue) return false;
   const classes = Array.isArray(classValue)
     ? classValue
     : String(classValue)
         .split(/\s+/)
         .map((cls) => cls.trim())
         .filter(Boolean);
-  if (!classes.length) return;
+  if (!classes.length) return false;
   const effect = document.createElement("div");
   effect.classList.add("piece-effect", ...classes);
   effect.style.left = `${(center.x / BOARD_WIDTH) * 100}%`;
@@ -2122,6 +2141,7 @@ function spawnEffectForSelection(selection, classKey, center) {
   effect.addEventListener("animationend", remove, { once: true });
   effect.addEventListener("transitionend", remove, { once: true });
   window.setTimeout(remove, 1500);
+  return true;
 }
 
 function computeLaserSignature(result) {

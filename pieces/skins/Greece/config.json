@@ -1,0 +1,38 @@
+{
+  "Type1": {
+    "laser": {
+      "coreColor": "#8bc0ff",
+      "beamGradient": "linear-gradient(90deg, rgba(10, 18, 34, 0.94) 0%, rgba(30, 76, 124, 0.78) 24%, rgba(140, 192, 255, 0.95) 52%, rgba(54, 112, 166, 0.82) 78%, rgba(8, 16, 30, 0.94) 100%)",
+      "glowColor": "rgba(156, 210, 255, 0.76)",
+      "impactGradient": "radial-gradient(circle, rgba(210, 236, 255, 0.95) 0%, rgba(112, 174, 226, 0.82) 45%, rgba(18, 48, 82, 0.9) 78%, rgba(0, 0, 0, 0.85) 100%)",
+      "impactShadow": "rgba(148, 206, 255, 0.74)"
+    },
+    "animations": {
+      "ownDestructionClass": "piece-effect--greece-type1-own",
+      "enemyDestructionClass": "piece-effect--greece-type1-enemy"
+    },
+    "sounds": {
+      "move": "pieces/skins/Greece/audio/type1-move.mp3",
+      "destroyEnemy": "pieces/skins/Greece/audio/type1-destroy.mp3",
+      "victory": "pieces/skins/Greece/audio/type1-victory.mp3"
+    }
+  },
+  "Type2": {
+    "laser": {
+      "coreColor": "#fff2ae",
+      "beamGradient": "linear-gradient(90deg, rgba(30, 20, 0, 0.92) 0%, rgba(112, 90, 18, 0.76) 26%, rgba(255, 238, 170, 0.95) 54%, rgba(168, 132, 42, 0.8) 78%, rgba(26, 18, 0, 0.92) 100%)",
+      "glowColor": "rgba(255, 236, 168, 0.78)",
+      "impactGradient": "radial-gradient(circle, rgba(255, 244, 198, 0.95) 0%, rgba(220, 190, 98, 0.82) 45%, rgba(64, 44, 0, 0.9) 78%, rgba(0, 0, 0, 0.85) 100%)",
+      "impactShadow": "rgba(240, 210, 120, 0.72)"
+    },
+    "animations": {
+      "ownDestructionClass": "piece-effect--greece-type2-own",
+      "enemyDestructionClass": "piece-effect--greece-type2-enemy"
+    },
+    "sounds": {
+      "move": "pieces/skins/Greece/audio/type2-move.mp3",
+      "destroyEnemy": "pieces/skins/Greece/audio/type2-destroy.mp3",
+      "victory": "pieces/skins/Greece/audio/type2-victory.mp3"
+    }
+  }
+}

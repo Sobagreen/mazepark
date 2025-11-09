@@ -1,0 +1,38 @@
+{
+  "Type1": {
+    "laser": {
+      "coreColor": "#3fddc2",
+      "beamGradient": "linear-gradient(90deg, rgba(8, 20, 16, 0.94) 0%, rgba(26, 82, 70, 0.78) 22%, rgba(74, 214, 180, 0.95) 52%, rgba(42, 120, 102, 0.8) 78%, rgba(6, 14, 12, 0.94) 100%)",
+      "glowColor": "rgba(82, 226, 198, 0.72)",
+      "impactGradient": "radial-gradient(circle, rgba(160, 255, 231, 0.95) 0%, rgba(62, 186, 152, 0.85) 45%, rgba(8, 36, 28, 0.9) 78%, rgba(0, 0, 0, 0.85) 100%)",
+      "impactShadow": "rgba(82, 226, 198, 0.7)"
+    },
+    "animations": {
+      "ownDestructionClass": "piece-effect--lavcraft-type1-own",
+      "enemyDestructionClass": "piece-effect--lavcraft-type1-enemy"
+    },
+    "sounds": {
+      "move": "pieces/skins/Lavcraft/audio/type1-move.mp3",
+      "destroyEnemy": "pieces/skins/Lavcraft/audio/type1-destroy.mp3",
+      "victory": "pieces/skins/Lavcraft/audio/type1-victory.mp3"
+    }
+  },
+  "Type2": {
+    "laser": {
+      "coreColor": "#8b4bff",
+      "beamGradient": "linear-gradient(90deg, rgba(16, 4, 32, 0.94) 0%, rgba(58, 26, 94, 0.82) 26%, rgba(162, 114, 242, 0.96) 52%, rgba(72, 32, 122, 0.82) 78%, rgba(10, 2, 24, 0.94) 100%)",
+      "glowColor": "rgba(154, 124, 250, 0.75)",
+      "impactGradient": "radial-gradient(circle, rgba(210, 188, 255, 0.95) 0%, rgba(126, 78, 198, 0.82) 42%, rgba(24, 8, 52, 0.88) 78%, rgba(0, 0, 0, 0.85) 100%)",
+      "impactShadow": "rgba(168, 120, 255, 0.72)"
+    },
+    "animations": {
+      "ownDestructionClass": "piece-effect--lavcraft-type2-own",
+      "enemyDestructionClass": "piece-effect--lavcraft-type2-enemy"
+    },
+    "sounds": {
+      "move": "pieces/skins/Lavcraft/audio/type2-move.mp3",
+      "destroyEnemy": "pieces/skins/Lavcraft/audio/type2-destroy.mp3",
+      "victory": "pieces/skins/Lavcraft/audio/type2-victory.mp3"
+    }
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "Type1": {
+    "laser": {
+      "coreColor": "#ffca63",
+      "beamGradient": "linear-gradient(90deg, rgba(36, 18, 0, 0.92) 0%, rgba(118, 72, 12, 0.78) 24%, rgba(255, 210, 126, 0.96) 52%, rgba(172, 116, 30, 0.8) 78%, rgba(28, 14, 0, 0.92) 100%)",
+      "glowColor": "rgba(255, 214, 132, 0.76)",
+      "impactGradient": "radial-gradient(circle, rgba(255, 236, 192, 0.96) 0%, rgba(222, 168, 76, 0.82) 45%, rgba(64, 34, 6, 0.88) 78%, rgba(0, 0, 0, 0.85) 100%)",
+      "impactShadow": "rgba(255, 204, 110, 0.74)"
+    },
+    "animations": {
+      "ownDestructionClass": "piece-effect--egypt-type1-own",
+      "enemyDestructionClass": "piece-effect--egypt-type1-enemy"
+    },
+    "sounds": {
+      "move": "pieces/skins/Egypt/audio/type1-move.mp3",
+      "destroyEnemy": "pieces/skins/Egypt/audio/type1-destroy.mp3",
+      "victory": "pieces/skins/Egypt/audio/type1-victory.mp3"
+    }
+  },
+  "Type2": {
+    "laser": {
+      "coreColor": "#63d2ff",
+      "beamGradient": "linear-gradient(90deg, rgba(6, 18, 28, 0.94) 0%, rgba(16, 72, 102, 0.78) 26%, rgba(124, 210, 255, 0.96) 54%, rgba(26, 112, 148, 0.82) 78%, rgba(4, 14, 22, 0.94) 100%)",
+      "glowColor": "rgba(132, 220, 255, 0.76)",
+      "impactGradient": "radial-gradient(circle, rgba(200, 244, 255, 0.96) 0%, rgba(98, 178, 214, 0.82) 45%, rgba(10, 40, 58, 0.9) 78%, rgba(0, 0, 0, 0.85) 100%)",
+      "impactShadow": "rgba(126, 216, 255, 0.74)"
+    },
+    "animations": {
+      "ownDestructionClass": "piece-effect--egypt-type2-own",
+      "enemyDestructionClass": "piece-effect--egypt-type2-enemy"
+    },
+    "sounds": {
+      "move": "pieces/skins/Egypt/audio/type2-move.mp3",
+      "destroyEnemy": "pieces/skins/Egypt/audio/type2-destroy.mp3",
+      "victory": "pieces/skins/Egypt/audio/type2-victory.mp3"
+    }
+  }
+}
