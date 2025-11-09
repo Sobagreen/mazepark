@@ -1,5 +1,12 @@
 :root {
   --font-family: "Montserrat", "Segoe UI", sans-serif;
+  --viewport-height: 100vh;
+}
+
+@supports (height: 100dvh) {
+  :root {
+    --viewport-height: 100dvh;
+  }
 }
 
 * {
@@ -12,14 +19,14 @@
 
 body {
   margin: 0;
-  min-height: 100vh;
+  min-height: var(--viewport-height);
   font-family: var(--font-family);
   font-size: 1rem;
   background: var(--page-gradient, var(--bg));
   color: var(--text);
   display: flex;
   justify-content: center;
-  padding: clamp(0.75rem, 2vw, 1.5rem);
+  padding: clamp(0.5rem, 1.8vw, 1.5rem);
   transition: background 0.6s ease, color 0.4s ease, font-size 0.3s ease;
   position: relative;
   overflow-x: hidden;
@@ -233,7 +240,7 @@ body.theme-light .button--primary {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 2.5rem 1.5rem;
+  padding: clamp(1.25rem, 5vw, 2.5rem) clamp(0.75rem, 4vw, 1.5rem);
   background: rgba(10, 14, 18, 0.82);
   backdrop-filter: blur(8px);
   z-index: 20;
@@ -246,32 +253,45 @@ body.theme-light .button--primary {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 2.5rem 1.5rem;
+  padding: clamp(1.25rem, 5vw, 2.75rem) clamp(0.75rem, 4vw, 1.5rem);
   background: rgba(10, 14, 18, 0.82);
   backdrop-filter: blur(10px);
   z-index: 24;
   overflow-y: auto;
 }
 
+@media (max-width: 640px) {
+  .start-overlay,
+  .connection-overlay {
+    align-items: flex-start;
+  }
+}
+
 .connection-card {
   width: min(100%, 520px);
   display: grid;
   gap: 1.1rem;
-  padding: clamp(1.6rem, 3vw, 2.2rem);
+  padding: clamp(1.4rem, 3.2vw, 2.2rem);
   border-radius: 18px;
   background: var(--bg-panel);
   box-shadow: inset 0 0 0 1px var(--panel-border-color), 0 30px 60px rgba(0, 0, 0, 0.35);
+  max-height: calc(var(--viewport-height) - clamp(2.5rem, 9vw, 4.5rem));
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .start-card {
   width: min(100%, 480px);
   display: grid;
   gap: 1.2rem;
-  padding: clamp(1.75rem, 4vw, 2.5rem);
+  padding: clamp(1.45rem, 4vw, 2.5rem);
   border-radius: 20px;
   background: var(--bg-panel);
   box-shadow: inset 0 0 0 1px var(--panel-border-color), 0 32px 72px rgba(0, 0, 0, 0.38);
   text-align: center;
+  max-height: calc(var(--viewport-height) - clamp(2.75rem, 9vw, 4.75rem));
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .start-card h1,
@@ -293,7 +313,7 @@ body.theme-light .button--primary {
 }
 
 .start-card--wide {
-  width: min(760px, 95vw);
+  width: min(720px, 96vw);
   text-align: left;
 }
 
@@ -317,7 +337,13 @@ body.theme-light .button--primary {
 .skin-grid {
   display: grid;
   gap: 0.85rem;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+}
+
+@media (max-width: 680px) {
+  .skin-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .skin-card {
@@ -330,6 +356,7 @@ body.theme-light .button--primary {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 12px 28px rgba(5, 10, 18, 0.32);
   align-content: start;
   backdrop-filter: blur(12px);
+  grid-template-rows: auto minmax(0, 1fr) auto;
 }
 
 body.theme-light .skin-card {
@@ -352,7 +379,7 @@ body.theme-light .skin-card {
   grid-template-columns: repeat(var(--skin-gallery-columns), minmax(0, 1fr));
   gap: 0.5rem;
   justify-items: center;
-  padding: 0.75rem;
+  padding: clamp(0.45rem, 1.2vw, 0.75rem);
   border-radius: 18px;
   border: 1px solid rgba(255, 255, 255, 0.06);
   background: linear-gradient(155deg, rgba(15, 23, 42, 0.22), rgba(15, 23, 42, 0.08));
@@ -360,7 +387,8 @@ body.theme-light .skin-card {
 
 .skin-card .skin-gallery {
   margin-inline: auto;
-  width: min(100%, 32.5rem);
+  width: 100%;
+  max-width: 32rem;
 }
 
 body.theme-light .skin-gallery {
@@ -385,12 +413,18 @@ body.theme-light .skin-gallery {
   }
 }
 
+@media (max-width: 440px) {
+  .skin-gallery {
+    --skin-gallery-columns: 2;
+  }
+}
+
 .skin-gallery__item {
   appearance: none;
   display: grid;
   justify-items: center;
   gap: 0.3rem;
-  padding: 0.35rem;
+  padding: 0.3rem;
   border-radius: 10px;
   border: 1px solid rgba(255, 255, 255, 0.04);
   background: linear-gradient(160deg, rgba(15, 23, 42, 0.16), rgba(15, 23, 42, 0.05));
@@ -398,7 +432,7 @@ body.theme-light .skin-gallery {
   cursor: pointer;
   transition: transform 0.18s ease, box-shadow 0.2s ease, border-color 0.2s ease;
   text-align: center;
-  min-height: 92px;
+  min-height: 78px;
 }
 
 body.theme-light .skin-gallery__item {
@@ -430,14 +464,14 @@ body.theme-light .skin-gallery__item--selected {
 
 .skin-gallery__thumb {
   width: 100%;
-  max-width: 60px;
+  max-width: 48px;
   aspect-ratio: 1;
   border-radius: 10px;
   background: linear-gradient(150deg, rgba(255, 255, 255, 0.1), rgba(0, 0, 0, 0.16));
   display: grid;
   place-items: center;
   overflow: hidden;
-  padding: 0.15rem;
+  padding: 0.1rem;
 }
 
 body.theme-light .skin-gallery__thumb {
@@ -473,12 +507,12 @@ body.theme-light .skin-gallery__thumb {
   flex-direction: column;
   align-items: center;
   gap: 0.45rem;
-  padding: 0.65rem 0.75rem;
+  padding: 0.55rem 0.65rem;
   border-radius: 14px;
   background: linear-gradient(160deg, rgba(15, 23, 42, 0.18), rgba(15, 23, 42, 0.06));
   text-align: center;
   border: 1px solid rgba(255, 255, 255, 0.05);
-  max-width: 220px;
+  width: min(180px, 100%);
   margin-inline: auto;
 }
 
@@ -488,8 +522,8 @@ body.theme-light .skin-preview {
 }
 
 .skin-preview img {
-  width: 52px;
-  height: 52px;
+  width: 42px;
+  height: 42px;
   object-fit: contain;
   filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.35));
 }
@@ -511,6 +545,8 @@ body.theme-light .skin-preview {
   align-items: flex-start;
   text-align: left;
   max-width: none;
+  width: 100%;
+  gap: 0.35rem;
 }
 
 .connection-card__title {
