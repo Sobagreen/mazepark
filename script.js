@@ -528,11 +528,14 @@ function updateOfflineSkinControls() {
     if (skinSelect) {
       populateSkinSelect(skinSelect);
       skinSelect.value = selection.skin;
+      disableTakenSkinOptions(skinSelect, player);
     }
     if (typeSelect) {
       populateTypeSelect(typeSelect, selection.skin);
+      const sameSkin = otherSelection.skin === selection.skin;
       Array.from(typeSelect.options).forEach((option) => {
-        option.disabled = otherSelection.skin === selection.skin && otherSelection.type === option.value;
+        const shouldDisable = sameSkin && option.value !== selection.type;
+        option.disabled = shouldDisable;
       });
       typeSelect.value = selection.type;
     }
@@ -563,9 +566,12 @@ function updateOnlineSkinControls() {
   const otherSelection = getPlayerSkin(other);
 
   elements.onlineSkin.value = selection.skin;
+  disableTakenSkinOptions(elements.onlineSkin, role);
   populateTypeSelect(elements.onlineType, selection.skin);
+  const sameSkin = otherSelection.skin === selection.skin;
   Array.from(elements.onlineType.options).forEach((option) => {
-    option.disabled = otherSelection.skin === selection.skin && otherSelection.type === option.value;
+    const shouldDisable = sameSkin && option.value !== selection.type;
+    option.disabled = shouldDisable;
   });
   elements.onlineType.value = selection.type;
 }
@@ -626,19 +632,10 @@ function assignPlayerSkin(player, skinKey, typeKey, options = {}) {
   const requested = normaliseSkinChoice(player, skinKey, typeKey);
   const other = player === "light" ? "shadow" : "light";
   const otherSelection = getPlayerSkin(other);
-  const conflict = otherSelection.skin === requested.skin && otherSelection.type === requested.type;
+  const sameSkin = otherSelection.skin === requested.skin;
 
-  if (conflict && !options.ignoreConflict) {
-    if (options.autoResolveConflict) {
-      const alternative = findAlternativeType(requested.skin, requested.type);
-      if (alternative) {
-        requested.type = alternative;
-      } else {
-        return { success: false, reason: "conflict", selection: getPlayerSkin(player) };
-      }
-    } else {
-      return { success: false, reason: "conflict", selection: getPlayerSkin(player) };
-    }
+  if (sameSkin && !options.ignoreConflict) {
+    return { success: false, reason: "conflict", selection: getPlayerSkin(player) };
   }
 
   playerSkins[player] = requested;
@@ -1001,6 +998,7 @@ function setupSkinSelectionUI() {
     if (!fieldset) continue;
     if (fieldset.skin) {
       populateSkinSelect(fieldset.skin);
+      disableTakenSkinOptions(fieldset.skin, player, { mode: "pending" });
       fieldset.skin.addEventListener("change", () => handleOfflineSkinChange(player));
     }
     if (fieldset.type) {
@@ -1092,6 +1090,19 @@ function populateSkinSelect(select) {
   });
 }
 
+function disableTakenSkinOptions(select, player, { mode = "actual" } = {}) {
+  if (!select || !player) return;
+  const reference = mode === "pending" ? pendingSkins : skinSelection;
+  const opponent = getOpponent(player);
+  const opponentSelection = reference[opponent];
+  const playerSelection = reference[player];
+  Array.from(select.options).forEach((option) => {
+    const takenByOpponent = opponentSelection && opponentSelection.skin === option.value;
+    const isOwnSkin = playerSelection && playerSelection.skin === option.value;
+    option.disabled = Boolean(takenByOpponent && !isOwnSkin);
+  });
+}
+
 function populateTypeSelect(select, skinKey, { player = null, mode = "actual" } = {}) {
   if (!select) return;
   select.innerHTML = "";
@@ -1106,15 +1117,20 @@ function populateTypeSelect(select, skinKey, { player = null, mode = "actual" } 
     const option = document.createElement("option");
     option.value = typeKey;
     option.textContent = typeDef.label;
-    const taken = Boolean(
+    const playerSelection = player ? reference[player] : null;
+    const skinTaken = Boolean(
       player &&
       reference[opponent] &&
-      reference[opponent].skin === skinKey &&
-      reference[opponent].type === typeKey
+      reference[opponent].skin === skinKey
     );
-    if (taken) {
+    const isCurrent = Boolean(
+      playerSelection &&
+      playerSelection.skin === skinKey &&
+      playerSelection.type === typeKey
+    );
+    if (skinTaken && !isCurrent) {
       option.disabled = true;
-      option.textContent = `${typeDef.label} — занято`;
+      option.textContent = `${typeDef.label} — скин занят`;
     }
     select.appendChild(option);
   });
@@ -1128,6 +1144,7 @@ function syncOfflineSelectorsWithPending() {
     const pending = pendingSkins[player];
     if (fieldset.skin && pending) {
       fieldset.skin.value = pending.skin;
+      disableTakenSkinOptions(fieldset.skin, player, { mode: "pending" });
     }
     if (fieldset.type) {
       populateTypeSelect(fieldset.type, pending.skin, { player, mode: "pending" });
@@ -1153,6 +1170,12 @@ function handleOfflineSkinChange(player) {
     fieldset.type.value = type;
   }
   setPendingSkin(player, skin, type);
+  disableTakenSkinOptions(fieldset.skin, player, { mode: "pending" });
+  const opponent = getOpponent(player);
+  const opponentFieldset = elements.offlineFields[opponent];
+  if (opponentFieldset && opponentFieldset.skin) {
+    disableTakenSkinOptions(opponentFieldset.skin, opponent, { mode: "pending" });
+  }
   updateOfflinePreview(player);
   updateOfflineConflict();
 }
@@ -1192,6 +1215,7 @@ function handleOnlineRoleChange(role) {
   if (elements.onlineSkinSelect) {
     elements.onlineSkinSelect.disabled = false;
     elements.onlineSkinSelect.value = pending.skin;
+    disableTakenSkinOptions(elements.onlineSkinSelect, onlineSelectedRole, { mode: "pending" });
   }
   if (elements.onlineTypeSelect) {
     populateTypeSelect(elements.onlineTypeSelect, pending.skin, { player: onlineSelectedRole, mode: "actual" });
@@ -1224,6 +1248,7 @@ function handleOnlineSkinChange() {
   } else {
     setPendingSkin(onlineSelectedRole, skin, desiredType);
   }
+  disableTakenSkinOptions(elements.onlineSkinSelect, onlineSelectedRole, { mode: "pending" });
   updateOnlinePreview();
   if (multiplayer.isActive() && typeof multiplayer.getRole === "function" && multiplayer.getRole() === onlineSelectedRole) {
     applyPendingSkin(onlineSelectedRole);
@@ -1269,13 +1294,12 @@ function updateOfflineConflict() {
   const conflict = Boolean(
     pendingSkins.light &&
     pendingSkins.shadow &&
-    pendingSkins.light.skin === pendingSkins.shadow.skin &&
-    pendingSkins.light.type === pendingSkins.shadow.type
+    pendingSkins.light.skin === pendingSkins.shadow.skin
   );
   if (elements.offlineConflict) {
     elements.offlineConflict.hidden = !conflict;
     elements.offlineConflict.textContent = conflict
-      ? "Оба игрока выбрали одинаковый тип скина. Выберите разные варианты."
+      ? "Оба игрока выбрали одинаковый скин. Выберите разные варианты."
       : "";
   }
   if (elements.offlineStart) {
@@ -1324,7 +1348,7 @@ function updateOnlineWarning() {
       message = "Выберите скин и тип.";
       invalid = true;
     } else if (isCombinationTaken(onlineSelectedRole, pending.skin, pending.type, { mode: "actual" })) {
-      message = "Выбранный тип уже занят соперником. Выберите другой вариант.";
+      message = "Выбранный скин уже занят соперником. Выберите другой вариант.";
       invalid = true;
     }
   }
@@ -1340,8 +1364,7 @@ function applyOfflineSelection() {
   const conflict = Boolean(
     pendingSkins.light &&
     pendingSkins.shadow &&
-    pendingSkins.light.skin === pendingSkins.shadow.skin &&
-    pendingSkins.light.type === pendingSkins.shadow.type
+    pendingSkins.light.skin === pendingSkins.shadow.skin
   );
   if (conflict) {
     updateOfflineConflict();
@@ -1470,7 +1493,7 @@ function isCombinationTaken(player, skin, type, { mode = "actual" } = {}) {
   const reference = mode === "pending" ? pendingSkins : skinSelection;
   const opponent = getOpponent(player);
   if (!reference[opponent]) return false;
-  return reference[opponent].skin === skin && reference[opponent].type === type;
+  return reference[opponent].skin === skin;
 }
 
 function getOpponent(player) {
