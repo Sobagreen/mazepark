@@ -11,19 +11,19 @@
     "animations": {
       "ownDestructionClass": {
         "classes": [
-          "piece-effect--impact",
+          "piece-effect--arnuvo-rose",
           "piece-effect--arnuvo-type1-own"
         ],
         "offset": { "x": 0, "y": 0 },
-        "scale": 1.18
+        "scale": 1.45
       },
       "enemyDestructionClass": {
         "classes": [
-          "piece-effect--impact",
+          "piece-effect--arnuvo-rose",
           "piece-effect--arnuvo-type1-enemy"
         ],
         "offset": { "x": 0, "y": 0 },
-        "scale": 1.9
+        "scale": 2.25
       }
     },
     "sounds": {
@@ -44,19 +44,19 @@
     "animations": {
       "ownDestructionClass": {
         "classes": [
-          "piece-effect--impact",
+          "piece-effect--arnuvo-rose",
           "piece-effect--arnuvo-type2-own"
         ],
         "offset": { "x": 0, "y": 0 },
-        "scale": 1.24
+        "scale": 1.55
       },
       "enemyDestructionClass": {
         "classes": [
-          "piece-effect--impact",
+          "piece-effect--arnuvo-rose",
           "piece-effect--arnuvo-type2-enemy"
         ],
         "offset": { "x": 0, "y": 0 },
-        "scale": 1.95
+        "scale": 2.35
       }
     },
     "sounds": {
