@@ -326,6 +326,10 @@ let lastMove = null;
 let skinSelection = cloneSkinSelection(DEFAULT_SKIN_SELECTION);
 let pendingSkins = cloneSkinSelection(DEFAULT_SKIN_SELECTION);
 let onlineSelectedRole = null;
+let lastLaserAudioSignature = null;
+
+const premiumAudio = createPremiumAudioController();
+premiumAudio.updateSkins(playerSkins);
 
 const elements = {
   board: document.getElementById("board"),
@@ -565,7 +569,7 @@ function updateOnlineSkinControls() {
   elements.onlineSkin.value = selection.skin;
   populateTypeSelect(elements.onlineType, selection.skin);
   Array.from(elements.onlineType.options).forEach((option) => {
-    option.disabled = otherSelection.skin === selection.skin && otherSelection.type === option.value;
+    option.disabled = selectionsConflict(otherSelection, { skin: selection.skin, type: option.value });
   });
   elements.onlineType.value = selection.type;
 }
@@ -626,7 +630,7 @@ function assignPlayerSkin(player, skinKey, typeKey, options = {}) {
   const requested = normaliseSkinChoice(player, skinKey, typeKey);
   const other = player === "light" ? "shadow" : "light";
   const otherSelection = getPlayerSkin(other);
-  const conflict = otherSelection.skin === requested.skin && otherSelection.type === requested.type;
+  const conflict = selectionsConflict(otherSelection, requested);
 
   if (conflict && !options.ignoreConflict) {
     if (options.autoResolveConflict) {
@@ -642,6 +646,7 @@ function assignPlayerSkin(player, skinKey, typeKey, options = {}) {
   }
 
   playerSkins[player] = requested;
+  premiumAudio.updateSkins(playerSkins);
   refreshPieceArt({ silent: options.silent });
   updateSkinControls();
   if (!options.silent && !options.suppressBroadcast) {
@@ -665,6 +670,11 @@ function getSkinAssetPath(selection, pieceType) {
 function getPieceAssetPath(pieceType, player) {
   const selection = getPlayerSkin(player);
   return getSkinAssetPath(selection, pieceType);
+}
+
+function getLaserStyleForPlayer(player) {
+  const selection = getPlayerSkin(player);
+  return selection.skin === "premium" ? "premium" : "default";
 }
 
 function getCheckedRole() {
@@ -699,6 +709,7 @@ function applyRemoteSkins(remoteSkins) {
     next.shadow = normaliseSkinChoice("shadow", remoteSkins.shadow.skin, remoteSkins.shadow.type);
   }
   playerSkins = next;
+  premiumAudio.updateSkins(playerSkins);
   refreshPieceArt({ silent: true });
   updateSkinControls();
 }
@@ -1109,8 +1120,7 @@ function populateTypeSelect(select, skinKey, { player = null, mode = "actual" } 
     const taken = Boolean(
       player &&
       reference[opponent] &&
-      reference[opponent].skin === skinKey &&
-      reference[opponent].type === typeKey
+      selectionsConflict(reference[opponent], { skin: skinKey, type: typeKey })
     );
     if (taken) {
       option.disabled = true;
@@ -1266,16 +1276,11 @@ function getFirstAvailableOption(select, preferred) {
 }
 
 function updateOfflineConflict() {
-  const conflict = Boolean(
-    pendingSkins.light &&
-    pendingSkins.shadow &&
-    pendingSkins.light.skin === pendingSkins.shadow.skin &&
-    pendingSkins.light.type === pendingSkins.shadow.type
-  );
+  const conflict = selectionsConflict(pendingSkins.light, pendingSkins.shadow);
   if (elements.offlineConflict) {
     elements.offlineConflict.hidden = !conflict;
     elements.offlineConflict.textContent = conflict
-      ? "Оба игрока выбрали одинаковый тип скина. Выберите разные варианты."
+      ? "Оба игрока выбрали одинаковую комбинацию скина и типа. Выберите разные варианты."
       : "";
   }
   if (elements.offlineStart) {
@@ -1324,7 +1329,7 @@ function updateOnlineWarning() {
       message = "Выберите скин и тип.";
       invalid = true;
     } else if (isCombinationTaken(onlineSelectedRole, pending.skin, pending.type, { mode: "actual" })) {
-      message = "Выбранный тип уже занят соперником. Выберите другой вариант.";
+      message = "Выбранная комбинация скина и типа уже занята соперником. Выберите другой вариант.";
       invalid = true;
     }
   }
@@ -1337,12 +1342,7 @@ function updateOnlineWarning() {
 
 function applyOfflineSelection() {
   applySelectedLayoutFromControls();
-  const conflict = Boolean(
-    pendingSkins.light &&
-    pendingSkins.shadow &&
-    pendingSkins.light.skin === pendingSkins.shadow.skin &&
-    pendingSkins.light.type === pendingSkins.shadow.type
-  );
+  const conflict = selectionsConflict(pendingSkins.light, pendingSkins.shadow);
   if (conflict) {
     updateOfflineConflict();
     return false;
@@ -1412,7 +1412,8 @@ function applySkinSelection(selection, { broadcast = true, preservePendingFor = 
   const previousPending = cloneSkinSelection(pendingSkins);
   skinSelection = cloneSkinSelection(selection);
   playerSkins = cloneSkinSelection(skinSelection);
-  const nextPending = cloneSkinSelection(skinSelection);
+  premiumAudio.updateSkins(playerSkins);
+    const nextPending = cloneSkinSelection(skinSelection);
   if (preservePendingFor && previousPending[preservePendingFor]) {
     nextPending[preservePendingFor] = { ...previousPending[preservePendingFor] };
   }
@@ -1470,7 +1471,7 @@ function isCombinationTaken(player, skin, type, { mode = "actual" } = {}) {
   const reference = mode === "pending" ? pendingSkins : skinSelection;
   const opponent = getOpponent(player);
   if (!reference[opponent]) return false;
-  return reference[opponent].skin === skin && reference[opponent].type === type;
+  return selectionsConflict(reference[opponent], { skin, type });
 }
 
 function getOpponent(player) {
@@ -1484,6 +1485,17 @@ function cloneSkinSelection(selection) {
     result[player] = { skin: source.skin, type: source.type };
   }
   return result;
+}
+
+function selectionsConflict(selectionA, selectionB) {
+  if (!selectionA || !selectionB) {
+    return false;
+  }
+  return selectionA.skin === selectionB.skin && selectionA.type === selectionB.type;
+}
+
+function normaliseLaserStyle(style) {
+  return style === "premium" ? "premium" : "default";
 }
 
 function renderBoard() {
@@ -1698,13 +1710,15 @@ function finishGame(winner) {
 function fireLaser(player) {
   const emitterPos = findEmitter(player);
   if (!emitterPos) {
-    return { path: [], firer: PLAYERS[player].laserName, origin: null };
+    return { path: [], firer: PLAYERS[player].laserName, origin: null, style: getLaserStyleForPlayer(player), turn: turnCounter };
   }
 
   let { x, y } = emitterPos;
   let direction = board[y][x].orientation % 4;
   const path = [];
   let previous = { x, y };
+  const style = getLaserStyleForPlayer(player);
+  const resultTurn = turnCounter;
 
   while (true) {
     const nextX = x + DIRECTIONS[direction].dx;
@@ -1715,7 +1729,9 @@ function fireLaser(player) {
         hit: null,
         firer: PLAYERS[player].laserName,
         origin: emitterPos,
-        termination: computeExitPoint(previous, direction)
+        termination: computeExitPoint(previous, direction),
+        style,
+        turn: resultTurn
       };
     }
 
@@ -1728,27 +1744,31 @@ function fireLaser(player) {
       continue;
     }
     const interaction = resolveLaserInteraction(target, direction);
-    if (interaction.destroy) {
-      board[y][x] = null;
-      return {
-        path,
-        hit: { piece: target, x, y },
-        firer: PLAYERS[player].laserName,
-        origin: emitterPos,
-        termination: { x: x + 0.5, y: y + 0.5 }
-      };
-    }
-    if (interaction.stop) {
-      const result = {
-        path,
-        hit: null,
-        firer: PLAYERS[player].laserName,
-        origin: emitterPos,
-        termination: { x: x + 0.5, y: y + 0.5 }
-      };
-      result.blocked = { piece: target, x, y };
-      return result;
-    }
+      if (interaction.destroy) {
+        board[y][x] = null;
+        return {
+          path,
+          hit: { piece: target, x, y },
+          firer: PLAYERS[player].laserName,
+          origin: emitterPos,
+          termination: { x: x + 0.5, y: y + 0.5 },
+          style,
+          turn: resultTurn
+        };
+      }
+      if (interaction.stop) {
+        const result = {
+          path,
+          hit: null,
+          firer: PLAYERS[player].laserName,
+          origin: emitterPos,
+          termination: { x: x + 0.5, y: y + 0.5 },
+          style,
+          turn: resultTurn
+        };
+        result.blocked = { piece: target, x, y };
+        return result;
+      }
     previous = { x, y };
     direction = interaction.nextDirection;
   }
@@ -1767,6 +1787,8 @@ function simulateLaserTrace(boardState, player) {
     : 0;
   const path = [];
   let previous = { x, y };
+  const style = getLaserStyleForPlayer(player);
+  const resultTurn = turnCounter;
 
   while (true) {
     const nextX = x + DIRECTIONS[direction].dx;
@@ -1777,7 +1799,9 @@ function simulateLaserTrace(boardState, player) {
         hit: null,
         firer: PLAYERS[player].laserName,
         origin: emitter,
-        termination: computeExitPoint(previous, direction)
+        termination: computeExitPoint(previous, direction),
+        style,
+        turn: resultTurn
       };
     }
 
@@ -1800,7 +1824,9 @@ function simulateLaserTrace(boardState, player) {
         hit: interaction.destroy ? { piece: clonePiece(target), x, y } : null,
         firer: PLAYERS[player].laserName,
         origin: emitter,
-        termination: { x: x + 0.5, y: y + 0.5 }
+        termination: { x: x + 0.5, y: y + 0.5 },
+        style,
+        turn: resultTurn
       };
       if (!interaction.destroy) {
         result.blocked = { piece: clonePiece(target), x, y };
@@ -1904,10 +1930,14 @@ function findEmitter(player) {
 function highlightLaserPath(result) {
   clearLaserPath({ preserveState: true });
   if (!result || !result.origin) {
+    updateLaserOverlayStyle("default");
     return;
   }
 
-  drawLaserBeam(result);
+  const style = normaliseLaserStyle(result.style);
+  updateLaserOverlayStyle(style);
+  drawLaserBeam(result, style);
+  handleLaserEffects(result, style);
 }
 
 function clearLaserPath({ preserveState = false } = {}) {
@@ -1916,10 +1946,12 @@ function clearLaserPath({ preserveState = false } = {}) {
   }
   if (!preserveState) {
     lastLaserResult = null;
+    lastLaserAudioSignature = null;
+    updateLaserOverlayStyle("default");
   }
 }
 
-function drawLaserBeam(result) {
+function drawLaserBeam(result, style = normaliseLaserStyle(result.style)) {
   if (!elements.laserOverlay) return;
 
   const points = [];
@@ -1945,6 +1977,9 @@ function drawLaserBeam(result) {
     const dy = end.y - start.y;
     const segment = document.createElement("div");
     segment.className = "laser-overlay__beam";
+    if (style === "premium") {
+      segment.classList.add("laser-overlay__beam--premium");
+    }
     segment.style.left = `${(start.x / BOARD_WIDTH) * 100}%`;
     segment.style.top = `${(start.y / BOARD_HEIGHT) * 100}%`;
     segment.style.width = `${(Math.hypot(dx, dy) / BOARD_WIDTH) * 100}%`;
@@ -1956,11 +1991,132 @@ function drawLaserBeam(result) {
     const impact = result.hit || result.blocked;
     const marker = document.createElement("div");
     marker.className = "laser-overlay__impact";
+    if (style === "premium") {
+      marker.classList.add("laser-overlay__impact--premium");
+    }
     const center = toCellCenter(impact.x, impact.y);
     marker.style.left = `${(center.x / BOARD_WIDTH) * 100}%`;
     marker.style.top = `${(center.y / BOARD_HEIGHT) * 100}%`;
     elements.laserOverlay.appendChild(marker);
   }
+}
+
+function updateLaserOverlayStyle(style) {
+  if (!elements.laserOverlay) return;
+  const value = normaliseLaserStyle(style);
+  elements.laserOverlay.dataset.laserStyle = value;
+}
+
+function handleLaserEffects(result, style) {
+  const signatureParts = [
+    style,
+    Number.isFinite(result.turn) ? result.turn : "",
+    result.path.length,
+    result.hit ? `${result.hit.x},${result.hit.y}` : "none",
+    result.blocked ? "blocked" : "clear"
+  ];
+  const signature = signatureParts.join(":");
+  if (signature !== lastLaserAudioSignature) {
+    if (style === "premium") {
+      premiumAudio.playLaserShot();
+      if (result.hit) {
+        premiumAudio.playImpact();
+      }
+    }
+    lastLaserAudioSignature = signature;
+    if (style === "premium" && result.hit) {
+      spawnPremiumImpact(result.hit.x, result.hit.y);
+    }
+  }
+}
+
+function spawnPremiumImpact(x, y) {
+  if (!elements.laserOverlay) return;
+  const center = toCellCenter(x, y);
+  const blast = document.createElement("div");
+  blast.className = "laser-overlay__blast";
+  blast.style.left = `${(center.x / BOARD_WIDTH) * 100}%`;
+  blast.style.top = `${(center.y / BOARD_HEIGHT) * 100}%`;
+  elements.laserOverlay.appendChild(blast);
+  blast.addEventListener("animationend", () => {
+    blast.remove();
+  });
+
+  const cell = cells?.[y]?.[x];
+  if (cell) {
+    cell.classList.add("cell--premium-hit");
+    setTimeout(() => {
+      cell.classList.remove("cell--premium-hit");
+    }, 650);
+  }
+}
+
+function createPremiumAudioController() {
+  const sources = {
+    background: "audio/premium-theme.mp3",
+    laser: "audio/premium-laser.mp3",
+    impact: "audio/premium-impact.mp3"
+  };
+
+  const audio = {
+    background: createAudio(sources.background, { loop: true, volume: 0.45 }),
+    laser: createAudio(sources.laser, { volume: 0.7 }),
+    impact: createAudio(sources.impact, { volume: 0.75 })
+  };
+
+  let backgroundActive = false;
+
+  function createAudio(src, { loop = false, volume = 1 } = {}) {
+    if (typeof Audio === "undefined") {
+      return null;
+    }
+    const instance = new Audio(src);
+    instance.loop = loop;
+    instance.volume = volume;
+    instance.preload = "auto";
+    return instance;
+  }
+
+  function safePlay(instance, { reset = true } = {}) {
+    if (!instance) return;
+    if (reset) {
+      try {
+        instance.currentTime = 0;
+      } catch (err) {
+        // игнорируем, если браузер не позволяет управлять currentTime
+      }
+    }
+    instance.play().catch(() => {});
+  }
+
+  function stopBackground() {
+    if (!audio.background) return;
+    audio.background.pause();
+    audio.background.currentTime = 0;
+    backgroundActive = false;
+  }
+
+  return {
+    updateSkins(selection) {
+      const hasPremium = Object.values(selection || {}).some((choice) => choice && choice.skin === "premium");
+      if (!audio.background) {
+        backgroundActive = false;
+        return;
+      }
+      if (hasPremium && !backgroundActive) {
+        safePlay(audio.background, { reset: false });
+        backgroundActive = true;
+      } else if (!hasPremium && backgroundActive) {
+        stopBackground();
+      }
+    },
+    playLaserShot() {
+      safePlay(audio.laser);
+    },
+    playImpact() {
+      safePlay(audio.impact);
+    }
+  };
 }
 
 function toCellCenter(x, y) {
@@ -2118,7 +2274,9 @@ function normaliseLaserResult(result) {
       : [],
     termination: result.termination
       ? { x: result.termination.x, y: result.termination.y }
-      : null
+      : null,
+    style: normaliseLaserStyle(result.style),
+    turn: typeof result.turn === "number" && Number.isFinite(result.turn) ? result.turn : null
   };
   if (result.hit) {
     copy.hit = {

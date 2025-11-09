@@ -612,7 +612,7 @@ body.theme-light .piece {
 .piece::before {
   content: "";
   position: absolute;
-  inset: 18%;
+  inset: 15%;
   border-radius: 18px;
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.22), transparent 65%);
   filter: blur(0.5px);
@@ -638,8 +638,8 @@ body.theme-light .piece {
 
 .piece__image {
   display: block;
-  width: 110%;
-  height: 110%;
+  width: 121%;
+  height: 121%;
   max-width: none;
   pointer-events: none;
   user-select: none;
@@ -693,6 +693,10 @@ body.theme-light .piece {
   position: absolute;
   inset: 0;
   z-index: 3;
+}
+
+.laser-overlay[data-laser-style="premium"] {
+  mix-blend-mode: screen;
 }
 
 .board-toolbar {
@@ -831,6 +835,48 @@ body.theme-light .board-action {
   animation: laser-impact 0.5s ease forwards;
 }
 
+.laser-overlay__beam--premium {
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.55), #9c1aff 45%, #00f6ff 100%);
+  box-shadow: 0 0 22px rgba(156, 26, 255, 0.75), 0 0 52px rgba(0, 246, 255, 0.6);
+  animation: premium-laser 0.5s ease forwards;
+}
+
+.laser-overlay__impact--premium {
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.95) 0%, rgba(156, 26, 255, 0.85) 35%, rgba(0, 246, 255, 0.2) 70%);
+  box-shadow: 0 0 28px rgba(156, 26, 255, 0.75), 0 0 58px rgba(0, 246, 255, 0.45);
+  animation: premium-impact 0.6s ease-out forwards;
+}
+
+.laser-overlay__blast {
+  position: absolute;
+  width: 14%;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.7) 0%, rgba(156, 26, 255, 0.35) 45%, rgba(0, 246, 255, 0.12) 70%, transparent 100%);
+  box-shadow: 0 0 42px rgba(156, 26, 255, 0.55), 0 0 64px rgba(0, 246, 255, 0.35);
+  animation: premium-blast 0.65s ease-out forwards;
+}
+
+.laser-overlay__blast::after {
+  content: "";
+  position: absolute;
+  inset: 20%;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, rgba(255, 255, 255, 0.8), rgba(156, 26, 255, 0.6), rgba(0, 246, 255, 0.4), rgba(255, 255, 255, 0.8));
+  filter: blur(2px);
+  opacity: 0;
+  animation: premium-sparkle 0.65s ease-out forwards;
+}
+
+.cell--premium-hit {
+  box-shadow:
+    inset 0 0 0 2px rgba(156, 26, 255, 0.75),
+    inset 0 0 22px rgba(0, 246, 255, 0.45);
+  background-image: radial-gradient(circle, rgba(156, 26, 255, 0.25) 0%, transparent 65%);
+}
+
 @keyframes laser-trace {
   0% {
     opacity: 0;
@@ -857,6 +903,62 @@ body.theme-light .board-action {
   100% {
     transform: translate(-50%, -50%) scale(1);
     opacity: 0.6;
+  }
+}
+
+@keyframes premium-laser {
+  0% {
+    opacity: 0;
+    filter: blur(5px);
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.85;
+    filter: blur(0px);
+  }
+}
+
+@keyframes premium-impact {
+  0% {
+    transform: translate(-50%, -50%) scale(0.6);
+    opacity: 0;
+  }
+  45% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1.35);
+    opacity: 0;
+  }
+}
+
+@keyframes premium-blast {
+  0% {
+    opacity: 0.8;
+    transform: translate(-50%, -50%) scale(0.75);
+  }
+  55% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.6);
+  }
+}
+
+@keyframes premium-sparkle {
+  0% {
+    opacity: 0;
+    transform: rotate(0deg) scale(0.8);
+  }
+  50% {
+    opacity: 0.8;
+  }
+  100% {
+    opacity: 0;
+    transform: rotate(220deg) scale(1.4);
   }
 }
 
