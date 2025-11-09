@@ -2,6 +2,10 @@ function duplicateLayout(layout) {
   return layout.map((row) => row.slice());
 }
 
+function clamp(value, min, max) {
+  return Math.min(Math.max(value, min), max);
+}
+
 const BASE_LAYOUT = [
   ["Л1ВН", "П", "П", "П", "1Щ1ВН", "В1ВВ", "2Щ1ВН", "1З1ВН", "П", "П"],
   ["П", "П", "2З1Л", "П", "П", "П", "П", "П", "П", "П"],
@@ -190,6 +194,7 @@ const BOARD_WIDTH = STARTING_LAYOUTS[DEFAULT_LAYOUT_KEY].tokens[0].length;
 const FILES = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".slice(0, BOARD_WIDTH);
 const THEME_STORAGE_KEY = "laser-theme";
 const DEFAULT_SERVER_URL = "wss://mazepark-1.onrender.com";
+const BASE_EFFECT_CLASS = "piece-effect--impact";
 
 const PLAYERS = {
   light: {
@@ -241,6 +246,7 @@ const SKINS = {
   Slavic: {
     label: "Славянский орден",
     preview: "pieces/skins/Slavic/Type1/volhv.png",
+    configPath: "pieces/skins/Slavic/config.json",
     types: {
       Type1: { label: "Перун", preview: "pieces/skins/Slavic/Type1/volhv.png" },
       Type2: { label: "Чернобог", preview: "pieces/skins/Slavic/Type2/volhv.png" }
@@ -258,14 +264,16 @@ const SKINS = {
   Greece: {
     label: "Греция",
     preview: "pieces/skins/Greece/Type1/preview.png",
+    configPath: "pieces/skins/Greece/config.json",
     types: {
       Type1: { label: "Легионер", preview: "pieces/skins/Greece/Type1/volhv.png" },
       Type2: { label: "Амазонка", preview: "pieces/skins/Greece/Type2/volhv.png" }
     }
-  },  
+  },
   Lavcraft: {
     label: "Говард Лавкрафт",
     preview: "pieces/skins/Lavcraft/Type1/preview.png",
+    configPath: "pieces/skins/Lavcraft/config.json",
     types: {
       Type1: { label: "Ктулху", preview: "pieces/skins/Lavcraft/Type1/volhv.png" },
       Type2: { label: "Жрец Ордена", preview: "pieces/skins/Lavcraft/Type2/volhv.png" }
@@ -274,6 +282,7 @@ const SKINS = {
   Egypt: {
     label: "Египет",
     preview: "pieces/skins/Egypt/Type1/preview.png",
+    configPath: "pieces/skins/Egypt/config.json",
     types: {
       Type1: { label: "Наложница", preview: "pieces/skins/Egypt/Type1/volhv.png" },
       Type2: { label: "Фараон", preview: "pieces/skins/Egypt/Type2/volhv.png" }
@@ -887,6 +896,7 @@ function initialiseBoardGrid() {
   elements.board.innerHTML = "";
   elements.board.style.setProperty("--board-columns", BOARD_WIDTH);
   elements.board.style.setProperty("--board-rows", BOARD_HEIGHT);
+  updateOverlayGridMetrics();
   for (let y = 0; y < BOARD_HEIGHT; y++) {
     cells[y] = [];
     for (let x = 0; x < BOARD_WIDTH; x++) {
@@ -902,6 +912,15 @@ function initialiseBoardGrid() {
       cells[y][x] = cell;
     }
   }
+}
+
+function updateOverlayGridMetrics() {
+  const overlays = [elements.effectsOverlay, elements.laserOverlay];
+  overlays.forEach((overlay) => {
+    if (!overlay) return;
+    overlay.style.setProperty("--board-columns", BOARD_WIDTH);
+    overlay.style.setProperty("--board-rows", BOARD_HEIGHT);
+  });
 }
 
 function attachEventListeners() {
@@ -2096,23 +2115,40 @@ function triggerPieceDestructionEffects({ attackerSelection, victimSelection, ce
 
 function spawnEffectForSelection(selection, classKey, center) {
   if (!selection || !selection.skin || !elements.effectsOverlay) return;
-  ensureSkinConfig(selection.skin);
+  const snapshot = { skin: selection.skin, type: selection.type };
+  const spawnIfReady = () => spawnEffectFromConfig(snapshot, classKey, center);
+  if (spawnIfReady()) {
+    return;
+  }
+  const pending = ensureSkinConfig(snapshot.skin);
+  if (pending && typeof pending.then === "function") {
+    pending
+      .then(() => {
+        spawnIfReady();
+      })
+      .catch(() => {});
+  }
+}
+
+function spawnEffectFromConfig(selection, classKey, center) {
   const config = getSkinConfig(selection);
   const animations = config && config.animations;
-  if (!animations) return;
-  const classValue = animations[classKey];
-  if (!classValue) return;
-  const classes = Array.isArray(classValue)
-    ? classValue
-    : String(classValue)
-        .split(/\s+/)
-        .map((cls) => cls.trim())
-        .filter(Boolean);
-  if (!classes.length) return;
+  if (!animations) return false;
+  const descriptor = animations[classKey];
+  const normalised = normaliseAnimationDescriptor(descriptor);
+  if (!normalised) return false;
+  const { classes, offsetX, offsetY, scale } = normalised;
+  if (!classes.length) return false;
   const effect = document.createElement("div");
-  effect.classList.add("piece-effect", ...classes);
-  effect.style.left = `${(center.x / BOARD_WIDTH) * 100}%`;
-  effect.style.top = `${(center.y / BOARD_HEIGHT) * 100}%`;
+  const classList = classes.filter((cls) => cls && cls !== BASE_EFFECT_CLASS);
+  effect.classList.add("piece-effect", BASE_EFFECT_CLASS, ...classList);
+  const adjustedX = clamp(center.x + offsetX, 0.5, BOARD_WIDTH - 0.5);
+  const adjustedY = clamp(center.y + offsetY, 0.5, BOARD_HEIGHT - 0.5);
+  effect.style.left = `${(adjustedX / BOARD_WIDTH) * 100}%`;
+  effect.style.top = `${(adjustedY / BOARD_HEIGHT) * 100}%`;
+  if (typeof scale === "number" && Number.isFinite(scale) && scale > 0) {
+    effect.style.setProperty("--effect-scale", String(scale));
+  }
   elements.effectsOverlay.appendChild(effect);
   const remove = () => {
     if (effect.parentElement) {
@@ -2122,6 +2158,94 @@ function spawnEffectForSelection(selection, classKey, center) {
   effect.addEventListener("animationend", remove, { once: true });
   effect.addEventListener("transitionend", remove, { once: true });
   window.setTimeout(remove, 1500);
+  return true;
+}
+
+function normaliseAnimationDescriptor(descriptor) {
+  if (!descriptor) return null;
+
+  const classSet = new Set();
+  let scale = null;
+  let offsetX = 0;
+  let offsetY = 0;
+
+  const appendClasses = (value) => {
+    if (Array.isArray(value)) {
+      value.forEach(appendClasses);
+      return;
+    }
+    if (!value && value !== 0) {
+      return;
+    }
+    String(value)
+      .split(/\s+/)
+      .map((cls) => cls.trim())
+      .filter(Boolean)
+      .forEach((cls) => classSet.add(cls));
+  };
+
+  const applyOffset = (value) => {
+    if (!value && value !== 0) {
+      return;
+    }
+    if (Array.isArray(value)) {
+      if (value.length > 0 && Number.isFinite(Number(value[0]))) {
+        offsetX = Number(value[0]);
+      }
+      if (value.length > 1 && Number.isFinite(Number(value[1]))) {
+        offsetY = Number(value[1]);
+      }
+      return;
+    }
+    if (typeof value === "object") {
+      const maybeX = Number(value.x ?? value.dx);
+      const maybeY = Number(value.y ?? value.dy);
+      if (Number.isFinite(maybeX)) {
+        offsetX = maybeX;
+      }
+      if (Number.isFinite(maybeY)) {
+        offsetY = maybeY;
+      }
+      return;
+    }
+    const numeric = Number(value);
+    if (Number.isFinite(numeric)) {
+      offsetX = numeric;
+      offsetY = numeric;
+    }
+  };
+
+  if (Array.isArray(descriptor)) {
+    descriptor.forEach(appendClasses);
+  } else if (typeof descriptor === "string") {
+    appendClasses(descriptor);
+  } else if (typeof descriptor === "object") {
+    if (Array.isArray(descriptor.classes)) {
+      descriptor.classes.forEach(appendClasses);
+    }
+    if (descriptor.class) {
+      appendClasses(descriptor.class);
+    }
+    if (descriptor.className) {
+      appendClasses(descriptor.className);
+    }
+    if (descriptor.offset !== undefined) {
+      applyOffset(descriptor.offset);
+    }
+    if (descriptor.scale !== undefined) {
+      const numeric = Number(descriptor.scale);
+      if (Number.isFinite(numeric) && numeric > 0) {
+        scale = numeric;
+      }
+    }
+  }
+
+  const classes = Array.from(classSet).filter(Boolean);
+  if (!classes.length) {
+    return null;
+  }
+
+  return { classes, offsetX, offsetY, scale };
 }
 
 function computeLaserSignature(result) {
@@ -2559,13 +2683,13 @@ function applyRemoteState(state, options = {}) {
     lastLaserResult = nextLaserResult;
     if (lastLaserResult) {
       highlightLaserPath(lastLaserResult);
-      if (incomingLaser && incomingLaser.hit) {
-        handleLaserImpact(lastLaserResult);
-      }
     } else {
       clearLaserPath();
     }
   });
+  if (lastLaserResult && lastLaserResult.hit) {
+    handleLaserImpact(lastLaserResult);
+  }
 }
 
 function broadcastGameState(reason) {

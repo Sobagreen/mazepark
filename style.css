@@ -693,6 +693,8 @@ body.theme-light .piece {
   position: absolute;
   inset: 0;
   z-index: 3;
+  --board-columns: 10;
+  --board-rows: 8;
   --laser-core-color: var(--laser, #ff5e5e);
   --laser-beam-gradient: linear-gradient(90deg, rgba(255, 255, 255, 0.2), var(--laser-core-color));
   --laser-glow-color: rgba(255, 94, 94, 0.55);
@@ -705,6 +707,8 @@ body.theme-light .piece {
   position: absolute;
   inset: 0;
   z-index: 4;
+  --board-columns: 10;
+  --board-rows: 8;
 }
 
 .board-toolbar {
@@ -846,13 +850,18 @@ body.theme-light .board-action {
 .piece-effect {
   position: absolute;
   pointer-events: none;
-  aspect-ratio: 1;
+  --effect-scale: 1;
+  width: calc((100% / var(--board-columns, 10)) * var(--effect-scale));
+  height: calc((100% / var(--board-rows, 8)) * var(--effect-scale));
   transform: translate(-50%, -50%);
   opacity: 0;
 }
 
+.piece-effect--impact {
+  --effect-scale: 1;
+}
+
 .piece-effect--premium-own {
-  width: 12%;
   border-radius: 50%;
   background: radial-gradient(circle, rgba(250, 236, 179, 0.95) 0%, rgba(212, 175, 55, 0.7) 48%, rgba(0, 0, 0, 0.85) 82%);
   box-shadow:
@@ -863,7 +872,6 @@ body.theme-light .board-action {
 }
 
 .piece-effect--premium-enemy {
-  width: 18%;
   border-radius: 50%;
   background:
     radial-gradient(circle, rgba(0, 0, 0, 0.85) 0%, rgba(32, 24, 0, 0.6) 32%, rgba(212, 175, 55, 0.75) 65%, rgba(250, 236, 179, 0) 90%);
@@ -876,7 +884,6 @@ body.theme-light .board-action {
 }
 
 .piece-effect--japan-own {
-  width: 11.5%;
   border-radius: 50%;
   background: radial-gradient(circle, rgba(182, 235, 171, 0.95) 0%, rgba(98, 168, 92, 0.72) 52%, rgba(12, 36, 16, 0.88) 100%);
   box-shadow:
@@ -887,7 +894,6 @@ body.theme-light .board-action {
 }
 
 .piece-effect--japan-enemy {
-  width: 16%;
   background: linear-gradient(135deg, rgba(255, 255, 255, 0) 40%, rgba(234, 255, 226, 0.95) 47%, rgba(108, 196, 97, 0.95) 50%, rgba(234, 255, 226, 0.95) 53%, rgba(255, 255, 255, 0) 60%);
   filter: drop-shadow(0 0 22px rgba(132, 214, 122, 0.65));
   animation: japan-slice-line 0.45s ease-out forwards;
@@ -914,6 +920,263 @@ body.theme-light .board-action {
 
 .piece-effect--japan-enemy::after {
   animation: japan-slice-right 0.62s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+}
+
+.piece-effect--lavcraft-type1-own {
+  border-radius: 46% 52% 48% 54%;
+  background: radial-gradient(circle at 45% 40%, rgba(116, 238, 206, 0.92) 0%, rgba(40, 142, 114, 0.72) 48%, rgba(8, 36, 30, 0.9) 100%);
+  box-shadow:
+    0 0 22px rgba(82, 214, 188, 0.6),
+    0 0 52px rgba(12, 52, 44, 0.55);
+  mix-blend-mode: screen;
+  animation: lavcraft-type1-own 0.82s ease-out forwards;
+}
+
+.piece-effect--lavcraft-type1-enemy {
+  border-radius: 50%;
+  background:
+    conic-gradient(from 45deg, rgba(14, 46, 36, 0.92) 0% 15%, rgba(108, 214, 186, 0.85) 15% 22%, rgba(10, 30, 26, 0.92) 22% 35%, rgba(66, 170, 140, 0.82) 35% 42%, rgba(8, 20, 18, 0.9) 42% 60%, rgba(116, 238, 206, 0.9) 60% 68%, rgba(6, 14, 12, 0.92) 68% 100%);
+  filter: drop-shadow(0 0 22px rgba(74, 214, 180, 0.68));
+  animation: lavcraft-type1-enemy 0.72s cubic-bezier(0.25, 0.6, 0.32, 1) forwards;
+}
+
+.piece-effect--lavcraft-type1-enemy::before,
+.piece-effect--lavcraft-type1-enemy::after {
+  content: "";
+  position: absolute;
+  width: 26%;
+  height: 128%;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(74, 214, 180, 0.9) 0%, rgba(12, 42, 34, 0.0) 75%);
+  opacity: 0;
+  transform-origin: center 100%;
+}
+
+.piece-effect--lavcraft-type1-enemy::before {
+  left: 26%;
+  top: -12%;
+  animation: lavcraft-type1-tentacle-left 0.72s ease-out forwards;
+}
+
+.piece-effect--lavcraft-type1-enemy::after {
+  right: 26%;
+  top: -12%;
+  animation: lavcraft-type1-tentacle-right 0.72s ease-out forwards;
+}
+
+.piece-effect--lavcraft-type2-own {
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(214, 188, 255, 0.92) 0%, rgba(142, 102, 208, 0.75) 52%, rgba(24, 8, 54, 0.9) 100%);
+  box-shadow:
+    0 0 24px rgba(168, 132, 240, 0.65),
+    0 0 56px rgba(36, 12, 64, 0.55);
+  mix-blend-mode: screen;
+  animation: lavcraft-type2-own 0.78s ease-out forwards;
+}
+
+.piece-effect--lavcraft-type2-enemy {
+  position: relative;
+  border-radius: 32% 68% 42% 58% / 58% 42% 68% 32%;
+  background: radial-gradient(circle at 48% 45%, rgba(210, 188, 255, 0.92) 0%, rgba(118, 74, 200, 0.78) 52%, rgba(16, 4, 36, 0.92) 100%);
+  box-shadow: 0 0 26px rgba(150, 110, 228, 0.6);
+  animation: lavcraft-type2-enemy 0.76s cubic-bezier(0.26, 0.58, 0.32, 1) forwards;
+}
+
+.piece-effect--lavcraft-type2-enemy::before,
+.piece-effect--lavcraft-type2-enemy::after {
+  content: "";
+  position: absolute;
+  inset: -18%;
+  border-radius: 50%;
+  border: 3px solid rgba(152, 120, 240, 0.45);
+  filter: blur(0.5px);
+  opacity: 0;
+}
+
+.piece-effect--lavcraft-type2-enemy::before {
+  animation: lavcraft-type2-ring 0.76s ease-out forwards;
+}
+
+.piece-effect--lavcraft-type2-enemy::after {
+  animation: lavcraft-type2-ring 0.76s ease-out 0.08s forwards;
+}
+
+.piece-effect--egypt-type1-own {
+  border-radius: 42% 58% 50% 48%;
+  background: radial-gradient(circle at 50% 40%, rgba(255, 234, 186, 0.92) 0%, rgba(214, 152, 58, 0.8) 52%, rgba(44, 20, 0, 0.88) 100%);
+  box-shadow:
+    0 0 20px rgba(232, 176, 72, 0.62),
+    0 0 48px rgba(64, 28, 0, 0.55);
+  animation: egypt-type1-own 0.78s ease-out forwards;
+}
+
+.piece-effect--egypt-type1-enemy {
+  border-radius: 20% 20% 60% 60%;
+  background: linear-gradient(180deg, rgba(255, 220, 140, 0.95) 0%, rgba(214, 136, 38, 0.92) 48%, rgba(46, 20, 0, 0.88) 100%);
+  box-shadow: 0 0 26px rgba(232, 172, 62, 0.7);
+  transform-origin: 50% 10%;
+  animation: egypt-type1-enemy 0.68s ease-out forwards;
+}
+
+.piece-effect--egypt-type2-own {
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(198, 240, 255, 0.95) 0%, rgba(92, 172, 210, 0.78) 52%, rgba(10, 42, 64, 0.9) 100%);
+  box-shadow:
+    0 0 22px rgba(132, 206, 238, 0.65),
+    0 0 48px rgba(12, 52, 74, 0.52);
+  animation: egypt-type2-own 0.82s ease-out forwards;
+}
+
+.piece-effect--egypt-type2-enemy {
+  position: relative;
+  border-radius: 48% 52% 42% 58%;
+  background: linear-gradient(135deg, rgba(8, 28, 42, 0.92) 0%, rgba(38, 122, 168, 0.86) 45%, rgba(140, 220, 255, 0.92) 50%, rgba(34, 108, 152, 0.86) 55%, rgba(4, 18, 28, 0.92) 100%);
+  filter: drop-shadow(0 0 22px rgba(102, 188, 226, 0.68));
+  animation: egypt-type2-enemy 0.7s ease-out forwards;
+}
+
+.piece-effect--egypt-type2-enemy::before,
+.piece-effect--egypt-type2-enemy::after {
+  content: "";
+  position: absolute;
+  width: 28%;
+  height: 100%;
+  background: radial-gradient(circle at 50% 30%, rgba(138, 220, 255, 0.9) 0%, rgba(12, 56, 82, 0) 70%);
+  opacity: 0;
+}
+
+.piece-effect--egypt-type2-enemy::before {
+  left: 12%;
+  top: -18%;
+  animation: egypt-type2-shard-left 0.7s ease-out forwards;
+}
+
+.piece-effect--egypt-type2-enemy::after {
+  right: 12%;
+  top: -18%;
+  animation: egypt-type2-shard-right 0.7s ease-out forwards;
+}
+
+.piece-effect--slavic-type1-own {
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 186, 132, 0.95) 0%, rgba(214, 88, 24, 0.78) 52%, rgba(54, 14, 0, 0.88) 100%);
+  box-shadow:
+    0 0 26px rgba(255, 142, 72, 0.68),
+    0 0 56px rgba(62, 18, 0, 0.58);
+  animation: slavic-type1-own 0.76s ease-out forwards;
+}
+
+.piece-effect--slavic-type1-enemy {
+  border-radius: 34% 66% 40% 60% / 52% 48% 62% 38%;
+  background:
+    radial-gradient(circle at 50% 40%, rgba(255, 210, 160, 0.9) 0%, rgba(214, 96, 34, 0.86) 40%, rgba(54, 12, 0, 0.92) 100%);
+  box-shadow: 0 0 28px rgba(214, 102, 38, 0.68);
+  animation: slavic-type1-enemy 0.68s cubic-bezier(0.32, 0.6, 0.28, 1) forwards;
+}
+
+.piece-effect--slavic-type2-own {
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(192, 232, 255, 0.95) 0%, rgba(78, 156, 212, 0.78) 52%, rgba(10, 32, 58, 0.9) 100%);
+  box-shadow:
+    0 0 24px rgba(122, 188, 238, 0.65),
+    0 0 52px rgba(14, 52, 82, 0.55);
+  animation: slavic-type2-own 0.78s ease-out forwards;
+}
+
+.piece-effect--slavic-type2-enemy {
+  border-radius: 30% 70% 46% 54% / 58% 42% 68% 32%;
+  background: linear-gradient(125deg, rgba(10, 40, 66, 0.94) 0%, rgba(36, 110, 160, 0.82) 38%, rgba(148, 220, 255, 0.92) 50%, rgba(42, 118, 172, 0.82) 62%, rgba(6, 22, 38, 0.94) 100%);
+  filter: drop-shadow(0 0 24px rgba(128, 198, 238, 0.68));
+  animation: slavic-type2-enemy 0.7s ease-out forwards;
+}
+
+.piece-effect--slavic-type2-enemy::before,
+.piece-effect--slavic-type2-enemy::after {
+  content: "";
+  position: absolute;
+  inset: -12%;
+  border-radius: 40% 60% 60% 40%;
+  border: 2px solid rgba(148, 220, 255, 0.4);
+  opacity: 0;
+}
+
+.piece-effect--slavic-type2-enemy::before {
+  animation: slavic-type2-crest 0.7s ease-out forwards;
+}
+
+.piece-effect--slavic-type2-enemy::after {
+  animation: slavic-type2-crest 0.7s ease-out 0.06s forwards;
+}
+
+.piece-effect--greece-type1-own {
+  border-radius: 44% 56% 46% 54%;
+  background: radial-gradient(circle at 48% 42%, rgba(182, 222, 255, 0.95) 0%, rgba(92, 152, 210, 0.78) 48%, rgba(18, 42, 72, 0.88) 100%);
+  box-shadow:
+    0 0 22px rgba(142, 190, 238, 0.62),
+    0 0 48px rgba(20, 52, 86, 0.55);
+  animation: greece-type1-own 0.8s ease-out forwards;
+}
+
+.piece-effect--greece-type1-enemy {
+  border-radius: 30% 30% 60% 60%;
+  background: linear-gradient(180deg, rgba(196, 226, 255, 0.95) 0%, rgba(80, 136, 200, 0.86) 45%, rgba(18, 46, 78, 0.92) 100%);
+  box-shadow: 0 0 26px rgba(128, 182, 238, 0.68);
+  animation: greece-type1-enemy 0.68s ease-out forwards;
+}
+
+.piece-effect--greece-type1-enemy::before,
+.piece-effect--greece-type1-enemy::after {
+  content: "";
+  position: absolute;
+  width: 18%;
+  height: 110%;
+  background: linear-gradient(180deg, rgba(180, 222, 255, 0.92) 0%, rgba(42, 102, 168, 0) 90%);
+  opacity: 0;
+}
+
+.piece-effect--greece-type1-enemy::before {
+  left: 18%;
+  animation: greece-type1-spear-left 0.68s ease-out forwards;
+}
+
+.piece-effect--greece-type1-enemy::after {
+  right: 18%;
+  animation: greece-type1-spear-right 0.68s ease-out forwards;
+}
+
+.piece-effect--greece-type2-own {
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 242, 198, 0.95) 0%, rgba(214, 186, 92, 0.78) 52%, rgba(54, 36, 0, 0.9) 100%);
+  box-shadow:
+    0 0 24px rgba(242, 204, 116, 0.68),
+    0 0 52px rgba(64, 38, 0, 0.55);
+  animation: greece-type2-own 0.78s ease-out forwards;
+}
+
+.piece-effect--greece-type2-enemy {
+  border-radius: 36% 36% 64% 64%;
+  background: linear-gradient(180deg, rgba(255, 236, 178, 0.95) 0%, rgba(214, 164, 68, 0.88) 46%, rgba(54, 28, 0, 0.92) 100%);
+  box-shadow: 0 0 28px rgba(232, 188, 96, 0.72);
+  animation: greece-type2-enemy 0.7s ease-out forwards;
+}
+
+.piece-effect--greece-type2-enemy::before,
+.piece-effect--greece-type2-enemy::after {
+  content: "";
+  position: absolute;
+  inset: -18% -6% 18% -6%;
+  border-radius: 0 0 60% 60%;
+  border: 3px solid rgba(255, 226, 150, 0.45);
+  border-top: none;
+  opacity: 0;
+}
+
+.piece-effect--greece-type2-enemy::before {
+  animation: greece-type2-arc 0.7s ease-out forwards;
+}
+
+.piece-effect--greece-type2-enemy::after {
+  animation: greece-type2-arc 0.7s ease-out 0.08s forwards;
 }
 
 @keyframes premium-own-collapse {
@@ -1044,6 +1307,418 @@ body.theme-light .board-action {
   100% {
     transform: translate(-50%, -50%) scale(1);
     opacity: 0.6;
+  }
+}
+
+@keyframes lavcraft-type1-own {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.65) rotate(-6deg);
+    filter: blur(3px);
+  }
+  55% {
+    opacity: 0.95;
+    transform: translate(-50%, -50%) scale(1.08) rotate(2deg);
+    filter: blur(1.2px);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.78) rotate(10deg);
+    filter: blur(4px);
+  }
+}
+
+@keyframes lavcraft-type1-enemy {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.55) rotate(-12deg);
+    filter: blur(4px);
+  }
+  40% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.02) rotate(-4deg);
+    filter: blur(1.8px);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.2) rotate(8deg);
+    filter: blur(5px);
+  }
+}
+
+@keyframes lavcraft-type1-tentacle-left {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scaleY(0.2) rotate(-18deg);
+  }
+  40% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-110%, -90%) scaleY(1.2) rotate(-42deg);
+  }
+}
+
+@keyframes lavcraft-type1-tentacle-right {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scaleY(0.2) rotate(18deg);
+  }
+  40% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(110%, -90%) scaleY(1.2) rotate(42deg);
+  }
+}
+
+@keyframes lavcraft-type2-own {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.6);
+    filter: blur(3px);
+  }
+  50% {
+    opacity: 0.95;
+    transform: translate(-50%, -50%) scale(1.06);
+    filter: blur(1.2px);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.8);
+    filter: blur(4.2px);
+  }
+}
+
+@keyframes lavcraft-type2-enemy {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.5) rotate(-8deg);
+    filter: blur(3px);
+  }
+  50% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.05) rotate(4deg);
+    filter: blur(1.5px);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.25) rotate(12deg);
+    filter: blur(5px);
+  }
+}
+
+@keyframes lavcraft-type2-ring {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.45);
+  }
+  60% {
+    opacity: 0.9;
+    transform: translate(-50%, -50%) scale(1.05);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.4);
+  }
+}
+
+@keyframes egypt-type1-own {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.7) rotate(-4deg);
+    filter: blur(2px);
+  }
+  55% {
+    opacity: 0.96;
+    transform: translate(-50%, -50%) scale(1.05) rotate(2deg);
+    filter: blur(1px);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.78) rotate(6deg);
+    filter: blur(3.5px);
+  }
+}
+
+@keyframes egypt-type1-enemy {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scaleY(0.2);
+  }
+  45% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scaleY(1.05);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scaleY(1.28);
+  }
+}
+
+@keyframes egypt-type2-own {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.65);
+    filter: blur(2.4px);
+  }
+  55% {
+    opacity: 0.96;
+    transform: translate(-50%, -50%) scale(1.08);
+    filter: blur(1.1px);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.8);
+    filter: blur(4px);
+  }
+}
+
+@keyframes egypt-type2-enemy {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.55) rotate(-6deg);
+    filter: blur(3px);
+  }
+  50% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.02) rotate(2deg);
+    filter: blur(1.4px);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.18) rotate(6deg);
+    filter: blur(4.8px);
+  }
+}
+
+@keyframes egypt-type2-shard-left {
+  0% {
+    opacity: 0;
+    transform: translate(-20%, -30%) scale(0.3) rotate(-12deg);
+  }
+  55% {
+    opacity: 1;
+    transform: translate(-80%, -90%) scale(1) rotate(-32deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-120%, -130%) scale(1.15) rotate(-42deg);
+  }
+}
+
+@keyframes egypt-type2-shard-right {
+  0% {
+    opacity: 0;
+    transform: translate(20%, -30%) scale(0.3) rotate(12deg);
+  }
+  55% {
+    opacity: 1;
+    transform: translate(80%, -90%) scale(1) rotate(32deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(120%, -130%) scale(1.15) rotate(42deg);
+  }
+}
+
+@keyframes slavic-type1-own {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.65) rotate(-4deg);
+    filter: blur(2.5px);
+  }
+  55% {
+    opacity: 0.98;
+    transform: translate(-50%, -50%) scale(1.1) rotate(2deg);
+    filter: blur(1.2px);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.82) rotate(8deg);
+    filter: blur(4px);
+  }
+}
+
+@keyframes slavic-type1-enemy {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.6) rotate(-12deg);
+    filter: blur(3px);
+  }
+  50% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.08) rotate(-2deg);
+    filter: blur(1.5px);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.22) rotate(6deg);
+    filter: blur(5px);
+  }
+}
+
+@keyframes slavic-type2-own {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.65);
+    filter: blur(2.8px);
+  }
+  55% {
+    opacity: 0.96;
+    transform: translate(-50%, -50%) scale(1.06);
+    filter: blur(1.2px);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.8);
+    filter: blur(4.4px);
+  }
+}
+
+@keyframes slavic-type2-enemy {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.55) rotate(6deg);
+    filter: blur(2.8px);
+  }
+  50% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.04) rotate(-2deg);
+    filter: blur(1.4px);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.2) rotate(-8deg);
+    filter: blur(4.6px);
+  }
+}
+
+@keyframes slavic-type2-crest {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.6) rotate(8deg);
+  }
+  60% {
+    opacity: 0.9;
+    transform: translate(-50%, -50%) scale(1.05) rotate(-2deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.3) rotate(-10deg);
+  }
+}
+
+@keyframes greece-type1-own {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.65) rotate(-6deg);
+    filter: blur(2.6px);
+  }
+  55% {
+    opacity: 0.95;
+    transform: translate(-50%, -50%) scale(1.04) rotate(2deg);
+    filter: blur(1.3px);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.82) rotate(6deg);
+    filter: blur(4px);
+  }
+}
+
+@keyframes greece-type1-enemy {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scaleY(0.3);
+  }
+  55% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scaleY(1.05);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scaleY(1.3);
+  }
+}
+
+@keyframes greece-type1-spear-left {
+  0% {
+    opacity: 0;
+    transform: translate(-40%, -30%) scaleY(0.3);
+  }
+  55% {
+    opacity: 1;
+    transform: translate(-110%, -90%) scaleY(1.05);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-150%, -130%) scaleY(1.2);
+  }
+}
+
+@keyframes greece-type1-spear-right {
+  0% {
+    opacity: 0;
+    transform: translate(40%, -30%) scaleY(0.3);
+  }
+  55% {
+    opacity: 1;
+    transform: translate(110%, -90%) scaleY(1.05);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(150%, -130%) scaleY(1.2);
+  }
+}
+
+@keyframes greece-type2-own {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.68);
+    filter: blur(2.6px);
+  }
+  55% {
+    opacity: 0.95;
+    transform: translate(-50%, -50%) scale(1.06);
+    filter: blur(1.1px);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.84);
+    filter: blur(4px);
+  }
+}
+
+@keyframes greece-type2-enemy {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scaleY(0.35);
+  }
+  55% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scaleY(1.05);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scaleY(1.28);
+  }
+}
+
+@keyframes greece-type2-arc {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.6);
+  }
+  60% {
+    opacity: 0.85;
+    transform: translate(-50%, -50%) scale(1.05);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.28);
   }
 }
 
