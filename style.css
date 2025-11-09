@@ -875,6 +875,47 @@ body.theme-light .board-action {
   animation: premium-enemy-burst 0.72s cubic-bezier(0.32, 0.05, 0.36, 1) forwards;
 }
 
+.piece-effect--japan-own {
+  width: 11.5%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(182, 235, 171, 0.95) 0%, rgba(98, 168, 92, 0.72) 52%, rgba(12, 36, 16, 0.88) 100%);
+  box-shadow:
+    0 0 22px rgba(148, 214, 133, 0.55),
+    0 0 48px rgba(42, 102, 52, 0.35);
+  mix-blend-mode: screen;
+  animation: japan-own-pulse 0.75s ease-out forwards;
+}
+
+.piece-effect--japan-enemy {
+  width: 16%;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0) 40%, rgba(234, 255, 226, 0.95) 47%, rgba(108, 196, 97, 0.95) 50%, rgba(234, 255, 226, 0.95) 53%, rgba(255, 255, 255, 0) 60%);
+  filter: drop-shadow(0 0 22px rgba(132, 214, 122, 0.65));
+  animation: japan-slice-line 0.45s ease-out forwards;
+}
+
+.piece-effect--japan-enemy::before,
+.piece-effect--japan-enemy::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 58%;
+  height: 74%;
+  background: radial-gradient(circle at 50% 40%, rgba(242, 255, 234, 0.95) 0%, rgba(158, 222, 146, 0.78) 55%, rgba(44, 94, 50, 0.78) 100%);
+  border-radius: 28% 38% 48% 32%;
+  opacity: 0;
+  transform-origin: center;
+  box-shadow: 0 0 18px rgba(136, 214, 122, 0.45);
+}
+
+.piece-effect--japan-enemy::before {
+  animation: japan-slice-left 0.62s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+}
+
+.piece-effect--japan-enemy::after {
+  animation: japan-slice-right 0.62s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+}
+
 @keyframes premium-own-collapse {
   0% {
     opacity: 0.95;
@@ -908,6 +949,72 @@ body.theme-light .board-action {
     opacity: 0;
     transform: translate(-50%, -50%) scale(1.48);
     filter: blur(6px) brightness(0.65);
+  }
+}
+
+@keyframes japan-own-pulse {
+  0% {
+    opacity: 0.95;
+    transform: translate(-50%, -50%) scale(0.7);
+    filter: blur(1px);
+  }
+  45% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.05);
+    filter: blur(1.5px);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.45);
+    filter: blur(4px);
+  }
+}
+
+@keyframes japan-slice-line {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.65) rotate(18deg);
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.05) rotate(18deg);
+  }
+}
+
+@keyframes japan-slice-left {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.85) rotate(-6deg);
+  }
+  20% {
+    opacity: 1;
+  }
+  60% {
+    transform: translate(-82%, -58%) scale(0.85) rotate(-18deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-108%, -78%) scale(0.75) rotate(-24deg);
+  }
+}
+
+@keyframes japan-slice-right {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.85) rotate(6deg);
+  }
+  20% {
+    opacity: 1;
+  }
+  60% {
+    transform: translate(-18%, -42%) scale(0.85) rotate(18deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(8%, -70%) scale(0.75) rotate(26deg);
   }
 }
 

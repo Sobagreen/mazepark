@@ -1,11 +1,11 @@
 {
   "Type1": {
     "laser": {
-      "coreColor": "#d4af37",
-      "beamGradient": "linear-gradient(90deg, rgba(0, 0, 0, 0.85) 0%, rgba(36, 24, 0, 0.45) 36%, rgba(212, 175, 55, 0.95) 100%)",
-      "glowColor": "rgba(212, 175, 55, 0.65)",
-      "impactGradient": "radial-gradient(circle, rgba(250, 236, 179, 0.95) 0%, rgba(212, 175, 55, 0.8) 48%, rgba(0, 0, 0, 0.75) 78%)",
-      "impactShadow": "rgba(212, 175, 55, 0.7)"
+      "coreColor": "#f7e3a1",
+      "beamGradient": "linear-gradient(90deg, rgba(32, 18, 0, 0.92) 0%, rgba(112, 78, 9, 0.68) 22%, rgba(255, 236, 179, 0.98) 50%, rgba(212, 175, 55, 0.82) 78%, rgba(24, 14, 0, 0.9) 100%)",
+      "glowColor": "rgba(255, 226, 149, 0.78)",
+      "impactGradient": "radial-gradient(circle, rgba(255, 249, 224, 0.98) 0%, rgba(255, 221, 149, 0.85) 38%, rgba(214, 166, 72, 0.55) 62%, rgba(42, 22, 0, 0.88) 100%)",
+      "impactShadow": "rgba(255, 209, 110, 0.78)"
     },
     "animations": {
       "ownDestructionClass": "piece-effect--premium-own",
@@ -19,11 +19,11 @@
   },
   "Type2": {
     "laser": {
-      "coreColor": "#d4af37",
-      "beamGradient": "linear-gradient(90deg, rgba(0, 0, 0, 0.85) 0%, rgba(36, 24, 0, 0.45) 36%, rgba(212, 175, 55, 0.95) 100%)",
-      "glowColor": "rgba(212, 175, 55, 0.65)",
-      "impactGradient": "radial-gradient(circle, rgba(250, 236, 179, 0.95) 0%, rgba(212, 175, 55, 0.8) 48%, rgba(0, 0, 0, 0.75) 78%)",
-      "impactShadow": "rgba(212, 175, 55, 0.7)"
+      "coreColor": "#f4d87e",
+      "beamGradient": "linear-gradient(90deg, rgba(24, 12, 0, 0.9) 0%, rgba(143, 97, 20, 0.7) 24%, rgba(255, 237, 196, 0.98) 48%, rgba(218, 180, 72, 0.85) 74%, rgba(30, 16, 0, 0.9) 100%)",
+      "glowColor": "rgba(255, 216, 138, 0.82)",
+      "impactGradient": "radial-gradient(circle, rgba(255, 244, 209, 0.98) 0%, rgba(244, 201, 104, 0.82) 42%, rgba(180, 116, 28, 0.55) 65%, rgba(32, 16, 0, 0.88) 100%)",
+      "impactShadow": "rgba(248, 195, 102, 0.82)"
     },
     "animations": {
       "ownDestructionClass": "piece-effect--premium-own",

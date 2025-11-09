@@ -249,6 +249,7 @@ const SKINS = {
   Japan: {
     label: "Япония",
     preview: "pieces/skins/Japan/Type1/preview.png",
+    configPath: "pieces/skins/Japan/config.json",
     types: {
       Type1: { label: "Гейша", preview: "pieces/skins/Japan/Type1/volhv.png" },
       Type2: { label: "Сëгун", preview: "pieces/skins/Japan/Type2/volhv.png" }
@@ -328,6 +329,7 @@ let currentTheme = "dark";
 let lastStatusMessage = "";
 let lastLaserResult = null;
 let lastLaserEffectSignature = null;
+let lastLaserEffectTimestamp = 0;
 let lastMove = null;
 let skinSelection = cloneSkinSelection(DEFAULT_SKIN_SELECTION);
 let pendingSkins = cloneSkinSelection(DEFAULT_SKIN_SELECTION);
@@ -1973,6 +1975,7 @@ function clearLaserPath({ preserveState = false } = {}) {
   if (!preserveState) {
     lastLaserResult = null;
     lastLaserEffectSignature = null;
+    lastLaserEffectTimestamp = 0;
     resetLaserOverlayTheme();
   }
 }
@@ -2138,11 +2141,13 @@ function handleLaserImpact(result) {
     return;
   }
   const signature = computeLaserSignature(result);
-  if (signature && signature === lastLaserEffectSignature) {
+  const now = Date.now();
+  if (signature && signature === lastLaserEffectSignature && now - lastLaserEffectTimestamp < 250) {
     return;
   }
   if (signature) {
     lastLaserEffectSignature = signature;
+    lastLaserEffectTimestamp = now;
   }
   const attacker = result.player || null;
   const attackerSelection = result.skin && result.skin.skin

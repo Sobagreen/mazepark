@@ -1,0 +1,28 @@
+{
+  "Type1": {
+    "laser": {
+      "coreColor": "#6fbf5b",
+      "beamGradient": "linear-gradient(90deg, rgba(12, 28, 16, 0.92) 0%, rgba(57, 112, 64, 0.78) 24%, rgba(170, 231, 159, 0.98) 52%, rgba(95, 168, 92, 0.78) 78%, rgba(6, 18, 9, 0.9) 100%)",
+      "glowColor": "rgba(168, 231, 161, 0.72)",
+      "impactGradient": "radial-gradient(circle, rgba(222, 255, 214, 0.98) 0%, rgba(146, 214, 121, 0.84) 40%, rgba(54, 110, 48, 0.58) 68%, rgba(6, 14, 7, 0.88) 100%)",
+      "impactShadow": "rgba(122, 196, 108, 0.75)"
+    },
+    "animations": {
+      "ownDestructionClass": "piece-effect--japan-own",
+      "enemyDestructionClass": "piece-effect--japan-enemy"
+    }
+  },
+  "Type2": {
+    "laser": {
+      "coreColor": "#5aa54a",
+      "beamGradient": "linear-gradient(90deg, rgba(10, 22, 14, 0.92) 0%, rgba(46, 96, 56, 0.82) 26%, rgba(162, 226, 152, 0.98) 50%, rgba(82, 156, 84, 0.82) 76%, rgba(4, 14, 7, 0.92) 100%)",
+      "glowColor": "rgba(154, 220, 144, 0.76)",
+      "impactGradient": "radial-gradient(circle, rgba(216, 255, 208, 0.98) 0%, rgba(132, 200, 116, 0.85) 42%, rgba(44, 94, 52, 0.58) 68%, rgba(5, 12, 7, 0.9) 100%)",
+      "impactShadow": "rgba(110, 182, 102, 0.78)"
+    },
+    "animations": {
+      "ownDestructionClass": "piece-effect--japan-own",
+      "enemyDestructionClass": "piece-effect--japan-enemy"
+    }
+  }
+}
