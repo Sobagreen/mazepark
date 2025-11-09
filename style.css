@@ -322,7 +322,7 @@ body.theme-light .button--primary {
 
 .skin-card {
   display: grid;
-  gap: 0.75rem;
+  gap: 0.85rem;
   padding: 1rem;
   border-radius: 16px;
   border: 1px solid var(--panel-border-color);
@@ -334,24 +334,119 @@ body.theme-light .button--primary {
   font-size: 1rem;
 }
 
+.skin-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.75rem;
+}
+
+.skin-gallery--wide {
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+}
+
+.skin-gallery__item {
+  appearance: none;
+  display: grid;
+  gap: 0.4rem;
+  padding: 0.85rem;
+  border-radius: 14px;
+  border: 1px solid transparent;
+  background: rgba(15, 23, 42, 0.16);
+  color: inherit;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  text-align: left;
+}
+
+body.theme-light .skin-gallery__item {
+  background: rgba(15, 23, 42, 0.08);
+}
+
+.skin-gallery__item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.22);
+}
+
+.skin-gallery__item:focus-visible {
+  outline: 2px solid var(--accent-light);
+  outline-offset: 3px;
+}
+
+.skin-gallery__item--selected {
+  border-color: var(--accent-light);
+  box-shadow: 0 0 0 2px rgba(255, 209, 102, 0.3), 0 18px 30px rgba(15, 23, 42, 0.3);
+  background: rgba(255, 209, 102, 0.12);
+}
+
+body.theme-light .skin-gallery__item--selected {
+  background: rgba(255, 209, 102, 0.22);
+}
+
+.skin-gallery__thumb {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.14);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.skin-gallery__thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.skin-gallery__meta {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.skin-gallery__skin {
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.skin-gallery__name {
+  font-weight: 600;
+}
+
 .skin-preview {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem;
+  gap: 0.5rem;
+  padding: 0.85rem;
   border-radius: 14px;
   background: rgba(0, 0, 0, 0.08);
+  text-align: center;
 }
 
 .skin-preview img {
-  width: 64px;
-  height: 64px;
+  width: 72px;
+  height: 72px;
   object-fit: contain;
+  filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.35));
+}
+
+.skin-preview__description {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.skin-preview__label {
+  margin: 0;
+  font-weight: 600;
 }
 
 .skin-preview--inline {
   margin-top: 0.5rem;
-  justify-content: flex-start;
+  align-items: flex-start;
+  text-align: left;
 }
 
 .connection-card__title {
@@ -883,6 +978,105 @@ body.theme-light .board-action {
   animation: premium-enemy-burst 0.72s cubic-bezier(0.32, 0.05, 0.36, 1) forwards;
 }
 
+.piece-effect--arnuvo-type1-own {
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 226, 243, 0.96) 0%, rgba(244, 143, 177, 0.8) 48%, rgba(112, 16, 84, 0.9) 100%);
+  box-shadow:
+    0 0 24px rgba(244, 143, 177, 0.6),
+    0 0 52px rgba(112, 16, 84, 0.5);
+  mix-blend-mode: screen;
+  animation: arnuvo-type1-own 0.7s ease-out forwards;
+}
+
+.piece-effect--arnuvo-type1-enemy {
+  position: relative;
+  border-radius: 52% 48% 60% 40% / 48% 60% 40% 52%;
+  background: radial-gradient(circle at 50% 40%, rgba(255, 238, 247, 0.96) 0%, rgba(236, 72, 153, 0.82) 52%, rgba(84, 10, 62, 0.92) 100%);
+  box-shadow: 0 0 30px rgba(236, 72, 153, 0.6);
+  mix-blend-mode: lighten;
+  animation: arnuvo-type1-enemy 0.75s cubic-bezier(0.32, 0.05, 0.36, 1) forwards;
+}
+
+.piece-effect--arnuvo-type1-enemy::before,
+.piece-effect--arnuvo-type1-enemy::after {
+  content: "";
+  position: absolute;
+  inset: -18%;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 194, 220, 0.55);
+  opacity: 0;
+  mix-blend-mode: screen;
+}
+
+.piece-effect--arnuvo-type1-enemy::before {
+  animation: arnuvo-type1-ring 0.75s ease-out forwards;
+}
+
+.piece-effect--arnuvo-type1-enemy::after {
+  animation: arnuvo-type1-ring 0.75s ease-out 0.08s forwards;
+}
+
+.piece-effect--arnuvo-type2-own {
+  position: relative;
+  border-radius: 44% 56% 60% 40% / 58% 42% 58% 42%;
+  background: radial-gradient(circle at 52% 38%, rgba(255, 232, 247, 0.96) 0%, rgba(245, 129, 189, 0.82) 52%, rgba(94, 18, 72, 0.92) 100%);
+  box-shadow:
+    0 0 26px rgba(244, 114, 182, 0.6),
+    0 0 54px rgba(88, 12, 70, 0.5);
+  animation: arnuvo-type2-own 0.82s ease-out forwards;
+  mix-blend-mode: screen;
+}
+
+.piece-effect--arnuvo-type2-own::after {
+  content: "";
+  position: absolute;
+  inset: 18%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 244, 252, 0.9) 0%, rgba(251, 207, 232, 0.28) 75%, rgba(255, 244, 252, 0) 100%);
+  opacity: 0;
+  animation: arnuvo-type2-petals 0.82s ease-out forwards;
+}
+
+.piece-effect--arnuvo-type2-enemy {
+  position: relative;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 238, 248, 0.98) 0%, rgba(231, 84, 156, 0.82) 48%, rgba(92, 12, 68, 0.9) 100%);
+  box-shadow:
+    0 0 32px rgba(236, 72, 153, 0.58),
+    0 0 68px rgba(110, 0, 82, 0.45);
+  animation: arnuvo-type2-enemy 0.78s cubic-bezier(0.32, 0.05, 0.36, 1) forwards;
+}
+
+.piece-effect--arnuvo-type2-enemy::before,
+.piece-effect--arnuvo-type2-enemy::after {
+  content: "";
+  position: absolute;
+  inset: -22%;
+  border-radius: 50%;
+  background: conic-gradient(
+    rgba(255, 194, 220, 0.85) 0deg 18deg,
+    transparent 18deg 36deg,
+    rgba(255, 194, 220, 0.85) 36deg 54deg,
+    transparent 54deg 72deg,
+    rgba(255, 194, 220, 0.85) 72deg 90deg,
+    transparent 90deg 108deg,
+    rgba(255, 194, 220, 0.85) 108deg 126deg,
+    transparent 126deg 144deg,
+    rgba(255, 194, 220, 0.85) 144deg 162deg,
+    transparent 162deg 180deg
+  );
+  opacity: 0;
+  mix-blend-mode: screen;
+}
+
+.piece-effect--arnuvo-type2-enemy::before {
+  animation: arnuvo-type2-petals 0.78s ease-out forwards;
+}
+
+.piece-effect--arnuvo-type2-enemy::after {
+  animation: arnuvo-type2-petals 0.78s ease-out 0.06s forwards;
+}
+
 .piece-effect--japan-own {
   border-radius: 50%;
   background: radial-gradient(circle, rgba(182, 235, 171, 0.95) 0%, rgba(98, 168, 92, 0.72) 52%, rgba(12, 36, 16, 0.88) 100%);
@@ -1212,6 +1406,98 @@ body.theme-light .board-action {
     opacity: 0;
     transform: translate(-50%, -50%) scale(1.48);
     filter: blur(6px) brightness(0.65);
+  }
+}
+
+@keyframes arnuvo-type1-own {
+  0% {
+    transform: translate(-50%, -50%) scale(0.6);
+    opacity: 0.95;
+    filter: blur(0.5px);
+  }
+  55% {
+    opacity: 0.85;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1.35);
+    opacity: 0;
+    filter: blur(4px);
+  }
+}
+
+@keyframes arnuvo-type1-enemy {
+  0% {
+    transform: translate(-50%, -50%) scale(0.45) rotate(-12deg);
+    opacity: 0.88;
+    filter: blur(0.5px);
+  }
+  55% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1.4) rotate(6deg);
+    opacity: 0;
+    filter: blur(4px);
+  }
+}
+
+@keyframes arnuvo-type1-ring {
+  0% {
+    transform: translate(-50%, -50%) scale(0.45);
+    opacity: 0.85;
+  }
+  65% {
+    opacity: 0.6;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1.45);
+    opacity: 0;
+  }
+}
+
+@keyframes arnuvo-type2-own {
+  0% {
+    transform: translate(-50%, -50%) scale(0.55) rotate(-18deg);
+    opacity: 0.92;
+    filter: blur(0.5px);
+  }
+  60% {
+    opacity: 0.72;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1.38) rotate(10deg);
+    opacity: 0;
+    filter: blur(4px);
+  }
+}
+
+@keyframes arnuvo-type2-enemy {
+  0% {
+    transform: translate(-50%, -50%) scale(0.48) rotate(0deg);
+    opacity: 0.9;
+    filter: blur(0.5px);
+  }
+  55% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1.45) rotate(12deg);
+    opacity: 0;
+    filter: blur(4px);
+  }
+}
+
+@keyframes arnuvo-type2-petals {
+  0% {
+    transform: translate(-50%, -50%) scale(0.5) rotate(0deg);
+    opacity: 0.9;
+  }
+  65% {
+    opacity: 0.7;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1.4) rotate(90deg);
+    opacity: 0;
   }
 }
 

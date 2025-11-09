@@ -42,33 +42,37 @@
       <div class="skin-grid">
         <section class="skin-card" aria-labelledby="offline-light-title">
           <h3 id="offline-light-title">☼ Первый Игрок</h3>
-          <label class="connection-field">
+          <div id="offline-light-gallery" class="skin-gallery" role="listbox" aria-label="Выбор персонажа для первого игрока"></div>
+          <div class="skin-preview">
+            <p id="offline-light-preview-description" class="skin-preview__description"></p>
+            <img id="offline-light-preview" src="pieces/skins/Slavic/Type1/laser.png" alt="">
+            <p id="offline-light-preview-label" class="skin-preview__label"></p>
+          </div>
+          <label class="connection-field" hidden>
             <span class="connection-field__label">Скин</span>
             <select id="offline-light-skin" class="connection-field__input"></select>
           </label>
-          <label class="connection-field">
+          <label class="connection-field" hidden>
             <span class="connection-field__label">Тип</span>
             <select id="offline-light-type" class="connection-field__input"></select>
           </label>
-          <div class="skin-preview">
-            <img id="offline-light-preview" src="pieces/skins/Slavic/Type1/laser.png" alt="">
-            <p id="offline-light-preview-label"></p>
-          </div>
         </section>
         <section class="skin-card" aria-labelledby="offline-shadow-title">
           <h3 id="offline-shadow-title">☽ Второй Игрок</h3>
-          <label class="connection-field">
+          <div id="offline-shadow-gallery" class="skin-gallery" role="listbox" aria-label="Выбор персонажа для второго игрока"></div>
+          <div class="skin-preview">
+            <p id="offline-shadow-preview-description" class="skin-preview__description"></p>
+            <img id="offline-shadow-preview" src="pieces/skins/Slavic/Type2/laser.png" alt="">
+            <p id="offline-shadow-preview-label" class="skin-preview__label"></p>
+          </div>
+          <label class="connection-field" hidden>
             <span class="connection-field__label">Скин</span>
             <select id="offline-shadow-skin" class="connection-field__input"></select>
           </label>
-          <label class="connection-field">
+          <label class="connection-field" hidden>
             <span class="connection-field__label">Тип</span>
             <select id="offline-shadow-type" class="connection-field__input"></select>
           </label>
-          <div class="skin-preview">
-            <img id="offline-shadow-preview" src="pieces/skins/Slavic/Type2/laser.png" alt="">
-            <p id="offline-shadow-preview-label"></p>
-          </div>
         </section>
       </div>
       <p id="offline-conflict" class="connection-warning" hidden></p>
@@ -114,19 +118,22 @@
         <select id="online-layout" class="connection-field__input"></select>
       </label>
 
-      <label class="connection-field">
+      <label class="connection-field" hidden>
         <span class="connection-field__label">Скин</span>
         <select id="online-skin" class="connection-field__input"></select>
       </label>
 
-      <label class="connection-field">
+      <label class="connection-field" hidden>
         <span class="connection-field__label">Тип</span>
         <select id="online-type" class="connection-field__input"></select>
       </label>
 
+      <div id="online-skin-gallery" class="skin-gallery skin-gallery--wide" role="listbox" aria-label="Выбор персонажа для сетевой игры"></div>
+
       <div class="skin-preview skin-preview--inline">
+        <p id="online-preview-description" class="skin-preview__description"></p>
         <img id="online-preview-image" src="pieces/skins/Slavic/Type1/laser.png" alt="">
-        <p id="online-preview-label"></p>
+        <p id="online-preview-label" class="skin-preview__label"></p>
       </div>
 
       <ul id="connection-players" class="connection-players" aria-live="polite">

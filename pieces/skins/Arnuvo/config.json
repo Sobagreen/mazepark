@@ -1,0 +1,68 @@
+{
+  "Type1": {
+    "description": "Нежно-розовый лазер, чьё прикосновение оставляет после себя парящий лепестковый шлейф.",
+    "laser": {
+      "coreColor": "#f7b6d9",
+      "beamGradient": "linear-gradient(90deg, rgba(46, 10, 34, 0.92) 0%, rgba(179, 62, 124, 0.75) 32%, rgba(255, 224, 242, 0.98) 52%, rgba(212, 96, 158, 0.82) 78%, rgba(34, 6, 26, 0.9) 100%)",
+      "glowColor": "rgba(250, 192, 222, 0.82)",
+      "impactGradient": "radial-gradient(circle, rgba(255, 240, 248, 0.98) 0%, rgba(243, 164, 201, 0.84) 42%, rgba(160, 48, 110, 0.58) 68%, rgba(48, 6, 32, 0.9) 100%)",
+      "impactShadow": "rgba(244, 160, 198, 0.78)"
+    },
+    "animations": {
+      "ownDestructionClass": {
+        "classes": [
+          "piece-effect--impact",
+          "piece-effect--arnuvo-type1-own"
+        ],
+        "offset": { "x": 0, "y": 0 },
+        "scale": 1.18
+      },
+      "enemyDestructionClass": {
+        "classes": [
+          "piece-effect--impact",
+          "piece-effect--arnuvo-type1-enemy"
+        ],
+        "offset": { "x": 0, "y": 0 },
+        "scale": 1.9
+      }
+    },
+    "sounds": {
+      "move": "pieces/skins/premium/audio/move.wav",
+      "destroyEnemy": "pieces/skins/premium/audio/destroy-enemy.wav",
+      "victory": "pieces/skins/premium/audio/victory.wav"
+    }
+  },
+  "Type2": {
+    "description": "Розовый луч с бархатной дымкой и разрушение фигур в виде распускающейся розы.",
+    "laser": {
+      "coreColor": "#f6c6eb",
+      "beamGradient": "linear-gradient(90deg, rgba(40, 8, 28, 0.9) 0%, rgba(168, 58, 134, 0.72) 28%, rgba(255, 218, 240, 0.98) 52%, rgba(214, 112, 176, 0.82) 78%, rgba(34, 8, 26, 0.92) 100%)",
+      "glowColor": "rgba(247, 188, 222, 0.85)",
+      "impactGradient": "radial-gradient(circle, rgba(255, 236, 248, 0.98) 0%, rgba(239, 160, 206, 0.84) 42%, rgba(164, 52, 128, 0.6) 68%, rgba(46, 8, 34, 0.9) 100%)",
+      "impactShadow": "rgba(244, 164, 208, 0.8)"
+    },
+    "animations": {
+      "ownDestructionClass": {
+        "classes": [
+          "piece-effect--impact",
+          "piece-effect--arnuvo-type2-own"
+        ],
+        "offset": { "x": 0, "y": 0 },
+        "scale": 1.24
+      },
+      "enemyDestructionClass": {
+        "classes": [
+          "piece-effect--impact",
+          "piece-effect--arnuvo-type2-enemy"
+        ],
+        "offset": { "x": 0, "y": 0 },
+        "scale": 1.95
+      }
+    },
+    "sounds": {
+      "move": "pieces/skins/premium/audio/move.wav",
+      "destroyEnemy": "pieces/skins/premium/audio/destroy-enemy.wav",
+      "victory": "pieces/skins/premium/audio/victory.wav"
+    }
+  }
+}
