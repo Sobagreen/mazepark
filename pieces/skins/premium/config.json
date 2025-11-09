@@ -8,8 +8,22 @@
       "impactShadow": "rgba(255, 209, 110, 0.78)"
     },
     "animations": {
-      "ownDestructionClass": "piece-effect--premium-own",
-      "enemyDestructionClass": "piece-effect--premium-enemy"
+      "ownDestructionClass": {
+        "classes": [
+          "piece-effect--impact",
+          "piece-effect--premium-own"
+        ],
+        "offset": { "x": 0, "y": 0 },
+        "scale": 1.2
+      },
+      "enemyDestructionClass": {
+        "classes": [
+          "piece-effect--impact",
+          "piece-effect--premium-enemy"
+        ],
+        "offset": { "x": 0, "y": 0 },
+        "scale": 1.8
+      }
     },
     "sounds": {
       "move": "pieces/skins/premium/audio/move.wav",
@@ -26,8 +40,22 @@
       "impactShadow": "rgba(248, 195, 102, 0.82)"
     },
     "animations": {
-      "ownDestructionClass": "piece-effect--premium-own",
-      "enemyDestructionClass": "piece-effect--premium-enemy"
+      "ownDestructionClass": {
+        "classes": [
+          "piece-effect--impact",
+          "piece-effect--premium-own"
+        ],
+        "offset": { "x": 0, "y": 0 },
+        "scale": 1.2
+      },
+      "enemyDestructionClass": {
+        "classes": [
+          "piece-effect--impact",
+          "piece-effect--premium-enemy"
+        ],
+        "offset": { "x": 0, "y": 0 },
+        "scale": 1.8
+      }
     },
     "sounds": {
       "move": "pieces/skins/premium/audio/move.wav",

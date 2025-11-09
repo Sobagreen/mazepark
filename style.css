@@ -693,6 +693,8 @@ body.theme-light .piece {
   position: absolute;
   inset: 0;
   z-index: 3;
+  --board-columns: 10;
+  --board-rows: 8;
   --laser-core-color: var(--laser, #ff5e5e);
   --laser-beam-gradient: linear-gradient(90deg, rgba(255, 255, 255, 0.2), var(--laser-core-color));
   --laser-glow-color: rgba(255, 94, 94, 0.55);
@@ -705,6 +707,8 @@ body.theme-light .piece {
   position: absolute;
   inset: 0;
   z-index: 4;
+  --board-columns: 10;
+  --board-rows: 8;
 }
 
 .board-toolbar {
@@ -846,13 +850,18 @@ body.theme-light .board-action {
 .piece-effect {
   position: absolute;
   pointer-events: none;
-  aspect-ratio: 1;
+  --effect-scale: 1;
+  width: calc((100% / var(--board-columns, 10)) * var(--effect-scale));
+  height: calc((100% / var(--board-rows, 8)) * var(--effect-scale));
   transform: translate(-50%, -50%);
   opacity: 0;
 }
 
+.piece-effect--impact {
+  --effect-scale: 1;
+}
+
 .piece-effect--premium-own {
-  width: 12%;
   border-radius: 50%;
   background: radial-gradient(circle, rgba(250, 236, 179, 0.95) 0%, rgba(212, 175, 55, 0.7) 48%, rgba(0, 0, 0, 0.85) 82%);
   box-shadow:
@@ -863,7 +872,6 @@ body.theme-light .board-action {
 }
 
 .piece-effect--premium-enemy {
-  width: 18%;
   border-radius: 50%;
   background:
     radial-gradient(circle, rgba(0, 0, 0, 0.85) 0%, rgba(32, 24, 0, 0.6) 32%, rgba(212, 175, 55, 0.75) 65%, rgba(250, 236, 179, 0) 90%);
@@ -876,7 +884,6 @@ body.theme-light .board-action {
 }
 
 .piece-effect--japan-own {
-  width: 11.5%;
   border-radius: 50%;
   background: radial-gradient(circle, rgba(182, 235, 171, 0.95) 0%, rgba(98, 168, 92, 0.72) 52%, rgba(12, 36, 16, 0.88) 100%);
   box-shadow:
@@ -887,7 +894,6 @@ body.theme-light .board-action {
 }
 
 .piece-effect--japan-enemy {
-  width: 16%;
   background: linear-gradient(135deg, rgba(255, 255, 255, 0) 40%, rgba(234, 255, 226, 0.95) 47%, rgba(108, 196, 97, 0.95) 50%, rgba(234, 255, 226, 0.95) 53%, rgba(255, 255, 255, 0) 60%);
   filter: drop-shadow(0 0 22px rgba(132, 214, 122, 0.65));
   animation: japan-slice-line 0.45s ease-out forwards;
@@ -917,7 +923,6 @@ body.theme-light .board-action {
 }
 
 .piece-effect--lavcraft-type1-own {
-  width: 13%;
   border-radius: 46% 52% 48% 54%;
   background: radial-gradient(circle at 45% 40%, rgba(116, 238, 206, 0.92) 0%, rgba(40, 142, 114, 0.72) 48%, rgba(8, 36, 30, 0.9) 100%);
   box-shadow:
@@ -928,7 +933,6 @@ body.theme-light .board-action {
 }
 
 .piece-effect--lavcraft-type1-enemy {
-  width: 19%;
   border-radius: 50%;
   background:
     conic-gradient(from 45deg, rgba(14, 46, 36, 0.92) 0% 15%, rgba(108, 214, 186, 0.85) 15% 22%, rgba(10, 30, 26, 0.92) 22% 35%, rgba(66, 170, 140, 0.82) 35% 42%, rgba(8, 20, 18, 0.9) 42% 60%, rgba(116, 238, 206, 0.9) 60% 68%, rgba(6, 14, 12, 0.92) 68% 100%);
@@ -961,7 +965,6 @@ body.theme-light .board-action {
 }
 
 .piece-effect--lavcraft-type2-own {
-  width: 12.5%;
   border-radius: 50%;
   background: radial-gradient(circle, rgba(214, 188, 255, 0.92) 0%, rgba(142, 102, 208, 0.75) 52%, rgba(24, 8, 54, 0.9) 100%);
   box-shadow:
@@ -972,7 +975,6 @@ body.theme-light .board-action {
 }
 
 .piece-effect--lavcraft-type2-enemy {
-  width: 18%;
   position: relative;
   border-radius: 32% 68% 42% 58% / 58% 42% 68% 32%;
   background: radial-gradient(circle at 48% 45%, rgba(210, 188, 255, 0.92) 0%, rgba(118, 74, 200, 0.78) 52%, rgba(16, 4, 36, 0.92) 100%);
@@ -1000,7 +1002,6 @@ body.theme-light .board-action {
 }
 
 .piece-effect--egypt-type1-own {
-  width: 12%;
   border-radius: 42% 58% 50% 48%;
   background: radial-gradient(circle at 50% 40%, rgba(255, 234, 186, 0.92) 0%, rgba(214, 152, 58, 0.8) 52%, rgba(44, 20, 0, 0.88) 100%);
   box-shadow:
@@ -1010,7 +1011,6 @@ body.theme-light .board-action {
 }
 
 .piece-effect--egypt-type1-enemy {
-  width: 17%;
   border-radius: 20% 20% 60% 60%;
   background: linear-gradient(180deg, rgba(255, 220, 140, 0.95) 0%, rgba(214, 136, 38, 0.92) 48%, rgba(46, 20, 0, 0.88) 100%);
   box-shadow: 0 0 26px rgba(232, 172, 62, 0.7);
@@ -1019,7 +1019,6 @@ body.theme-light .board-action {
 }
 
 .piece-effect--egypt-type2-own {
-  width: 11.5%;
   border-radius: 50%;
   background: radial-gradient(circle, rgba(198, 240, 255, 0.95) 0%, rgba(92, 172, 210, 0.78) 52%, rgba(10, 42, 64, 0.9) 100%);
   box-shadow:
@@ -1029,7 +1028,6 @@ body.theme-light .board-action {
 }
 
 .piece-effect--egypt-type2-enemy {
-  width: 18%;
   position: relative;
   border-radius: 48% 52% 42% 58%;
   background: linear-gradient(135deg, rgba(8, 28, 42, 0.92) 0%, rgba(38, 122, 168, 0.86) 45%, rgba(140, 220, 255, 0.92) 50%, rgba(34, 108, 152, 0.86) 55%, rgba(4, 18, 28, 0.92) 100%);
@@ -1060,7 +1058,6 @@ body.theme-light .board-action {
 }
 
 .piece-effect--slavic-type1-own {
-  width: 12.5%;
   border-radius: 50%;
   background: radial-gradient(circle, rgba(255, 186, 132, 0.95) 0%, rgba(214, 88, 24, 0.78) 52%, rgba(54, 14, 0, 0.88) 100%);
   box-shadow:
@@ -1070,7 +1067,6 @@ body.theme-light .board-action {
 }
 
 .piece-effect--slavic-type1-enemy {
-  width: 19%;
   border-radius: 34% 66% 40% 60% / 52% 48% 62% 38%;
   background:
     radial-gradient(circle at 50% 40%, rgba(255, 210, 160, 0.9) 0%, rgba(214, 96, 34, 0.86) 40%, rgba(54, 12, 0, 0.92) 100%);
@@ -1079,7 +1075,6 @@ body.theme-light .board-action {
 }
 
 .piece-effect--slavic-type2-own {
-  width: 12%;
   border-radius: 50%;
   background: radial-gradient(circle, rgba(192, 232, 255, 0.95) 0%, rgba(78, 156, 212, 0.78) 52%, rgba(10, 32, 58, 0.9) 100%);
   box-shadow:
@@ -1089,7 +1084,6 @@ body.theme-light .board-action {
 }
 
 .piece-effect--slavic-type2-enemy {
-  width: 18%;
   border-radius: 30% 70% 46% 54% / 58% 42% 68% 32%;
   background: linear-gradient(125deg, rgba(10, 40, 66, 0.94) 0%, rgba(36, 110, 160, 0.82) 38%, rgba(148, 220, 255, 0.92) 50%, rgba(42, 118, 172, 0.82) 62%, rgba(6, 22, 38, 0.94) 100%);
   filter: drop-shadow(0 0 24px rgba(128, 198, 238, 0.68));
@@ -1115,7 +1109,6 @@ body.theme-light .board-action {
 }
 
 .piece-effect--greece-type1-own {
-  width: 11.5%;
   border-radius: 44% 56% 46% 54%;
   background: radial-gradient(circle at 48% 42%, rgba(182, 222, 255, 0.95) 0%, rgba(92, 152, 210, 0.78) 48%, rgba(18, 42, 72, 0.88) 100%);
   box-shadow:
@@ -1125,7 +1118,6 @@ body.theme-light .board-action {
 }
 
 .piece-effect--greece-type1-enemy {
-  width: 18%;
   border-radius: 30% 30% 60% 60%;
   background: linear-gradient(180deg, rgba(196, 226, 255, 0.95) 0%, rgba(80, 136, 200, 0.86) 45%, rgba(18, 46, 78, 0.92) 100%);
   box-shadow: 0 0 26px rgba(128, 182, 238, 0.68);
@@ -1153,7 +1145,6 @@ body.theme-light .board-action {
 }
 
 .piece-effect--greece-type2-own {
-  width: 12%;
   border-radius: 50%;
   background: radial-gradient(circle, rgba(255, 242, 198, 0.95) 0%, rgba(214, 186, 92, 0.78) 52%, rgba(54, 36, 0, 0.9) 100%);
   box-shadow:
@@ -1163,7 +1154,6 @@ body.theme-light .board-action {
 }
 
 .piece-effect--greece-type2-enemy {
-  width: 18%;
   border-radius: 36% 36% 64% 64%;
   background: linear-gradient(180deg, rgba(255, 236, 178, 0.95) 0%, rgba(214, 164, 68, 0.88) 46%, rgba(54, 28, 0, 0.92) 100%);
   box-shadow: 0 0 28px rgba(232, 188, 96, 0.72);

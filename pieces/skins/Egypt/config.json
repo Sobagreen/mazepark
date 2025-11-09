@@ -8,8 +8,22 @@
       "impactShadow": "rgba(255, 204, 110, 0.74)"
     },
     "animations": {
-      "ownDestructionClass": "piece-effect--egypt-type1-own",
-      "enemyDestructionClass": "piece-effect--egypt-type1-enemy"
+      "ownDestructionClass": {
+        "classes": [
+          "piece-effect--impact",
+          "piece-effect--egypt-type1-own"
+        ],
+        "offset": { "x": 0, "y": 0 },
+        "scale": 1.2
+      },
+      "enemyDestructionClass": {
+        "classes": [
+          "piece-effect--impact",
+          "piece-effect--egypt-type1-enemy"
+        ],
+        "offset": { "x": 0, "y": 0 },
+        "scale": 1.7
+      }
     },
     "sounds": {
       "move": "pieces/skins/Egypt/audio/type1-move.mp3",
@@ -26,8 +40,22 @@
       "impactShadow": "rgba(126, 216, 255, 0.74)"
     },
     "animations": {
-      "ownDestructionClass": "piece-effect--egypt-type2-own",
-      "enemyDestructionClass": "piece-effect--egypt-type2-enemy"
+      "ownDestructionClass": {
+        "classes": [
+          "piece-effect--impact",
+          "piece-effect--egypt-type2-own"
+        ],
+        "offset": { "x": 0, "y": 0 },
+        "scale": 1.15
+      },
+      "enemyDestructionClass": {
+        "classes": [
+          "piece-effect--impact",
+          "piece-effect--egypt-type2-enemy"
+        ],
+        "offset": { "x": 0, "y": 0 },
+        "scale": 1.8
+      }
     },
     "sounds": {
       "move": "pieces/skins/Egypt/audio/type2-move.mp3",

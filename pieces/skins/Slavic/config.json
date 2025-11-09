@@ -8,8 +8,22 @@
       "impactShadow": "rgba(255, 142, 72, 0.74)"
     },
     "animations": {
-      "ownDestructionClass": "piece-effect--slavic-type1-own",
-      "enemyDestructionClass": "piece-effect--slavic-type1-enemy"
+      "ownDestructionClass": {
+        "classes": [
+          "piece-effect--impact",
+          "piece-effect--slavic-type1-own"
+        ],
+        "offset": { "x": 0, "y": 0 },
+        "scale": 1.25
+      },
+      "enemyDestructionClass": {
+        "classes": [
+          "piece-effect--impact",
+          "piece-effect--slavic-type1-enemy"
+        ],
+        "offset": { "x": 0, "y": 0 },
+        "scale": 1.9
+      }
     },
     "sounds": {
       "move": "pieces/skins/Slavic/audio/type1-move.mp3",
@@ -26,8 +40,22 @@
       "impactShadow": "rgba(118, 194, 255, 0.74)"
     },
     "animations": {
-      "ownDestructionClass": "piece-effect--slavic-type2-own",
-      "enemyDestructionClass": "piece-effect--slavic-type2-enemy"
+      "ownDestructionClass": {
+        "classes": [
+          "piece-effect--impact",
+          "piece-effect--slavic-type2-own"
+        ],
+        "offset": { "x": 0, "y": 0 },
+        "scale": 1.2
+      },
+      "enemyDestructionClass": {
+        "classes": [
+          "piece-effect--impact",
+          "piece-effect--slavic-type2-enemy"
+        ],
+        "offset": { "x": 0, "y": 0 },
+        "scale": 1.8
+      }
     },
     "sounds": {
       "move": "pieces/skins/Slavic/audio/type2-move.mp3",
