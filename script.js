@@ -281,6 +281,7 @@ const SKINS = {
   premium: {
     label: "Премиум",
     preview: "pieces/skins/premium/Type1/volhv.png",
+    configPath: "pieces/skins/premium/config.json",
     types: {
       Type1: { label: "Бета-тест", preview: "pieces/skins/premium/Type1/volhv.png" },
       Type2: { label: "Бета-тест2", preview: "pieces/skins/premium/Type1/volhv.png" }
@@ -296,6 +297,10 @@ const DEFAULT_SKIN_SELECTION = {
 const AVAILABLE_SKINS = SKINS;
 const DEFAULT_PLAYER_SKINS = DEFAULT_SKIN_SELECTION;
 let playerSkins = cloneSkinSelection(DEFAULT_SKIN_SELECTION);
+
+const skinConfigCache = {};
+const skinConfigPromises = {};
+const skinAudioCache = new Map();
 
 const DIRECTIONS = [
   { dx: 0, dy: -1 }, // вверх
@@ -322,10 +327,13 @@ let turnCounter = 1;
 let currentTheme = "dark";
 let lastStatusMessage = "";
 let lastLaserResult = null;
+let lastLaserEffectSignature = null;
 let lastMove = null;
 let skinSelection = cloneSkinSelection(DEFAULT_SKIN_SELECTION);
 let pendingSkins = cloneSkinSelection(DEFAULT_SKIN_SELECTION);
 let onlineSelectedRole = null;
+
+preloadSkinConfigs(DEFAULT_SKIN_SELECTION);
 
 const elements = {
   board: document.getElementById("board"),
@@ -340,6 +348,7 @@ const elements = {
   themeToggle: document.getElementById("theme-toggle"),
   openConnection: document.getElementById("open-connection"),
   laserOverlay: document.getElementById("laser-overlay"),
+  effectsOverlay: document.getElementById("effects-overlay"),
   pieceName: document.getElementById("piece-name"),
   pieceDetails: document.getElementById("piece-details"),
   startOverlay: document.getElementById("start-overlay"),
@@ -414,6 +423,7 @@ function startNewGame() {
   currentPlayer = "light";
   turnCounter = 1;
   clearLaserPath();
+  clearEffectsOverlay();
   updateTurnIndicator();
   clearSelection({ silent: true });
   setStatus("Первый игрок начинает ход. Переместите фигуру или поверните лазер.");
@@ -597,6 +607,63 @@ function updatePreviewContainer(container, selection) {
   });
 }
 
+function preloadSkinConfigs(selection) {
+  if (!selection) return;
+  const entries = selection.light || selection.shadow ? Object.values(selection) : [selection];
+  entries.forEach((item) => {
+    if (item && item.skin) {
+      ensureSkinConfig(item.skin);
+    }
+  });
+}
+
+function ensureSkinConfig(skinKey) {
+  if (!skinKey) {
+    return null;
+  }
+  if (Object.prototype.hasOwnProperty.call(skinConfigCache, skinKey)) {
+    return skinConfigPromises[skinKey] || null;
+  }
+  const meta = AVAILABLE_SKINS[skinKey];
+  if (!meta || !meta.configPath) {
+    skinConfigCache[skinKey] = {};
+    return null;
+  }
+  if (!skinConfigPromises[skinKey] && typeof fetch === "function") {
+    skinConfigPromises[skinKey] = fetch(meta.configPath)
+      .then((response) => (response.ok ? response.json() : null))
+      .then((json) => {
+        skinConfigCache[skinKey] = json && typeof json === "object" ? json : {};
+        return skinConfigCache[skinKey];
+      })
+      .catch(() => {
+        skinConfigCache[skinKey] = {};
+        return skinConfigCache[skinKey];
+      });
+  }
+  if (!skinConfigPromises[skinKey]) {
+    skinConfigCache[skinKey] = {};
+  }
+  return skinConfigPromises[skinKey] || null;
+}
+
+function getSkinConfig(selection) {
+  if (!selection || !selection.skin) {
+    return null;
+  }
+  const cache = skinConfigCache[selection.skin];
+  if (!cache) {
+    return null;
+  }
+  if (selection.type && cache[selection.type]) {
+    return cache[selection.type];
+  }
+  if (cache.default) {
+    return cache.default;
+  }
+  return null;
+}
+
 function getPlayerSkin(player) {
   const base = playerSkins[player] || DEFAULT_PLAYER_SKINS[player] || DEFAULT_PLAYER_SKINS.light;
   const normalised = normaliseSkinChoice(player, base.skin, base.type);
@@ -613,35 +680,15 @@ function normaliseSkinChoice(player, skinKey, typeKey) {
     const firstType = Object.keys(skinMeta.types)[0];
     typeId = firstType || "Type1";
   }
+  ensureSkinConfig(skinId);
   return { skin: skinId, type: typeId };
-}
-
-function findAlternativeType(skinKey, excludeType) {
-  const skinMeta = AVAILABLE_SKINS[skinKey];
-  if (!skinMeta) return null;
-  return Object.keys(skinMeta.types).find((type) => type !== excludeType) || null;
 }
 
 function assignPlayerSkin(player, skinKey, typeKey, options = {}) {
   const requested = normaliseSkinChoice(player, skinKey, typeKey);
-  const other = player === "light" ? "shadow" : "light";
-  const otherSelection = getPlayerSkin(other);
-  const conflict = otherSelection.skin === requested.skin && otherSelection.type === requested.type;
-
-  if (conflict && !options.ignoreConflict) {
-    if (options.autoResolveConflict) {
-      const alternative = findAlternativeType(requested.skin, requested.type);
-      if (alternative) {
-        requested.type = alternative;
-      } else {
-        return { success: false, reason: "conflict", selection: getPlayerSkin(player) };
-      }
-    } else {
-      return { success: false, reason: "conflict", selection: getPlayerSkin(player) };
-    }
-  }
-
   playerSkins[player] = requested;
+  ensureSkinConfig(requested.skin);
+  preloadSkinConfigs(playerSkins);
   refreshPieceArt({ silent: options.silent });
   updateSkinControls();
   if (!options.silent && !options.suppressBroadcast) {
@@ -665,6 +712,29 @@ function getSkinAssetPath(selection, pieceType) {
 function getPieceAssetPath(pieceType, player) {
   const selection = getPlayerSkin(player);
   return getSkinAssetPath(selection, pieceType);
+}
+
+function playSkinSound(playerOrSelection, cue) {
+  if (!cue || typeof Audio !== "function") return;
+  let selection;
+  if (typeof playerOrSelection === "string") {
+    selection = getPlayerSkin(playerOrSelection);
+  } else {
+    selection = playerOrSelection;
+  }
+  if (!selection || !selection.skin) return;
+  const config = getSkinConfig(selection);
+  const url = config && config.sounds ? config.sounds[cue] : null;
+  if (!url) return;
+  const key = `${selection.skin}:${selection.type}:${cue}`;
+  let base = skinAudioCache.get(key);
+  if (!base) {
+    base = new Audio(url);
+    base.preload = "auto";
+    skinAudioCache.set(key, base);
+  }
+  const instance = base.cloneNode(true);
+  instance.play().catch(() => {});
 }
 
 function getCheckedRole() {
@@ -699,6 +769,7 @@ function applyRemoteSkins(remoteSkins) {
     next.shadow = normaliseSkinChoice("shadow", remoteSkins.shadow.skin, remoteSkins.shadow.type);
   }
   playerSkins = next;
+  preloadSkinConfigs(playerSkins);
   refreshPieceArt({ silent: true });
   updateSkinControls();
 }
@@ -789,12 +860,10 @@ function handleOfflineFormSubmit() {
   };
 
   assignPlayerSkin("light", lightSelection.skin, lightSelection.type, {
-    autoResolveConflict: true,
     suppressBroadcast: true,
     silent: true
   });
   assignPlayerSkin("shadow", shadowSelection.skin, shadowSelection.type, {
-    autoResolveConflict: true,
     suppressBroadcast: true,
     silent: true
   });
@@ -1100,22 +1169,10 @@ function populateTypeSelect(select, skinKey, { player = null, mode = "actual" } 
     select.disabled = true;
     return;
   }
-  const opponent = player ? getOpponent(player) : null;
-  const reference = mode === "pending" ? pendingSkins : skinSelection;
   Object.entries(skin.types).forEach(([typeKey, typeDef]) => {
     const option = document.createElement("option");
     option.value = typeKey;
     option.textContent = typeDef.label;
-    const taken = Boolean(
-      player &&
-      reference[opponent] &&
-      reference[opponent].skin === skinKey &&
-      reference[opponent].type === typeKey
-    );
-    if (taken) {
-      option.disabled = true;
-      option.textContent = `${typeDef.label} — занято`;
-    }
     select.appendChild(option);
   });
   select.disabled = false;
@@ -1266,20 +1323,12 @@ function getFirstAvailableOption(select, preferred) {
 }
 
 function updateOfflineConflict() {
-  const conflict = Boolean(
-    pendingSkins.light &&
-    pendingSkins.shadow &&
-    pendingSkins.light.skin === pendingSkins.shadow.skin &&
-    pendingSkins.light.type === pendingSkins.shadow.type
-  );
   if (elements.offlineConflict) {
-    elements.offlineConflict.hidden = !conflict;
-    elements.offlineConflict.textContent = conflict
-      ? "Оба игрока выбрали одинаковый тип скина. Выберите разные варианты."
-      : "";
+    elements.offlineConflict.hidden = true;
+    elements.offlineConflict.textContent = "";
   }
   if (elements.offlineStart) {
-    elements.offlineStart.disabled = conflict;
+    elements.offlineStart.disabled = false;
   }
 }
 
@@ -1323,9 +1372,6 @@ function updateOnlineWarning() {
     if (!pending || !pending.skin || !pending.type) {
       message = "Выберите скин и тип.";
       invalid = true;
-    } else if (isCombinationTaken(onlineSelectedRole, pending.skin, pending.type, { mode: "actual" })) {
-      message = "Выбранный тип уже занят соперником. Выберите другой вариант.";
-      invalid = true;
     }
   }
   elements.onlineTypeWarning.hidden = !invalid || message.length === 0;
@@ -1337,16 +1383,6 @@ function updateOnlineWarning() {
 
 function applyOfflineSelection() {
   applySelectedLayoutFromControls();
-  const conflict = Boolean(
-    pendingSkins.light &&
-    pendingSkins.shadow &&
-    pendingSkins.light.skin === pendingSkins.shadow.skin &&
-    pendingSkins.light.type === pendingSkins.shadow.type
-  );
-  if (conflict) {
-    updateOfflineConflict();
-    return false;
-  }
   multiplayer.handleOfflineSelection();
   applyAllPendingSkins({ broadcast: false });
   updateLegendImages();
@@ -1395,6 +1431,7 @@ function hideOverlayElement(element) {
 function setPendingSkin(player, skin, type) {
   const skinKey = SKINS[skin] ? skin : DEFAULT_SKIN_SELECTION[player].skin;
   const typeKey = SKINS[skinKey].types[type] ? type : Object.keys(SKINS[skinKey].types)[0];
+  ensureSkinConfig(skinKey);
   pendingSkins[player] = { skin: skinKey, type: typeKey };
 }
 
@@ -1417,6 +1454,7 @@ function applySkinSelection(selection, { broadcast = true, preservePendingFor = 
     nextPending[preservePendingFor] = { ...previousPending[preservePendingFor] };
   }
   pendingSkins = nextPending;
+  preloadSkinConfigs(playerSkins);
   updateLegendImages();
   renderBoard();
   updateOnlineWarning();
@@ -1464,13 +1502,6 @@ function getTypeLabel(skin, type) {
 function getPieceImageUrl(piece) {
   const selection = skinSelection[piece.player] || DEFAULT_SKIN_SELECTION[piece.player];
   return `pieces/skins/${selection.skin}/${selection.type}/${piece.type}.png`;
-}
-
-function isCombinationTaken(player, skin, type, { mode = "actual" } = {}) {
-  const reference = mode === "pending" ? pendingSkins : skinSelection;
-  const opponent = getOpponent(player);
-  if (!reference[opponent]) return false;
-  return reference[opponent].skin === skin && reference[opponent].type === type;
 }
 
 function getOpponent(player) {
@@ -1657,10 +1688,12 @@ function rotateSelected(delta) {
 function endTurn() {
   clearSelection({ silent: true });
   const activePlayer = currentPlayer;
+  playSkinSound(activePlayer, "move");
   const laserResult = normaliseLaserResult(fireLaser(activePlayer));
   lastLaserResult = laserResult;
   renderBoard();
   highlightLaserPath(laserResult);
+  handleLaserImpact(laserResult);
   if (laserResult.hit) {
     const hitPiece = laserResult.hit.piece;
     const owner = PLAYERS[hitPiece.player].name;
@@ -1687,6 +1720,7 @@ function endTurn() {
 
 function finishGame(winner) {
   const loser = winner === "light" ? "shadow" : "light";
+  playSkinSound(winner, "victory");
   elements.endgame.hidden = false;
   elements.endgame.setAttribute("aria-hidden", "false");
   elements.endgameTitle.textContent = `${PLAYERS[winner].name} побеждает!`;
@@ -1697,8 +1731,16 @@ function finishGame(winner) {
 
 function fireLaser(player) {
   const emitterPos = findEmitter(player);
+  const selection = getPlayerSkin(player);
+  const skinSnapshot = selection ? { skin: selection.skin, type: selection.type } : null;
   if (!emitterPos) {
-    return { path: [], firer: PLAYERS[player].laserName, origin: null };
+    return {
+      path: [],
+      firer: PLAYERS[player].laserName,
+      origin: null,
+      player,
+      skin: skinSnapshot
+    };
   }
 
   let { x, y } = emitterPos;
@@ -1715,7 +1757,9 @@ function fireLaser(player) {
         hit: null,
         firer: PLAYERS[player].laserName,
         origin: emitterPos,
-        termination: computeExitPoint(previous, direction)
+        termination: computeExitPoint(previous, direction),
+        player,
+        skin: skinSnapshot
       };
     }
 
@@ -1735,7 +1779,9 @@ function fireLaser(player) {
         hit: { piece: target, x, y },
         firer: PLAYERS[player].laserName,
         origin: emitterPos,
-        termination: { x: x + 0.5, y: y + 0.5 }
+        termination: { x: x + 0.5, y: y + 0.5 },
+        player,
+        skin: skinSnapshot
       };
     }
     if (interaction.stop) {
@@ -1744,7 +1790,9 @@ function fireLaser(player) {
         hit: null,
         firer: PLAYERS[player].laserName,
         origin: emitterPos,
-        termination: { x: x + 0.5, y: y + 0.5 }
+        termination: { x: x + 0.5, y: y + 0.5 },
+        player,
+        skin: skinSnapshot
       };
       result.blocked = { piece: target, x, y };
       return result;
@@ -1767,6 +1815,8 @@ function simulateLaserTrace(boardState, player) {
     : 0;
   const path = [];
   let previous = { x, y };
+  const selection = getPlayerSkin(player);
+  const skinSnapshot = selection ? { skin: selection.skin, type: selection.type } : null;
 
   while (true) {
     const nextX = x + DIRECTIONS[direction].dx;
@@ -1777,7 +1827,9 @@ function simulateLaserTrace(boardState, player) {
         hit: null,
         firer: PLAYERS[player].laserName,
         origin: emitter,
-        termination: computeExitPoint(previous, direction)
+        termination: computeExitPoint(previous, direction),
+        player,
+        skin: skinSnapshot
       };
     }
 
@@ -1800,7 +1852,9 @@ function simulateLaserTrace(boardState, player) {
         hit: interaction.destroy ? { piece: clonePiece(target), x, y } : null,
         firer: PLAYERS[player].laserName,
         origin: emitter,
-        termination: { x: x + 0.5, y: y + 0.5 }
+        termination: { x: x + 0.5, y: y + 0.5 },
+        player,
+        skin: skinSnapshot
       };
       if (!interaction.destroy) {
         result.blocked = { piece: clonePiece(target), x, y };
@@ -1904,9 +1958,11 @@ function findEmitter(player) {
 function highlightLaserPath(result) {
   clearLaserPath({ preserveState: true });
   if (!result || !result.origin) {
+    resetLaserOverlayTheme();
     return;
   }
 
+  applyLaserVisualTheme(result);
   drawLaserBeam(result);
 }
 
@@ -1916,6 +1972,8 @@ function clearLaserPath({ preserveState = false } = {}) {
   }
   if (!preserveState) {
     lastLaserResult = null;
+    lastLaserEffectSignature = null;
+    resetLaserOverlayTheme();
   }
 }
 
@@ -1965,6 +2023,146 @@ function drawLaserBeam(result) {
 
 function toCellCenter(x, y) {
   return { x: x + 0.5, y: y + 0.5 };
+}
+
+function applyLaserVisualTheme(result) {
+  if (!elements.laserOverlay) return;
+  if (!result) {
+    resetLaserOverlayTheme();
+    return;
+  }
+  let selection = null;
+  if (result.skin && result.skin.skin) {
+    selection = { skin: result.skin.skin, type: result.skin.type };
+  } else if (result.player) {
+    selection = getPlayerSkin(result.player);
+  }
+  if (!selection) {
+    resetLaserOverlayTheme();
+    return;
+  }
+  ensureSkinConfig(selection.skin);
+  const config = getSkinConfig(selection);
+  const laser = config && config.laser;
+  if (!laser) {
+    resetLaserOverlayTheme();
+    return;
+  }
+  elements.laserOverlay.dataset.laserSkin = selection.skin;
+  elements.laserOverlay.dataset.laserType = selection.type || "";
+  setLaserOverlayProperty("--laser-core-color", laser.coreColor || null);
+  setLaserOverlayProperty("--laser-beam-gradient", laser.beamGradient || null);
+  setLaserOverlayProperty("--laser-glow-color", laser.glowColor || null);
+  setLaserOverlayProperty("--laser-impact-gradient", laser.impactGradient || null);
+  setLaserOverlayProperty("--laser-impact-shadow", laser.impactShadow || null);
+}
+
+function setLaserOverlayProperty(property, value) {
+  if (!elements.laserOverlay) return;
+  if (value) {
+    elements.laserOverlay.style.setProperty(property, value);
+  } else {
+    elements.laserOverlay.style.removeProperty(property);
+  }
+}
+
+function resetLaserOverlayTheme() {
+  if (!elements.laserOverlay) return;
+  [
+    "--laser-core-color",
+    "--laser-beam-gradient",
+    "--laser-glow-color",
+    "--laser-impact-gradient",
+    "--laser-impact-shadow"
+  ].forEach((prop) => elements.laserOverlay.style.removeProperty(prop));
+  if (elements.laserOverlay.dataset) {
+    delete elements.laserOverlay.dataset.laserSkin;
+    delete elements.laserOverlay.dataset.laserType;
+  }
+}
+
+function triggerPieceDestructionEffects({ attackerSelection, victimSelection, center }) {
+  if (!elements.effectsOverlay || !center) return;
+  if (victimSelection) {
+    spawnEffectForSelection(victimSelection, "ownDestructionClass", center);
+  }
+  if (attackerSelection) {
+    spawnEffectForSelection(attackerSelection, "enemyDestructionClass", center);
+  }
+}
+
+function spawnEffectForSelection(selection, classKey, center) {
+  if (!selection || !selection.skin || !elements.effectsOverlay) return;
+  ensureSkinConfig(selection.skin);
+  const config = getSkinConfig(selection);
+  const animations = config && config.animations;
+  if (!animations) return;
+  const classValue = animations[classKey];
+  if (!classValue) return;
+  const classes = Array.isArray(classValue)
+    ? classValue
+    : String(classValue)
+        .split(/\s+/)
+        .map((cls) => cls.trim())
+        .filter(Boolean);
+  if (!classes.length) return;
+  const effect = document.createElement("div");
+  effect.classList.add("piece-effect", ...classes);
+  effect.style.left = `${(center.x / BOARD_WIDTH) * 100}%`;
+  effect.style.top = `${(center.y / BOARD_HEIGHT) * 100}%`;
+  elements.effectsOverlay.appendChild(effect);
+  const remove = () => {
+    if (effect.parentElement) {
+      effect.parentElement.removeChild(effect);
+    }
+  };
+  effect.addEventListener("animationend", remove, { once: true });
+  effect.addEventListener("transitionend", remove, { once: true });
+  window.setTimeout(remove, 1500);
+}
+
+function computeLaserSignature(result) {
+  if (!result) return null;
+  const origin = result.origin ? `${result.origin.x},${result.origin.y}` : "none";
+  const termination = result.termination ? `${result.termination.x},${result.termination.y}` : "none";
+  const path = Array.isArray(result.path)
+    ? result.path.map((step) => `${step.x},${step.y}`).join("|")
+    : "";
+  const hitPiece = result.hit && result.hit.piece ? `${result.hit.piece.player}:${result.hit.piece.type}` : "no-piece";
+  const hit = result.hit ? `${result.hit.x},${result.hit.y}:${hitPiece}` : "none";
+  return `${result.player || ""}#${origin}#${path}#${hit}#${termination}`;
+}
+
+function handleLaserImpact(result) {
+  if (!result || !result.hit) {
+    return;
+  }
+  const signature = computeLaserSignature(result);
+  if (signature && signature === lastLaserEffectSignature) {
+    return;
+  }
+  if (signature) {
+    lastLaserEffectSignature = signature;
+  }
+  const attacker = result.player || null;
+  const attackerSelection = result.skin && result.skin.skin
+    ? { skin: result.skin.skin, type: result.skin.type }
+    : attacker
+      ? getPlayerSkin(attacker)
+      : null;
+  const victimPiece = result.hit.piece || null;
+  const victimSelection = victimPiece ? getPlayerSkin(victimPiece.player) : null;
+  const center = toCellCenter(result.hit.x, result.hit.y);
+  triggerPieceDestructionEffects({ attackerSelection, victimSelection, center });
+  if (attacker && victimPiece && attacker !== victimPiece.player) {
+    playSkinSound(attacker, "destroyEnemy");
+  }
+}
+
+function clearEffectsOverlay() {
+  if (elements.effectsOverlay) {
+    elements.effectsOverlay.replaceChildren();
+  }
 }
 
 function computeExitPoint(previous, direction) {
@@ -2120,6 +2318,13 @@ function normaliseLaserResult(result) {
       ? { x: result.termination.x, y: result.termination.y }
       : null
   };
+  copy.player = typeof result.player === "string" ? result.player : null;
+  if (result.skin && result.skin.skin) {
+    copy.skin = {
+      skin: result.skin.skin,
+      type: result.skin.type
+    };
+  }
   if (result.hit) {
     copy.hit = {
       x: result.hit.x,
@@ -2299,6 +2504,7 @@ function applyRemoteState(state, options = {}) {
     setCurrentLayout(state.layout, { silent: true });
     lastMove = normaliseLastMove(state.lastMove);
     board = cloneBoardState(state.board);
+    clearEffectsOverlay();
     if (state.skins) {
       const skinOptions = { broadcast: false };
       if (preserveRole) {
@@ -2348,6 +2554,9 @@ function applyRemoteState(state, options = {}) {
     lastLaserResult = nextLaserResult;
     if (lastLaserResult) {
       highlightLaserPath(lastLaserResult);
+      if (incomingLaser && incomingLaser.hit) {
+        handleLaserImpact(lastLaserResult);
+      }
     } else {
       clearLaserPath();
     }
@@ -2406,7 +2615,7 @@ function createMultiplayerController() {
       return;
     }
     const pending = pendingSkins[role];
-    if (!pending || isCombinationTaken(role, pending.skin, pending.type, { mode: "actual" })) {
+    if (!pending || !pending.skin || !pending.type) {
       updateOnlineWarning();
       return;
     }
@@ -2557,14 +2766,6 @@ function createMultiplayerController() {
     }
     const actual = skinSelection[role] || DEFAULT_SKIN_SELECTION[role];
     if (actual.skin === desired.skin && actual.type === desired.type) {
-      return;
-    }
-    if (isCombinationTaken(role, desired.skin, desired.type, { mode: "actual" })) {
-      pendingSkins[role] = { skin: actual.skin, type: actual.type };
-      handleOnlineRoleChange(role);
-      updateOnlinePreview();
-      updateOnlineWarning();
-      syncOfflineSelectorsWithPending();
       return;
     }
     applyPendingSkin(role, { broadcast });
