@@ -288,6 +288,66 @@ const SKINS = {
   },
 };
 
+// SKIN_MEDIA описывает, где лежат визуальные и звуковые эффекты фракций:
+// animations.* содержит ключевые CSS-классы/оверлеи для визуализаций,
+// audio.* перечисляет пути к звуковым файлам (файлы не добавлены, только ссылки).
+const SKIN_MEDIA = {
+  Slavic: {
+    animations: {
+      destruction: null,
+      laser: null,
+      impact: null
+    },
+    audio: {}
+  },
+  Japan: {
+    animations: {
+      destruction: "slice-overlay--japan",
+      laser: null,
+      impact: null
+    },
+    audio: {
+      destruction: "audio/japan-slice.mp3"
+    }
+  },
+  Greece: {
+    animations: {
+      destruction: null,
+      laser: null,
+      impact: null
+    },
+    audio: {}
+  },
+  Lavcraft: {
+    animations: {
+      destruction: null,
+      laser: null,
+      impact: null
+    },
+    audio: {}
+  },
+  Egypt: {
+    animations: {
+      destruction: null,
+      laser: null,
+      impact: null
+    },
+    audio: {}
+  },
+  premium: {
+    animations: {
+      destruction: "laser-overlay__blast",
+      laser: "laser-overlay__beam--premium",
+      impact: "laser-overlay__impact--premium"
+    },
+    audio: {
+      background: "audio/premium-theme.mp3",
+      laser: "audio/premium-laser.mp3",
+      impact: "audio/premium-impact.mp3"
+    }
+  }
+};
+
 const DEFAULT_SKIN_SELECTION = {
   light: { skin: "Slavic", type: "Type1" },
   shadow: { skin: "Slavic", type: "Type2" }
@@ -1951,6 +2011,47 @@ function clearLaserPath({ preserveState = false } = {}) {
   }
 }
 
+function buildLaserSegments(points) {
+  const segments = [];
+  if (!Array.isArray(points) || points.length < 2) {
+    return segments;
+  }
+
+  let segmentStart = points[0];
+  let previousDirection = null;
+
+  for (let i = 1; i < points.length; i += 1) {
+    const prevPoint = points[i - 1];
+    const currentPoint = points[i];
+    const dx = currentPoint.x - prevPoint.x;
+    const dy = currentPoint.y - prevPoint.y;
+    const length = Math.hypot(dx, dy);
+    if (length === 0) continue;
+
+    const direction = {
+      x: Number((dx / length).toFixed(4)),
+      y: Number((dy / length).toFixed(4))
+    };
+
+    if (!previousDirection) {
+      previousDirection = direction;
+    } else if (
+      Math.abs(direction.x - previousDirection.x) > 0.0001 ||
+      Math.abs(direction.y - previousDirection.y) > 0.0001
+    ) {
+      segments.push({ start: { ...segmentStart }, end: { ...prevPoint } });
+      segmentStart = prevPoint;
+      previousDirection = direction;
+    }
+
+    if (i === points.length - 1) {
+      segments.push({ start: { ...segmentStart }, end: { ...currentPoint } });
+    }
+  }
+
+  return segments;
+}
+
 function drawLaserBeam(result, style = normaliseLaserStyle(result.style)) {
   if (!elements.laserOverlay) return;
 
@@ -1966,23 +2067,36 @@ function drawLaserBeam(result, style = normaliseLaserStyle(result.style)) {
     }
   }
 
-  if (points.length < 2) {
+  const segments = buildLaserSegments(points);
+
+  if (!segments.length) {
     return;
   }
 
-  for (let i = 0; i < points.length - 1; i += 1) {
-    const start = points[i];
-    const end = points[i + 1];
+  const pad = style === "premium" ? 0.3 : 0.12;
+
+  for (const segment of segments) {
+    const start = segment.start;
+    const end = segment.end;
     const dx = end.x - start.x;
     const dy = end.y - start.y;
+    const length = Math.hypot(dx, dy);
+    if (length === 0) {
+      continue;
+    }
+    const dirX = dx / length;
+    const dirY = dy / length;
+    const offsetX = start.x - dirX * pad * 0.5;
+    const offsetY = start.y - dirY * pad * 0.5;
+    const renderLength = length + pad;
     const segment = document.createElement("div");
     segment.className = "laser-overlay__beam";
     if (style === "premium") {
       segment.classList.add("laser-overlay__beam--premium");
     }
-    segment.style.left = `${(start.x / BOARD_WIDTH) * 100}%`;
-    segment.style.top = `${(start.y / BOARD_HEIGHT) * 100}%`;
-    segment.style.width = `${(Math.hypot(dx, dy) / BOARD_WIDTH) * 100}%`;
+    segment.style.left = `${(offsetX / BOARD_WIDTH) * 100}%`;
+    segment.style.top = `${(offsetY / BOARD_HEIGHT) * 100}%`;
+    segment.style.width = `${(renderLength / BOARD_WIDTH) * 100}%`;
     segment.style.transform = `translate(0, -50%) rotate(${Math.atan2(dy, dx)}rad)`;
     elements.laserOverlay.appendChild(segment);
   }
@@ -2027,6 +2141,12 @@ function handleLaserEffects(result, style) {
     if (style === "premium" && result.hit) {
       spawnPremiumImpact(result.hit.x, result.hit.y);
     }
+    if (result.hit) {
+      const victimSkin = getPlayerSkin(result.hit.piece.player).skin;
+      if (victimSkin === "Japan") {
+        spawnJapanSliceEffect(result.hit.x, result.hit.y, result.hit.piece);
+      }
+    }
   }
 }
 
@@ -2051,12 +2171,50 @@ function spawnPremiumImpact(x, y) {
   }
 }
 
-function createPremiumAudioController() {
-  const sources = {
-    background: "audio/premium-theme.mp3",
-    laser: "audio/premium-laser.mp3",
-    impact: "audio/premium-impact.mp3"
+function spawnJapanSliceEffect(x, y, piece) {
+  const cell = cells?.[y]?.[x];
+  if (!cell) return;
+
+  cell.querySelectorAll(".slice-overlay").forEach((node) => node.remove());
+
+  const overlay = document.createElement("div");
+  overlay.className = "slice-overlay";
+  const animationClass = SKIN_MEDIA.Japan?.animations?.destruction;
+  if (animationClass) {
+    overlay.classList.add(animationClass);
+  }
+
+  const imageUrl = getPieceAssetPath(piece.type, piece.player);
+
+  const leftHalf = document.createElement("div");
+  leftHalf.className = "slice-overlay__half slice-overlay__half--left";
+  leftHalf.style.backgroundImage = `url(${imageUrl})`;
+
+  const rightHalf = document.createElement("div");
+  rightHalf.className = "slice-overlay__half slice-overlay__half--right";
+  rightHalf.style.backgroundImage = `url(${imageUrl})`;
+
+  const trail = document.createElement("div");
+  trail.className = "slice-overlay__trail";
+
+  overlay.append(leftHalf, rightHalf, trail);
+  cell.appendChild(overlay);
+
+  const cleanup = () => {
+    overlay.remove();
   };
+
+  [leftHalf, rightHalf, trail].forEach((element) => {
+    element.addEventListener("animationend", cleanup, { once: true });
+  });
+
+  setTimeout(() => {
+    overlay.remove();
+  }, 900);
+}
+
+function createPremiumAudioController() {
+  const sources = SKIN_MEDIA.premium?.audio || {};
 
   const audio = {
     background: createAudio(sources.background, { loop: true, volume: 0.45 }),

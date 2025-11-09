@@ -836,15 +836,50 @@ body.theme-light .board-action {
 }
 
 .laser-overlay__beam--premium {
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0.55), #9c1aff 45%, #00f6ff 100%);
-  box-shadow: 0 0 22px rgba(156, 26, 255, 0.75), 0 0 52px rgba(0, 246, 255, 0.6);
-  animation: premium-laser 0.5s ease forwards;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.85) 0%, #ff5bff 25%, #8c35ff 55%, #2bfbff 85%, rgba(255, 255, 255, 0.9) 100%);
+  background-size: 220% 100%;
+  box-shadow: 0 0 28px rgba(168, 77, 255, 0.9), 0 0 72px rgba(0, 246, 255, 0.65);
+  animation: premium-laser 0.45s ease forwards, premium-laser-flow 1.35s linear infinite;
+  position: relative;
+  overflow: visible;
+}
+
+.laser-overlay__beam--premium::before {
+  content: "";
+  position: absolute;
+  inset: -65% -15%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.95) 0%, rgba(174, 94, 255, 0.45) 55%, rgba(0, 0, 0, 0) 100%);
+  filter: blur(6px);
+  opacity: 0;
+  animation: premium-laser-core 0.6s ease forwards;
+}
+
+.laser-overlay__beam--premium::after {
+  content: "";
+  position: absolute;
+  inset: -35% -20%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.92), transparent);
+  opacity: 0;
+  mix-blend-mode: screen;
+  animation: premium-laser-spark 0.55s ease forwards;
 }
 
 .laser-overlay__impact--premium {
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.95) 0%, rgba(156, 26, 255, 0.85) 35%, rgba(0, 246, 255, 0.2) 70%);
-  box-shadow: 0 0 28px rgba(156, 26, 255, 0.75), 0 0 58px rgba(0, 246, 255, 0.45);
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.96) 0%, rgba(168, 77, 255, 0.82) 40%, rgba(0, 246, 255, 0.22) 72%);
+  box-shadow: 0 0 32px rgba(168, 77, 255, 0.9), 0 0 72px rgba(0, 246, 255, 0.5);
   animation: premium-impact 0.6s ease-out forwards;
+  position: relative;
+  overflow: visible;
+}
+
+.laser-overlay__impact--premium::after {
+  content: "";
+  position: absolute;
+  inset: -45%;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.65);
+  opacity: 0;
+  animation: premium-impact-ring 0.6s ease-out forwards;
 }
 
 .laser-overlay__blast {
@@ -875,6 +910,49 @@ body.theme-light .board-action {
     inset 0 0 0 2px rgba(156, 26, 255, 0.75),
     inset 0 0 22px rgba(0, 246, 255, 0.45);
   background-image: radial-gradient(circle, rgba(156, 26, 255, 0.25) 0%, transparent 65%);
+}
+
+.slice-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.slice-overlay--japan {
+  mix-blend-mode: screen;
+}
+
+.slice-overlay__half {
+  position: absolute;
+  inset: 0;
+  background-size: 220% 100%;
+  background-position: center;
+  background-repeat: no-repeat;
+  filter: drop-shadow(0 0 22px rgba(255, 255, 255, 0.4));
+  opacity: 0;
+  transform-origin: center;
+}
+
+.slice-overlay__half--left {
+  clip-path: polygon(0 0, 50% 0, 50% 100%, 0 100%);
+  animation: japan-slice-left 0.72s ease-out forwards;
+}
+
+.slice-overlay__half--right {
+  clip-path: polygon(50% 0, 100% 0, 100% 100%, 50% 100%);
+  animation: japan-slice-right 0.72s ease-out forwards;
+}
+
+.slice-overlay__trail {
+  position: absolute;
+  inset: -25% -35%;
+  background: linear-gradient(120deg, transparent 35%, rgba(255, 255, 255, 0.95) 50%, transparent 65%);
+  transform: rotate(14deg) scaleX(0.5);
+  opacity: 0;
+  filter: blur(1px);
+  mix-blend-mode: screen;
+  animation: japan-slice-trail 0.48s ease-out forwards;
 }
 
 @keyframes laser-trace {
@@ -920,6 +998,43 @@ body.theme-light .board-action {
   }
 }
 
+@keyframes premium-laser-flow {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 200% 50%;
+  }
+}
+
+@keyframes premium-laser-core {
+  0% {
+    opacity: 0;
+    transform: scaleY(0.65);
+  }
+  40% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.85;
+    transform: scaleY(1);
+  }
+}
+
+@keyframes premium-laser-spark {
+  0% {
+    opacity: 0;
+    transform: translateX(-25%);
+  }
+  40% {
+    opacity: 0.8;
+  }
+  100% {
+    opacity: 0.3;
+    transform: translateX(25%);
+  }
+}
+
 @keyframes premium-impact {
   0% {
     transform: translate(-50%, -50%) scale(0.6);
@@ -931,6 +1046,20 @@ body.theme-light .board-action {
   100% {
     transform: translate(-50%, -50%) scale(1.35);
     opacity: 0;
+  }
+}
+
+@keyframes premium-impact-ring {
+  0% {
+    opacity: 0.2;
+    transform: scale(0.6);
+  }
+  60% {
+    opacity: 0.75;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.35);
   }
 }
 
@@ -959,6 +1088,48 @@ body.theme-light .board-action {
   100% {
     opacity: 0;
     transform: rotate(220deg) scale(1.4);
+  }
+}
+
+@keyframes japan-slice-left {
+  0% {
+    opacity: 0;
+    transform: translate(-4%, 4%) scale(1) rotate(-2deg);
+  }
+  35% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-26%, -4%) scale(0.92) rotate(-10deg);
+  }
+}
+
+@keyframes japan-slice-right {
+  0% {
+    opacity: 0;
+    transform: translate(4%, -4%) scale(1) rotate(2deg);
+  }
+  35% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(26%, 6%) scale(0.92) rotate(8deg);
+  }
+}
+
+@keyframes japan-slice-trail {
+  0% {
+    opacity: 0;
+    transform: rotate(14deg) scaleX(0.2);
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: rotate(14deg) scaleX(1);
   }
 }
 
