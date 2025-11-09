@@ -1,116 +1,316 @@
-const INITIAL_LAYOUT = [
-  ["Л1", "П", "П", "П", "1Щ1", "В1", "2Щ1", "1З1", "П", "П"],
-  ["П", "П", "2З1", "П", "П", "П", "П", "П", "П", "П"],
-  ["П", "П", "П", "7З2", "П", "П", "П", "П", "П", "П"],
-  ["3З1", "П", "5З2", "П", "1Т1", "2Т1", "П", "4З1", "П", "6З2"],
-  ["5З1", "П", "3З2", "П", "1Т2", "2Т2", "П", "6З1", "П", "4З2"],
-  ["П", "П", "П", "П", "П", "П", "7З1", "П", "П", "П"],
-  ["П", "П", "П", "П", "П", "П", "П", "2З2", "П", "П"],
-  ["П", "П", "1З2", "1Щ2", "В2", "2Щ2", "П", "П", "П", "Л2"]
+function duplicateLayout(layout) {
+  return layout.map((row) => row.slice());
+}
+
+function clamp(value, min, max) {
+  return Math.min(Math.max(value, min), max);
+}
+
+const BASE_LAYOUT = [
+  ["Л1ВН", "П", "П", "П", "1Щ1ВН", "В1ВВ", "2Щ1ВН", "1З1ВН", "П", "П"],
+  ["П", "П", "2З1Л", "П", "П", "П", "П", "П", "П", "П"],
+  ["П", "П", "П", "7З2ВВ", "П", "П", "П", "П", "П", "П"],
+  ["3З1П", "П", "5З2Л", "П", "1Т1П", "2Т1ВН", "П", "4З1ВН", "П", "6З2ВВ"],
+  ["5З1ВН", "П", "3З2ВВ", "П", "1Т2ВН", "2Т2П", "П", "6З1П", "П", "4З2Л"],
+  ["П", "П", "П", "П", "П", "П", "7З1ВН", "П", "П", "П"],
+  ["П", "П", "П", "П", "П", "П", "П", "2З2П", "П", "П"],
+  ["П", "П", "1З2ВВ", "1Щ2ВВ", "В2ВВ", "2Щ2ВВ", "П", "П", "П", "Л2ВВ"]
 ];
+
+const MODERN_LAYOUT = [
+  ["1З1ВВ", "1З1П", "1З1ВН", "1З1Л", "П", "П", "П", "П", "П", "П"],
+  ["П", "П", "П", "П", "П", "П", "П", "П", "П", "П"],
+  ["П", "П", "П", "П", "П", "П", "П", "П", "П", "П"],
+  ["П", "П", "П", "П", "П", "П", "П", "П", "П", "П"],
+  ["П", "П", "П", "П", "П", "П", "П", "П", "П", "П"],
+  ["П", "П", "П", "П", "П", "П", "П", "П", "П", "П"],
+  ["П", "П", "П", "П", "П", "П", "П", "П", "П", "П"],
+  ["1З2ВВ", "1З2П", "1З2ВН", "1З2Л", "П", "П", "П", "П", "П", "П"]
+];
+
+const LEGACY_LAYOUT = [
+  ["Л1ВН", "П", "П", "П", "1З1Л", "1Щ1ВН", "2З1ВН", "П", "П", "П"],
+  ["П", "П", "П", "П", "П", "В1ВН", "П", "П", "П", "П"],
+  ["3З1П", "П", "П", "П", "4З1Л", "2Щ1ВН", "1Т1ВН", "П", "П", "П"],
+  ["5З1ВН", "П", "2Т1П", "П", "1З2ВВ", "П", "2З2ВН", "П", "П", "П"],
+  ["П", "П", "П", "6З1ВВ", "П", "7З1ВН", "П", "1Т2Л", "П", "3З2ВВ"],
+  ["П", "П", "П", "2Т2ВН", "1Щ2ВВ", "4З2П", "П", "П", "П", "5З2Л"],
+  ["П", "П", "П", "П", "В2ВВ", "П", "П", "П", "П", "П"],
+  ["П", "П", "П", "6З2ВВ", "2Щ2ВВ", "7З2П", "П", "П", "П", "Л2ВВ"]
+];
+
+const STARTING_LAYOUT_ORDER = ["basic", "modern", "legacy"];
+
+const STARTING_LAYOUTS = {
+  basic: { label: "Базовая", tokens: BASE_LAYOUT },
+  modern: { label: "Модерн", tokens: MODERN_LAYOUT },
+  legacy: { label: "Легаси", tokens: LEGACY_LAYOUT }
+};
+
+const DEFAULT_LAYOUT_KEY = "basic";
 
 const TOKEN_MAP = {
   П: null,
-  "Л1": { type: "laser", player: "light", orientation: 2 },
-  "Л2": { type: "laser", player: "shadow", orientation: 0 },
-  "В1": { type: "volhv", player: "light", orientation: 0 },
-  "В2": { type: "volhv", player: "shadow", orientation: 0 },
-  "1З1": { type: "mirror", player: "light", orientation: 2 },
-  "2З1": { type: "mirror", player: "light", orientation: 3 },
-  "3З1": { type: "mirror", player: "light", orientation: 1 },
-  "4З1": { type: "mirror", player: "light", orientation: 2 },
-  "5З1": { type: "mirror", player: "light", orientation: 2 },
-  "6З1": { type: "mirror", player: "light", orientation: 1 },
-  "7З1": { type: "mirror", player: "light", orientation: 2 },
-  "1З2": { type: "mirror", player: "shadow", orientation: 0 },
-  "2З2": { type: "mirror", player: "shadow", orientation: 1 },
-  "3З2": { type: "mirror", player: "shadow", orientation: 0 },
-  "4З2": { type: "mirror", player: "shadow", orientation: 3 },
-  "5З2": { type: "mirror", player: "shadow", orientation: 3 },
-  "6З2": { type: "mirror", player: "shadow", orientation: 0 },
-  "7З2": { type: "mirror", player: "shadow", orientation: 0 },
-  "1Щ1": { type: "shield", player: "light", orientation: 2 },
-  "1Щ2": { type: "shield", player: "shadow", orientation: 0 },
-  "2Щ1": { type: "shield", player: "light", orientation: 2 },
-  "2Щ2": { type: "shield", player: "shadow", orientation: 0 },
-  "1Т1": { type: "totem", player: "light", orientation: 1 },
-  "2Т2": { type: "totem", player: "shadow", orientation: 1 },
-  "2Т1": { type: "totem", player: "light", orientation: 2 },
-  "1Т2": { type: "totem", player: "shadow", orientation: 2 }
+
+  // === Лазеры ===
+  "Л1ВВ": { type: "laser", player: "light", orientation: 0 },
+  "Л1П":  { type: "laser", player: "light", orientation: 1 },
+  "Л1ВН": { type: "laser", player: "light", orientation: 2 },
+  "Л1Л":  { type: "laser", player: "light", orientation: 3 },
+
+  "Л2ВВ": { type: "laser", player: "shadow", orientation: 0 },
+  "Л2П":  { type: "laser", player: "shadow", orientation: 1 },
+  "Л2ВН": { type: "laser", player: "shadow", orientation: 2 },
+  "Л2Л":  { type: "laser", player: "shadow", orientation: 3 },
+
+  // === Волхвы ===
+  "В1ВВ": { type: "volhv", player: "light", orientation: 0 },
+  "В1П":  { type: "volhv", player: "light", orientation: 1 },
+  "В1ВН": { type: "volhv", player: "light", orientation: 2 },
+  "В1Л":  { type: "volhv", player: "light", orientation: 3 },
+
+  "В2ВВ": { type: "volhv", player: "shadow", orientation: 0 },
+  "В2П":  { type: "volhv", player: "shadow", orientation: 1 },
+  "В2ВН": { type: "volhv", player: "shadow", orientation: 2 },
+  "В2Л":  { type: "volhv", player: "shadow", orientation: 3 },
+
+  // === Зеркала Light (З1) ===
+  "1З1ВВ": { type: "mirror", player: "light", orientation: 0 },
+  "1З1П":  { type: "mirror", player: "light", orientation: 1 },
+  "1З1ВН": { type: "mirror", player: "light", orientation: 2 },
+  "1З1Л":  { type: "mirror", player: "light", orientation: 3 },
+
+  "2З1ВВ": { type: "mirror", player: "light", orientation: 0 },
+  "2З1П":  { type: "mirror", player: "light", orientation: 1 },
+  "2З1ВН": { type: "mirror", player: "light", orientation: 2 },
+  "2З1Л":  { type: "mirror", player: "light", orientation: 3 },
+
+  "3З1ВВ": { type: "mirror", player: "light", orientation: 0 },
+  "3З1П":  { type: "mirror", player: "light", orientation: 1 },
+  "3З1ВН": { type: "mirror", player: "light", orientation: 2 },
+  "3З1Л":  { type: "mirror", player: "light", orientation: 3 },
+
+  "4З1ВВ": { type: "mirror", player: "light", orientation: 0 },
+  "4З1П":  { type: "mirror", player: "light", orientation: 1 },
+  "4З1ВН": { type: "mirror", player: "light", orientation: 2 },
+  "4З1Л":  { type: "mirror", player: "light", orientation: 3 },
+
+  "5З1ВВ": { type: "mirror", player: "light", orientation: 0 },
+  "5З1П":  { type: "mirror", player: "light", orientation: 1 },
+  "5З1ВН": { type: "mirror", player: "light", orientation: 2 },
+  "5З1Л":  { type: "mirror", player: "light", orientation: 3 },
+
+  "6З1ВВ": { type: "mirror", player: "light", orientation: 0 },
+  "6З1П":  { type: "mirror", player: "light", orientation: 1 },
+  "6З1ВН": { type: "mirror", player: "light", orientation: 2 },
+  "6З1Л":  { type: "mirror", player: "light", orientation: 3 },
+
+  "7З1ВВ": { type: "mirror", player: "light", orientation: 0 },
+  "7З1П":  { type: "mirror", player: "light", orientation: 1 },
+  "7З1ВН": { type: "mirror", player: "light", orientation: 2 },
+  "7З1Л":  { type: "mirror", player: "light", orientation: 3 },
+
+  // === Зеркала Shadow (З2) ===
+  "1З2ВВ": { type: "mirror", player: "shadow", orientation: 0 },
+  "1З2П":  { type: "mirror", player: "shadow", orientation: 1 },
+  "1З2ВН": { type: "mirror", player: "shadow", orientation: 2 },
+  "1З2Л":  { type: "mirror", player: "shadow", orientation: 3 },
+
+  "2З2ВВ": { type: "mirror", player: "shadow", orientation: 0 },
+  "2З2П":  { type: "mirror", player: "shadow", orientation: 1 },
+  "2З2ВН": { type: "mirror", player: "shadow", orientation: 2 },
+  "2З2Л":  { type: "mirror", player: "shadow", orientation: 3 },
+
+  "3З2ВВ": { type: "mirror", player: "shadow", orientation: 0 },
+  "3З2П":  { type: "mirror", player: "shadow", orientation: 1 },
+  "3З2ВН": { type: "mirror", player: "shadow", orientation: 2 },
+  "3З2Л":  { type: "mirror", player: "shadow", orientation: 3 },
+
+  "4З2ВВ": { type: "mirror", player: "shadow", orientation: 0 },
+  "4З2П":  { type: "mirror", player: "shadow", orientation: 1 },
+  "4З2ВН": { type: "mirror", player: "shadow", orientation: 2 },
+  "4З2Л":  { type: "mirror", player: "shadow", orientation: 3 },
+
+  "5З2ВВ": { type: "mirror", player: "shadow", orientation: 0 },
+  "5З2П":  { type: "mirror", player: "shadow", orientation: 1 },
+  "5З2ВН": { type: "mirror", player: "shadow", orientation: 2 },
+  "5З2Л":  { type: "mirror", player: "shadow", orientation: 3 },
+
+  "6З2ВВ": { type: "mirror", player: "shadow", orientation: 0 },
+  "6З2П":  { type: "mirror", player: "shadow", orientation: 1 },
+  "6З2ВН": { type: "mirror", player: "shadow", orientation: 2 },
+  "6З2Л":  { type: "mirror", player: "shadow", orientation: 3 },
+
+  "7З2ВВ": { type: "mirror", player: "shadow", orientation: 0 },
+  "7З2П":  { type: "mirror", player: "shadow", orientation: 1 },
+  "7З2ВН": { type: "mirror", player: "shadow", orientation: 2 },
+  "7З2Л":  { type: "mirror", player: "shadow", orientation: 3 },
+
+  // === Щиты ===
+  "1Щ1ВВ": { type: "shield", player: "light", orientation: 0 },
+  "1Щ1П":  { type: "shield", player: "light", orientation: 1 },
+  "1Щ1ВН": { type: "shield", player: "light", orientation: 2 },
+  "1Щ1Л":  { type: "shield", player: "light", orientation: 3 },
+
+  "1Щ2ВВ": { type: "shield", player: "shadow", orientation: 0 },
+  "1Щ2П":  { type: "shield", player: "shadow", orientation: 1 },
+  "1Щ2ВН": { type: "shield", player: "shadow", orientation: 2 },
+  "1Щ2Л":  { type: "shield", player: "shadow", orientation: 3 },
+
+  "2Щ1ВВ": { type: "shield", player: "light", orientation: 0 },
+  "2Щ1П":  { type: "shield", player: "light", orientation: 1 },
+  "2Щ1ВН": { type: "shield", player: "light", orientation: 2 },
+  "2Щ1Л":  { type: "shield", player: "light", orientation: 3 },
+
+  "2Щ2ВВ": { type: "shield", player: "shadow", orientation: 0 },
+  "2Щ2П":  { type: "shield", player: "shadow", orientation: 1 },
+  "2Щ2ВН": { type: "shield", player: "shadow", orientation: 2 },
+  "2Щ2Л":  { type: "shield", player: "shadow", orientation: 3 },
+
+  // === Тотемы ===
+  "1Т1ВВ": { type: "totem", player: "light", orientation: 0 },
+  "1Т1П":  { type: "totem", player: "light", orientation: 1 },
+  "1Т1ВН": { type: "totem", player: "light", orientation: 2 },
+  "1Т1Л":  { type: "totem", player: "light", orientation: 3 },
+
+  "1Т2ВВ": { type: "totem", player: "shadow", orientation: 0 },
+  "1Т2П":  { type: "totem", player: "shadow", orientation: 1 },
+  "1Т2ВН": { type: "totem", player: "shadow", orientation: 2 },
+  "1Т2Л":  { type: "totem", player: "shadow", orientation: 3 },
+
+  "2Т1ВВ": { type: "totem", player: "light", orientation: 0 },
+  "2Т1П":  { type: "totem", player: "light", orientation: 1 },
+  "2Т1ВН": { type: "totem", player: "light", orientation: 2 },
+  "2Т1Л":  { type: "totem", player: "light", orientation: 3 },
+
+  "2Т2ВВ": { type: "totem", player: "shadow", orientation: 0 },
+  "2Т2П":  { type: "totem", player: "shadow", orientation: 1 },
+  "2Т2ВН": { type: "totem", player: "shadow", orientation: 2 },
+  "2Т2Л":  { type: "totem", player: "shadow", orientation: 3 }
 };
 
-const BOARD_HEIGHT = INITIAL_LAYOUT.length;
-const BOARD_WIDTH = INITIAL_LAYOUT[0].length;
+const BOARD_HEIGHT = STARTING_LAYOUTS[DEFAULT_LAYOUT_KEY].tokens.length;
+const BOARD_WIDTH = STARTING_LAYOUTS[DEFAULT_LAYOUT_KEY].tokens[0].length;
 const FILES = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".slice(0, BOARD_WIDTH);
 const THEME_STORAGE_KEY = "laser-theme";
+const DEFAULT_SERVER_URL = "wss://mazepark-1.onrender.com";
+const BASE_EFFECT_CLASS = "piece-effect--impact";
 
 const PLAYERS = {
   light: {
-    name: "Дружина Перуна",
+    name: "Первый игрок",
     glyph: "☼",
-    laserName: "Лучезар Перуна"
+    laserName: "Луч первого Игрока"
   },
   shadow: {
-    name: "Полк Чернобога",
+    name: "Второй Игрок",
     glyph: "☽",
-    laserName: "Луч Чернобога"
+    laserName: "Луч второго игрока"
   }
 };
 
-// Поместите файлы PNG для каждой фракции в подпапки "pieces/light" и "pieces/shadow"
-// рядом со script.js. Например: pieces/light/laser.png, pieces/shadow/laser.png и т.д.
 const PIECE_DEFS = {
   laser: {
-    name: "Лучезар",
-    images: {
-      light: "pieces/light/laser.png",
-      shadow: "pieces/shadow/laser.png"
-    },
+    name: "Луч",
     canRotate: true,
-    description: "Излучает луч. Не двигается и неуязвим, можно лишь поворачивать направление луча.",
+    description: "После действия активного игрока излучает свет. Не двигается и неуязвим, можно лишь поворачивать направление луча.",
     movement: () => []
   },
   volhv: {
-    name: "Волхв",
-    images: {
-      light: "pieces/light/volhv.png",
-      shadow: "pieces/shadow/volhv.png"
-    },
+    name: "Герой",
     canRotate: false,
-    description: "Главная фигура. Ходит на одну клетку в любом направлении. Попадание луча заканчивает партию.",
+    description: "Главная фигура. Ходит на одну клетку в любом направлении. Попадание луча в Героя заканчивает партию.",
     movement: (board, x, y, piece) => adjacentMoves(board, x, y, piece)
   },
   mirror: {
-    name: "Зерцало",
-    images: {
-      light: "pieces/light/mirror.png",
-      shadow: "pieces/shadow/mirror.png"
-    },
+    name: "Зеркало",
     canRotate: true,
-    description: "Один зеркальный фас. Отражает луч под прямым углом, уязвимо с открытых сторон.",
+    description: "Вещь с отражательным эффектом. Одна зеркальная сторона. Отражает луч под прямым углом,уязвимо с открытых сторон.",
     movement: (board, x, y, piece) => adjacentMoves(board, x, y, piece)
   },
   shield: {
-    name: "Щитоносец",
-    images: {
-      light: "pieces/light/shield.png",
-      shadow: "pieces/shadow/shield.png"
-    },
+    name: "Щит",
     canRotate: true,
-    description: "Щит гасит луч лицевой стороной. С боков и тыла может быть уничтожен.",
+    description: "Вещь с защитным эффектом, может гасить луч,но только лицевой стороной. С боков и тыла может быть уничтожена.",
     movement: (board, x, y, piece) => adjacentMoves(board, x, y, piece)
   },
   totem: {
     name: "Тотем",
-    images: {
-      light: "pieces/light/totem.png",
-      shadow: "pieces/shadow/totem.png"
-    },
     canRotate: true,
-    description: "Двуликое зеркало. Отражает с двух сторон и может сменяться местами с зерцалом или щитом поблизости, включая диагональ.",
+    description: "Двустороннее зеркало. Отражает луч на 90 градусов с двух сторон. МОЖЕТ МЕНЯТЬСЯ МЕСТАМИ С ЗЕРКАЛОМ ИЛИ ЩИТОМ ПОБЛИЗОСТИ.",
     movement: (board, x, y, piece) => totemMoves(board, x, y, piece)
   }
 };
+
+const SKINS = {
+  Slavic: {
+    label: "Славянский орден",
+    preview: "pieces/skins/Slavic/Type1/volhv.png",
+    configPath: "pieces/skins/Slavic/config.json",
+    types: {
+      Type1: { label: "Перун", preview: "pieces/skins/Slavic/Type1/volhv.png" },
+      Type2: { label: "Чернобог", preview: "pieces/skins/Slavic/Type2/volhv.png" }
+    }
+  },
+  Japan: {
+    label: "Япония",
+    preview: "pieces/skins/Japan/Type1/preview.png",
+    configPath: "pieces/skins/Japan/config.json",
+    types: {
+      Type1: { label: "Гейша", preview: "pieces/skins/Japan/Type1/volhv.png" },
+      Type2: { label: "Сëгун", preview: "pieces/skins/Japan/Type2/volhv.png" }
+    }
+  },
+  Greece: {
+    label: "Греция",
+    preview: "pieces/skins/Greece/Type1/preview.png",
+    configPath: "pieces/skins/Greece/config.json",
+    types: {
+      Type1: { label: "Легионер", preview: "pieces/skins/Greece/Type1/volhv.png" },
+      Type2: { label: "Амазонка", preview: "pieces/skins/Greece/Type2/volhv.png" }
+    }
+  },
+  Lavcraft: {
+    label: "Говард Лавкрафт",
+    preview: "pieces/skins/Lavcraft/Type1/preview.png",
+    configPath: "pieces/skins/Lavcraft/config.json",
+    types: {
+      Type1: { label: "Ктулху", preview: "pieces/skins/Lavcraft/Type1/volhv.png" },
+      Type2: { label: "Жрец Ордена", preview: "pieces/skins/Lavcraft/Type2/volhv.png" }
+    }
+  },
+  Egypt: {
+    label: "Египет",
+    preview: "pieces/skins/Egypt/Type1/preview.png",
+    configPath: "pieces/skins/Egypt/config.json",
+    types: {
+      Type1: { label: "Наложница", preview: "pieces/skins/Egypt/Type1/volhv.png" },
+      Type2: { label: "Фараон", preview: "pieces/skins/Egypt/Type2/volhv.png" }
+    }
+  },
+  premium: {
+    label: "Премиум",
+    preview: "pieces/skins/premium/Type1/volhv.png",
+    configPath: "pieces/skins/premium/config.json",
+    types: {
+      Type1: { label: "Бета-тест", preview: "pieces/skins/premium/Type1/volhv.png" },
+      Type2: { label: "Бета-тест2", preview: "pieces/skins/premium/Type1/volhv.png" }
+    }
+  },
+};
+
+const DEFAULT_SKIN_SELECTION = {
+  light: { skin: "Slavic", type: "Type1" },
+  shadow: { skin: "Slavic", type: "Type2" }
+};
+
+const AVAILABLE_SKINS = SKINS;
+const DEFAULT_PLAYER_SKINS = DEFAULT_SKIN_SELECTION;
+let playerSkins = cloneSkinSelection(DEFAULT_SKIN_SELECTION);
+
+const skinConfigCache = {};
+const skinConfigPromises = {};
+const skinAudioCache = new Map();
 
 const DIRECTIONS = [
   { dx: 0, dy: -1 }, // вверх
@@ -128,6 +328,7 @@ const DIAGONALS = [
 
 const ADJACENT = [...DIRECTIONS, ...DIAGONALS];
 
+let currentLayoutKey = DEFAULT_LAYOUT_KEY;
 let board = createEmptyBoard();
 let currentPlayer = "light";
 let selectedCell = null;
@@ -136,6 +337,14 @@ let turnCounter = 1;
 let currentTheme = "dark";
 let lastStatusMessage = "";
 let lastLaserResult = null;
+let lastLaserEffectSignature = null;
+let lastLaserEffectTimestamp = 0;
+let lastMove = null;
+let skinSelection = cloneSkinSelection(DEFAULT_SKIN_SELECTION);
+let pendingSkins = cloneSkinSelection(DEFAULT_SKIN_SELECTION);
+let onlineSelectedRole = null;
+
+preloadSkinConfigs(DEFAULT_SKIN_SELECTION);
 
 const elements = {
   board: document.getElementById("board"),
@@ -150,38 +359,88 @@ const elements = {
   themeToggle: document.getElementById("theme-toggle"),
   openConnection: document.getElementById("open-connection"),
   laserOverlay: document.getElementById("laser-overlay"),
+  effectsOverlay: document.getElementById("effects-overlay"),
   pieceName: document.getElementById("piece-name"),
   pieceDetails: document.getElementById("piece-details"),
+  startOverlay: document.getElementById("start-overlay"),
+  startOnline: document.getElementById("start-online"),
+  startOffline: document.getElementById("start-offline"),
+  startTraining: document.getElementById("start-training"),
+  trainingOverlay: document.getElementById("training-overlay"),
+  trainingBack: document.getElementById("training-back"),
+  offlineOverlay: document.getElementById("offline-overlay"),
+  offlineForm: document.getElementById("offline-form"),
+  offlineBack: document.getElementById("offline-back"),
+  offlineStart: document.getElementById("offline-start"),
   connectionOverlay: document.getElementById("connection-overlay"),
   connectionForm: document.getElementById("connection-form"),
   connectionStatus: document.getElementById("connection-status"),
   connectionPlayers: document.getElementById("connection-players"),
   connectButton: document.getElementById("connect-button"),
-  offlineButton: document.getElementById("offline-button"),
   serverInput: document.getElementById("server-url"),
-  roomInput: document.getElementById("room-id")
+  roomInput: document.getElementById("room-id"),
+  onlineTypeSelect: document.getElementById("online-type"),
+  onlineSkinSelect: document.getElementById("online-skin"),
+  onlineLayoutSelect: document.getElementById("online-layout"),
+  onlinePreviewImage: document.getElementById("online-preview-image"),
+  onlinePreviewLabel: document.getElementById("online-preview-label"),
+  onlineTypeWarning: document.getElementById("online-type-warning"),
+  onlineBack: document.getElementById("online-back"),
+  startScreen: document.getElementById("start-screen"),
+  startOnline: document.getElementById("start-online"),
+  startOffline: document.getElementById("start-offline"),
+  startTraining: document.getElementById("start-training"),
+  trainingOverlay: document.getElementById("training-overlay"),
+  trainingBack: document.getElementById("training-back"),
+  offlineOverlay: document.getElementById("offline-setup"),
+  offlineStart: document.getElementById("offline-start"),
+  offlineCancel: document.getElementById("offline-cancel"),
+  offlineConflict: document.getElementById("offline-conflict"),
+  offlineLayoutSelect: document.getElementById("offline-layout"),
+  offlineFields: {
+    light: {
+      skin: document.getElementById("offline-light-skin"),
+      type: document.getElementById("offline-light-type"),
+      preview: document.getElementById("offline-light-preview"),
+      label: document.getElementById("offline-light-preview-label")
+    },
+    shadow: {
+      skin: document.getElementById("offline-shadow-skin"),
+      type: document.getElementById("offline-shadow-type"),
+      preview: document.getElementById("offline-shadow-preview"),
+      label: document.getElementById("offline-shadow-preview-label")
+    }
+  },
+  legendImages: Array.from(document.querySelectorAll("[data-piece-image]"))
 };
 
 const cells = [];
 const multiplayer = createMultiplayerController();
 
 initialiseBoardGrid();
+setupSkinSelectionUI();
+initialiseLayoutControls();
 attachEventListeners();
 initialiseTheme();
 multiplayer.init();
 startNewGame();
+showStartScreen();
 
 function startNewGame() {
+  applySelectedLayoutFromControls();
+  lastMove = null;
   board = createEmptyBoard();
   placeInitialPieces();
   currentPlayer = "light";
   turnCounter = 1;
   clearLaserPath();
+  clearEffectsOverlay();
   updateTurnIndicator();
   clearSelection({ silent: true });
-  setStatus("Дружина Перуна начинает дуэль: выберите фигуру или поверните зеркало.");
+  setStatus("Первый игрок начинает ход. Переместите фигуру или поверните лазер.");
   elements.endgame.hidden = true;
   elements.endgame.setAttribute("aria-hidden", "true");
+  updateLayoutSelectors();
   broadcastGameState("new-game");
 }
 
@@ -189,10 +448,21 @@ function createEmptyBoard() {
   return Array.from({ length: BOARD_HEIGHT }, () => Array(BOARD_WIDTH).fill(null));
 }
 
+function normaliseLayoutKey(key) {
+  return STARTING_LAYOUTS[key] ? key : DEFAULT_LAYOUT_KEY;
+}
+
+function getLayoutTokens(layoutKey) {
+  const key = normaliseLayoutKey(layoutKey);
+  return STARTING_LAYOUTS[key].tokens;
+}
+
 function placeInitialPieces() {
+  const layout = getLayoutTokens(currentLayoutKey);
   for (let y = 0; y < BOARD_HEIGHT; y++) {
     for (let x = 0; x < BOARD_WIDTH; x++) {
-      const token = INITIAL_LAYOUT[y][x];
+      const row = layout[y] || [];
+      const token = row[x];
       const spec = TOKEN_MAP[token];
       if (spec) {
         board[y][x] = {
@@ -205,10 +475,428 @@ function placeInitialPieces() {
   }
 }
 
+function initialiseSkinControls() {
+  if (elements.onlineSkin) {
+    populateSkinSelect(elements.onlineSkin);
+  }
+  if (elements.onlineType) {
+    populateTypeSelect(elements.onlineType, getPlayerSkin("light").skin);
+  }
+
+  if (elements.offlineLightSkin) {
+    populateSkinSelect(elements.offlineLightSkin);
+  }
+  if (elements.offlineShadowSkin) {
+    populateSkinSelect(elements.offlineShadowSkin);
+  }
+  if (elements.offlineLightType) {
+    populateTypeSelect(elements.offlineLightType, getPlayerSkin("light").skin);
+  }
+  if (elements.offlineShadowType) {
+    populateTypeSelect(elements.offlineShadowType, getPlayerSkin("shadow").skin);
+  }
+
+  updateSkinControls();
+  refreshPieceArt({ silent: true });
+}
+
+function populateSkinSelect(select) {
+  if (!select) return;
+  const currentValue = select.value;
+  select.innerHTML = "";
+  Object.entries(AVAILABLE_SKINS).forEach(([key, meta]) => {
+    const option = document.createElement("option");
+    option.value = key;
+    option.textContent = meta.label;
+    select.appendChild(option);
+  });
+  if (currentValue && AVAILABLE_SKINS[currentValue]) {
+    select.value = currentValue;
+  }
+}
+
+function populateTypeSelect(select, skinKey) {
+  if (!select) return;
+  const skin = AVAILABLE_SKINS[skinKey] || AVAILABLE_SKINS.Slavic;
+  const currentValue = select.value;
+  select.innerHTML = "";
+  Object.entries(skin.types).forEach(([typeKey, meta]) => {
+    const option = document.createElement("option");
+    option.value = typeKey;
+    option.textContent = meta.label;
+    select.appendChild(option);
+  });
+  if (currentValue && skin.types[currentValue]) {
+    select.value = currentValue;
+  }
+}
+
+function updateSkinControls() {
+  updateOfflineSkinControls();
+  updateOnlineSkinControls();
+  updateSkinPreviews();
+}
+
+function updateOfflineSkinControls() {
+  const players = ["light", "shadow"];
+  for (const player of players) {
+    const skinSelect = player === "light" ? elements.offlineLightSkin : elements.offlineShadowSkin;
+    const typeSelect = player === "light" ? elements.offlineLightType : elements.offlineShadowType;
+    const selection = getPlayerSkin(player);
+    const other = player === "light" ? "shadow" : "light";
+    const otherSelection = getPlayerSkin(other);
+
+    if (skinSelect) {
+      populateSkinSelect(skinSelect);
+      skinSelect.value = selection.skin;
+    }
+    if (typeSelect) {
+      populateTypeSelect(typeSelect, selection.skin);
+      Array.from(typeSelect.options).forEach((option) => {
+        option.disabled = otherSelection.skin === selection.skin && otherSelection.type === option.value;
+      });
+      typeSelect.value = selection.type;
+    }
+  }
+}
+
+function updateOnlineSkinControls() {
+  if (!elements.onlineSkin || !elements.onlineType) return;
+  populateSkinSelect(elements.onlineSkin);
+
+  const checkedRole = getCheckedRole();
+  if (checkedRole) {
+    selectedOnlineRole = checkedRole;
+  }
+
+  const role = selectedOnlineRole;
+  elements.onlineSkin.disabled = !role;
+  elements.onlineType.disabled = !role;
+
+  if (!role) {
+    elements.onlineType.innerHTML = "";
+    updateSkinPreviews();
+    return;
+  }
+
+  const selection = getPlayerSkin(role);
+  const other = role === "light" ? "shadow" : "light";
+  const otherSelection = getPlayerSkin(other);
+
+  elements.onlineSkin.value = selection.skin;
+  populateTypeSelect(elements.onlineType, selection.skin);
+  Array.from(elements.onlineType.options).forEach((option) => {
+    option.disabled = otherSelection.skin === selection.skin && otherSelection.type === option.value;
+  });
+  elements.onlineType.value = selection.type;
+}
+
+function updateSkinPreviews() {
+  document.querySelectorAll("[data-preview-player]").forEach((container) => {
+    const player = container.getAttribute("data-preview-player");
+    updatePreviewContainer(container, getPlayerSkin(player));
+  });
+
+  const onlineContainer = document.querySelector("[data-preview-context='online']");
+  if (onlineContainer) {
+    const role = selectedOnlineRole || "light";
+    updatePreviewContainer(onlineContainer, getPlayerSkin(role));
+  }
+
+  document.querySelectorAll("img[data-legend-player]").forEach((img) => {
+    const player = img.getAttribute("data-legend-player");
+    const piece = img.getAttribute("data-piece");
+    img.src = getPieceAssetPath(piece, player);
+  });
+}
+
+function updatePreviewContainer(container, selection) {
+  if (!container) return;
+  container.querySelectorAll("img[data-piece]").forEach((img) => {
+    const piece = img.getAttribute("data-piece");
+    img.src = getSkinAssetPath(selection, piece);
+  });
+}
+
+function preloadSkinConfigs(selection) {
+  if (!selection) return;
+  const entries = selection.light || selection.shadow ? Object.values(selection) : [selection];
+  entries.forEach((item) => {
+    if (item && item.skin) {
+      ensureSkinConfig(item.skin);
+    }
+  });
+}
+
+function ensureSkinConfig(skinKey) {
+  if (!skinKey) {
+    return null;
+  }
+  if (Object.prototype.hasOwnProperty.call(skinConfigCache, skinKey)) {
+    return skinConfigPromises[skinKey] || null;
+  }
+  const meta = AVAILABLE_SKINS[skinKey];
+  if (!meta || !meta.configPath) {
+    skinConfigCache[skinKey] = {};
+    return null;
+  }
+  if (!skinConfigPromises[skinKey] && typeof fetch === "function") {
+    skinConfigPromises[skinKey] = fetch(meta.configPath)
+      .then((response) => (response.ok ? response.json() : null))
+      .then((json) => {
+        skinConfigCache[skinKey] = json && typeof json === "object" ? json : {};
+        return skinConfigCache[skinKey];
+      })
+      .catch(() => {
+        skinConfigCache[skinKey] = {};
+        return skinConfigCache[skinKey];
+      });
+  }
+  if (!skinConfigPromises[skinKey]) {
+    skinConfigCache[skinKey] = {};
+  }
+  return skinConfigPromises[skinKey] || null;
+}
+
+function getSkinConfig(selection) {
+  if (!selection || !selection.skin) {
+    return null;
+  }
+  const cache = skinConfigCache[selection.skin];
+  if (!cache) {
+    return null;
+  }
+  if (selection.type && cache[selection.type]) {
+    return cache[selection.type];
+  }
+  if (cache.default) {
+    return cache.default;
+  }
+  return null;
+}
+
+function getPlayerSkin(player) {
+  const base = playerSkins[player] || DEFAULT_PLAYER_SKINS[player] || DEFAULT_PLAYER_SKINS.light;
+  const normalised = normaliseSkinChoice(player, base.skin, base.type);
+  playerSkins[player] = normalised;
+  return normalised;
+}
+
+function normaliseSkinChoice(player, skinKey, typeKey) {
+  const fallback = DEFAULT_PLAYER_SKINS[player] || DEFAULT_PLAYER_SKINS.light;
+  const skinId = AVAILABLE_SKINS[skinKey] ? skinKey : fallback.skin;
+  const skinMeta = AVAILABLE_SKINS[skinId];
+  let typeId = skinMeta.types[typeKey] ? typeKey : fallback.type;
+  if (!skinMeta.types[typeId]) {
+    const firstType = Object.keys(skinMeta.types)[0];
+    typeId = firstType || "Type1";
+  }
+  ensureSkinConfig(skinId);
+  return { skin: skinId, type: typeId };
+}
+
+function assignPlayerSkin(player, skinKey, typeKey, options = {}) {
+  const requested = normaliseSkinChoice(player, skinKey, typeKey);
+  playerSkins[player] = requested;
+  ensureSkinConfig(requested.skin);
+  preloadSkinConfigs(playerSkins);
+  refreshPieceArt({ silent: options.silent });
+  updateSkinControls();
+  if (!options.silent && !options.suppressBroadcast) {
+    broadcastGameState("skin-update");
+  }
+  return { success: true, selection: requested };
+}
+
+function refreshPieceArt({ silent = false } = {}) {
+  renderBoard();
+  updateSkinPreviews();
+  if (!silent) {
+    updatePiecePanel();
+  }
+}
+
+function getSkinAssetPath(selection, pieceType) {
+  return `pieces/skins/${selection.skin}/${selection.type}/${pieceType}.png`;
+}
+
+function getPieceAssetPath(pieceType, player) {
+  const selection = getPlayerSkin(player);
+  return getSkinAssetPath(selection, pieceType);
+}
+
+function playSkinSound(playerOrSelection, cue) {
+  if (!cue || typeof Audio !== "function") return;
+  let selection;
+  if (typeof playerOrSelection === "string") {
+    selection = getPlayerSkin(playerOrSelection);
+  } else {
+    selection = playerOrSelection;
+  }
+  if (!selection || !selection.skin) return;
+  const config = getSkinConfig(selection);
+  const url = config && config.sounds ? config.sounds[cue] : null;
+  if (!url) return;
+  const key = `${selection.skin}:${selection.type}:${cue}`;
+  let base = skinAudioCache.get(key);
+  if (!base) {
+    base = new Audio(url);
+    base.preload = "auto";
+    skinAudioCache.set(key, base);
+  }
+  const instance = base.cloneNode(true);
+  instance.play().catch(() => {});
+}
+
+function getCheckedRole() {
+  if (!elements.connectionForm) return null;
+  const checked = elements.connectionForm.querySelector('input[name="role"]:checked');
+  if (!checked) return null;
+  const value = checked.value;
+  return value === "light" || value === "shadow" ? value : null;
+}
+
+function clonePlayerSkinsState() {
+  return {
+    light: { ...getPlayerSkin("light") },
+    shadow: { ...getPlayerSkin("shadow") }
+  };
+}
+
+function applyRemoteSkins(remoteSkins) {
+  if (!remoteSkins) return;
+  const current = {
+    light: getPlayerSkin("light"),
+    shadow: getPlayerSkin("shadow")
+  };
+  const next = {
+    light: current.light,
+    shadow: current.shadow
+  };
+  if (remoteSkins.light) {
+    next.light = normaliseSkinChoice("light", remoteSkins.light.skin, remoteSkins.light.type);
+  }
+  if (remoteSkins.shadow) {
+    next.shadow = normaliseSkinChoice("shadow", remoteSkins.shadow.skin, remoteSkins.shadow.type);
+  }
+  playerSkins = next;
+  preloadSkinConfigs(playerSkins);
+  refreshPieceArt({ silent: true });
+  updateSkinControls();
+}
+
+function hideStartOverlay() {
+  if (elements.startOverlay) {
+    elements.startOverlay.hidden = true;
+    elements.startOverlay.setAttribute("aria-hidden", "true");
+  }
+}
+
+function showStartOverlay() {
+  closeOfflineMenu();
+  closeTrainingMenu();
+  hideConnectionOverlay();
+  if (elements.startOverlay) {
+    elements.startOverlay.hidden = false;
+    elements.startOverlay.setAttribute("aria-hidden", "false");
+  }
+}
+
+function hideConnectionOverlay() {
+  if (multiplayer && typeof multiplayer.closeOverlay === "function") {
+    multiplayer.closeOverlay();
+  }
+  if (elements.connectionOverlay) {
+    elements.connectionOverlay.hidden = true;
+    elements.connectionOverlay.setAttribute("aria-hidden", "true");
+  }
+  selectedOnlineRole = null;
+  updateOnlineSkinControls();
+}
+
+function openOnlineMenu() {
+  closeOfflineMenu();
+  closeTrainingMenu();
+  hideStartOverlay();
+  multiplayer.openOverlay();
+  updateLayoutSelectors();
+  updateOnlineSkinControls();
+  updateSkinPreviews();
+}
+
+function openOfflineMenu() {
+  closeTrainingMenu();
+  hideConnectionOverlay();
+  hideStartOverlay();
+  if (elements.offlineOverlay) {
+    elements.offlineOverlay.hidden = false;
+    elements.offlineOverlay.setAttribute("aria-hidden", "false");
+  }
+  updateLayoutSelectors();
+  updateSkinControls();
+}
+
+function closeOfflineMenu() {
+  if (elements.offlineOverlay) {
+    elements.offlineOverlay.hidden = true;
+    elements.offlineOverlay.setAttribute("aria-hidden", "true");
+  }
+}
+
+function openTrainingMenu() {
+  closeOfflineMenu();
+  hideConnectionOverlay();
+  if (elements.trainingOverlay) {
+    elements.trainingOverlay.hidden = false;
+    elements.trainingOverlay.setAttribute("aria-hidden", "false");
+  }
+}
+
+function closeTrainingMenu() {
+  if (elements.trainingOverlay) {
+    elements.trainingOverlay.hidden = true;
+    elements.trainingOverlay.setAttribute("aria-hidden", "true");
+  }
+}
+
+function handleOfflineFormSubmit() {
+  applySelectedLayoutFromControls();
+  const lightSelection = {
+    skin: elements.offlineLightSkin ? elements.offlineLightSkin.value : getPlayerSkin("light").skin,
+    type: elements.offlineLightType ? elements.offlineLightType.value : getPlayerSkin("light").type
+  };
+  const shadowSelection = {
+    skin: elements.offlineShadowSkin ? elements.offlineShadowSkin.value : getPlayerSkin("shadow").skin,
+    type: elements.offlineShadowType ? elements.offlineShadowType.value : getPlayerSkin("shadow").type
+  };
+
+  assignPlayerSkin("light", lightSelection.skin, lightSelection.type, {
+    suppressBroadcast: true,
+    silent: true
+  });
+  assignPlayerSkin("shadow", shadowSelection.skin, shadowSelection.type, {
+    suppressBroadcast: true,
+    silent: true
+  });
+  updateSkinControls();
+  multiplayer.handleOfflineSelection();
+  closeOfflineMenu();
+  hideConnectionOverlay();
+  hideStartOverlay();
+  startNewGame();
+}
+
+function setOverlayStatus(message) {
+  if (elements.connectionStatus) {
+    elements.connectionStatus.textContent = message || "";
+  }
+}
+
 function initialiseBoardGrid() {
   elements.board.innerHTML = "";
   elements.board.style.setProperty("--board-columns", BOARD_WIDTH);
   elements.board.style.setProperty("--board-rows", BOARD_HEIGHT);
+  updateOverlayGridMetrics();
   for (let y = 0; y < BOARD_HEIGHT; y++) {
     cells[y] = [];
     for (let x = 0; x < BOARD_WIDTH; x++) {
@@ -226,6 +914,15 @@ function initialiseBoardGrid() {
   }
 }
 
+function updateOverlayGridMetrics() {
+  const overlays = [elements.effectsOverlay, elements.laserOverlay];
+  overlays.forEach((overlay) => {
+    if (!overlay) return;
+    overlay.style.setProperty("--board-columns", BOARD_WIDTH);
+    overlay.style.setProperty("--board-rows", BOARD_HEIGHT);
+  });
+}
+
 function attachEventListeners() {
   document.getElementById("new-game").addEventListener("click", startNewGame);
   elements.rotateLeft.addEventListener("click", () => rotateSelected(-1));
@@ -234,22 +931,611 @@ function attachEventListeners() {
   if (elements.themeToggle) {
     elements.themeToggle.addEventListener("click", toggleTheme);
   }
+  if (elements.startOnline) {
+    elements.startOnline.addEventListener("click", () => {
+      hideStartOverlay();
+      openOnlineMenu();
+    });
+  }
+  if (elements.startOffline) {
+    elements.startOffline.addEventListener("click", () => {
+      hideStartOverlay();
+      openOfflineMenu();
+    });
+  }
+  if (elements.startTraining) {
+    elements.startTraining.addEventListener("click", () => {
+      hideStartOverlay();
+      openTrainingMenu();
+    });
+  }
+  if (elements.trainingBack) {
+    elements.trainingBack.addEventListener("click", () => {
+      closeTrainingMenu();
+      showStartOverlay();
+    });
+  }
+  if (elements.offlineBack) {
+    elements.offlineBack.addEventListener("click", () => {
+      closeOfflineMenu();
+      showStartOverlay();
+    });
+  }
+  if (elements.offlineForm) {
+    elements.offlineForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      handleOfflineFormSubmit();
+    });
+  }
+  if (elements.offlineLightSkin) {
+    elements.offlineLightSkin.addEventListener("change", (event) => {
+      assignPlayerSkin("light", event.target.value, getPlayerSkin("light").type, { autoResolveConflict: true, silent: true });
+    });
+  }
+  if (elements.offlineLightType) {
+    elements.offlineLightType.addEventListener("change", (event) => {
+      const result = assignPlayerSkin("light", getPlayerSkin("light").skin, event.target.value, { autoResolveConflict: true, silent: true });
+      if (!result.success) {
+        elements.offlineLightType.value = getPlayerSkin("light").type;
+      }
+    });
+  }
+  if (elements.offlineShadowSkin) {
+    elements.offlineShadowSkin.addEventListener("change", (event) => {
+      assignPlayerSkin("shadow", event.target.value, getPlayerSkin("shadow").type, { autoResolveConflict: true, silent: true });
+    });
+  }
+  if (elements.offlineShadowType) {
+    elements.offlineShadowType.addEventListener("change", (event) => {
+      const result = assignPlayerSkin("shadow", getPlayerSkin("shadow").skin, event.target.value, { autoResolveConflict: true, silent: true });
+      if (!result.success) {
+        elements.offlineShadowType.value = getPlayerSkin("shadow").type;
+      }
+    });
+  }
   if (elements.connectionForm) {
     elements.connectionForm.addEventListener("submit", (event) => {
       event.preventDefault();
       multiplayer.handleConnectSubmission();
     });
-  }
-  if (elements.offlineButton) {
-    elements.offlineButton.addEventListener("click", () => {
-      multiplayer.handleOfflineSelection();
+    const roleInputs = elements.connectionForm.querySelectorAll('input[name="role"]');
+    roleInputs.forEach((input) => {
+      input.addEventListener("change", () => {
+        selectedOnlineRole = input.value === "shadow" ? "shadow" : "light";
+        updateOnlineSkinControls();
+        updateSkinPreviews();
+      });
     });
   }
   if (elements.openConnection) {
     elements.openConnection.addEventListener("click", () => {
+      openOnlineMenu();
+    });
+  }
+  if (elements.connectionBack) {
+    elements.connectionBack.addEventListener("click", () => {
+      multiplayer.handleOfflineSelection();
+      hideConnectionOverlay();
+      showStartOverlay();
+    });
+  }
+  if (elements.onlineBack) {
+    elements.onlineBack.addEventListener("click", () => {
+      multiplayer.closeOverlay();
+      showStartScreen();
+    });
+  }
+  if (elements.startOnline) {
+    elements.startOnline.addEventListener("click", () => {
+      hideStartScreen();
       multiplayer.openOverlay();
     });
   }
+  if (elements.startOffline) {
+    elements.startOffline.addEventListener("click", () => {
+      hideStartScreen();
+      openOfflineSetup();
+    });
+  }
+  if (elements.startTraining) {
+    elements.startTraining.addEventListener("click", () => {
+      hideStartScreen();
+      openTraining();
+    });
+  }
+  if (elements.trainingBack) {
+    elements.trainingBack.addEventListener("click", () => {
+      closeTraining();
+      showStartScreen();
+    });
+  }
+  if (elements.offlineCancel) {
+    elements.offlineCancel.addEventListener("click", () => {
+      closeOfflineSetup();
+      showStartScreen();
+    });
+  }
+  if (elements.offlineStart) {
+    elements.offlineStart.addEventListener("click", () => {
+      if (applyOfflineSelection()) {
+        closeOfflineSetup();
+        startNewGame();
+      }
+    });
+  }
+}
+
+function setupSkinSelectionUI() {
+  if (elements.onlineSkinSelect) {
+    populateSkinSelect(elements.onlineSkinSelect);
+    elements.onlineSkinSelect.addEventListener("change", () => handleOnlineSkinChange());
+    elements.onlineSkinSelect.disabled = true;
+  }
+  if (elements.onlineTypeSelect) {
+    populateTypeSelect(elements.onlineTypeSelect, null, { player: null, mode: "actual" });
+    elements.onlineTypeSelect.addEventListener("change", () => handleOnlineTypeChange());
+    elements.onlineTypeSelect.disabled = true;
+  }
+  if (elements.connectionForm) {
+    const roleInputs = elements.connectionForm.querySelectorAll("input[name=\"role\"]");
+    roleInputs.forEach((input) => {
+      input.addEventListener("change", () => handleOnlineRoleChange(input.value));
+      if (input.checked) {
+        onlineSelectedRole = input.value;
+      }
+    });
+  }
+
+  for (const player of Object.keys(elements.offlineFields)) {
+    const fieldset = elements.offlineFields[player];
+    if (!fieldset) continue;
+    if (fieldset.skin) {
+      populateSkinSelect(fieldset.skin);
+      fieldset.skin.addEventListener("change", () => handleOfflineSkinChange(player));
+    }
+    if (fieldset.type) {
+      populateTypeSelect(fieldset.type, pendingSkins[player].skin, { player, mode: "pending" });
+      fieldset.type.addEventListener("change", () => handleOfflineTypeChange(player));
+    }
+  }
+
+  syncOfflineSelectorsWithPending();
+  handleOnlineRoleChange(onlineSelectedRole);
+  updateLegendImages();
+  updateOfflineConflict();
+  updateOnlineWarning();
+}
+
+function initialiseLayoutControls() {
+  const selects = [elements.offlineLayoutSelect, elements.onlineLayoutSelect].filter(Boolean);
+  selects.forEach((select) => populateLayoutOptions(select));
+  updateLayoutSelectors();
+  if (elements.offlineLayoutSelect) {
+    elements.offlineLayoutSelect.addEventListener("change", (event) => {
+      setCurrentLayout(event.target.value);
+    });
+  }
+  if (elements.onlineLayoutSelect) {
+    elements.onlineLayoutSelect.addEventListener("change", (event) => {
+      setCurrentLayout(event.target.value);
+    });
+  }
+}
+
+function populateLayoutOptions(select) {
+  if (!select) return;
+  const previous = select.value;
+  select.innerHTML = "";
+  STARTING_LAYOUT_ORDER.forEach((key) => {
+    const layout = STARTING_LAYOUTS[key];
+    if (!layout) return;
+    const option = document.createElement("option");
+    option.value = key;
+    option.textContent = layout.label;
+    select.appendChild(option);
+  });
+  const desired = STARTING_LAYOUTS[previous] ? previous : currentLayoutKey;
+  select.value = normaliseLayoutKey(desired);
+}
+
+function updateLayoutSelectors() {
+  const key = normaliseLayoutKey(currentLayoutKey);
+  if (elements.offlineLayoutSelect) {
+    elements.offlineLayoutSelect.value = key;
+  }
+  if (elements.onlineLayoutSelect) {
+    elements.onlineLayoutSelect.value = key;
+  }
+}
+
+function setCurrentLayout(layoutKey, { silent = false } = {}) {
+  const key = normaliseLayoutKey(layoutKey);
+  if (currentLayoutKey === key) {
+    updateLayoutSelectors();
+    return currentLayoutKey;
+  }
+  currentLayoutKey = key;
+  updateLayoutSelectors();
+  if (!silent && multiplayer.canBroadcast()) {
+    broadcastGameState("layout-change");
+  }
+  return currentLayoutKey;
+}
+
+function applySelectedLayoutFromControls() {
+  const candidates = [elements.offlineLayoutSelect, elements.onlineLayoutSelect];
+  for (const select of candidates) {
+    if (select && select.value) {
+      setCurrentLayout(select.value, { silent: true });
+    }
+  }
+}
+
+function populateSkinSelect(select) {
+  if (!select) return;
+  select.innerHTML = "";
+  Object.entries(SKINS).forEach(([key, skin]) => {
+    const option = document.createElement("option");
+    option.value = key;
+    option.textContent = skin.label;
+    select.appendChild(option);
+  });
+}
+
+function populateTypeSelect(select, skinKey, { player = null, mode = "actual" } = {}) {
+  if (!select) return;
+  select.innerHTML = "";
+  const skin = SKINS[skinKey];
+  if (!skin) {
+    select.disabled = true;
+    return;
+  }
+  Object.entries(skin.types).forEach(([typeKey, typeDef]) => {
+    const option = document.createElement("option");
+    option.value = typeKey;
+    option.textContent = typeDef.label;
+    select.appendChild(option);
+  });
+  select.disabled = false;
+}
+
+function syncOfflineSelectorsWithPending() {
+  for (const player of Object.keys(elements.offlineFields)) {
+    const fieldset = elements.offlineFields[player];
+    if (!fieldset) continue;
+    const pending = pendingSkins[player];
+    if (fieldset.skin && pending) {
+      fieldset.skin.value = pending.skin;
+    }
+    if (fieldset.type) {
+      populateTypeSelect(fieldset.type, pending.skin, { player, mode: "pending" });
+      const available = getFirstAvailableOption(fieldset.type, pending.type);
+      if (available) {
+        fieldset.type.value = available;
+        setPendingSkin(player, pending.skin, available);
+      }
+      updateOfflinePreview(player);
+    }
+  }
+}
+
+function handleOfflineSkinChange(player) {
+  const fieldset = elements.offlineFields[player];
+  if (!fieldset || !fieldset.skin) return;
+  const skin = fieldset.skin.value;
+  const pending = pendingSkins[player];
+  const desiredType = pending ? pending.type : null;
+  populateTypeSelect(fieldset.type, skin, { player, mode: "pending" });
+  const type = getFirstAvailableOption(fieldset.type, desiredType);
+  if (fieldset.type && type) {
+    fieldset.type.value = type;
+  }
+  setPendingSkin(player, skin, type);
+  updateOfflinePreview(player);
+  updateOfflineConflict();
+}
+
+function handleOfflineTypeChange(player) {
+  const fieldset = elements.offlineFields[player];
+  if (!fieldset || !fieldset.type) return;
+  const selected = fieldset.type.value;
+  if (!selected || fieldset.type.selectedOptions[0]?.disabled) {
+    const fallback = getFirstAvailableOption(fieldset.type);
+    if (fallback) {
+      fieldset.type.value = fallback;
+    }
+  }
+  const skin = fieldset.skin ? fieldset.skin.value : pendingSkins[player].skin;
+  const type = fieldset.type ? fieldset.type.value : pendingSkins[player].type;
+  setPendingSkin(player, skin, type);
+  updateOfflinePreview(player);
+  updateOfflineConflict();
+}
+
+function handleOnlineRoleChange(role) {
+  onlineSelectedRole = role || null;
+  if (!onlineSelectedRole) {
+    if (elements.onlineSkinSelect) {
+      elements.onlineSkinSelect.disabled = true;
+    }
+    if (elements.onlineTypeSelect) {
+      elements.onlineTypeSelect.disabled = true;
+    }
+    updateOnlinePreview();
+    updateOnlineWarning();
+    return;
+  }
+
+  const pending = pendingSkins[onlineSelectedRole] || DEFAULT_SKIN_SELECTION[onlineSelectedRole];
+  if (elements.onlineSkinSelect) {
+    elements.onlineSkinSelect.disabled = false;
+    elements.onlineSkinSelect.value = pending.skin;
+  }
+  if (elements.onlineTypeSelect) {
+    populateTypeSelect(elements.onlineTypeSelect, pending.skin, { player: onlineSelectedRole, mode: "actual" });
+    const type = getFirstAvailableOption(elements.onlineTypeSelect, pending.type);
+    if (type) {
+      elements.onlineTypeSelect.value = type;
+      setPendingSkin(onlineSelectedRole, pending.skin, type);
+    }
+    elements.onlineTypeSelect.disabled = false;
+  }
+
+  updateOnlinePreview();
+  updateOnlineWarning();
+}
+
+function handleOnlineSkinChange() {
+  if (!onlineSelectedRole || !elements.onlineSkinSelect) {
+    return;
+  }
+  const skin = elements.onlineSkinSelect.value;
+  const current = pendingSkins[onlineSelectedRole] || DEFAULT_SKIN_SELECTION[onlineSelectedRole];
+  const desiredType = current.type;
+  if (elements.onlineTypeSelect) {
+    populateTypeSelect(elements.onlineTypeSelect, skin, { player: onlineSelectedRole, mode: "actual" });
+    const type = getFirstAvailableOption(elements.onlineTypeSelect, desiredType);
+    if (type) {
+      elements.onlineTypeSelect.value = type;
+      setPendingSkin(onlineSelectedRole, skin, type);
+    }
+  } else {
+    setPendingSkin(onlineSelectedRole, skin, desiredType);
+  }
+  updateOnlinePreview();
+  if (multiplayer.isActive() && typeof multiplayer.getRole === "function" && multiplayer.getRole() === onlineSelectedRole) {
+    applyPendingSkin(onlineSelectedRole);
+  }
+  updateOnlineWarning();
+}
+
+function handleOnlineTypeChange() {
+  if (!onlineSelectedRole || !elements.onlineTypeSelect) {
+    return;
+  }
+  const option = elements.onlineTypeSelect.selectedOptions[0];
+  if (option && option.disabled) {
+    const fallback = getFirstAvailableOption(elements.onlineTypeSelect);
+    if (fallback) {
+      elements.onlineTypeSelect.value = fallback;
+    }
+  }
+  const skin = elements.onlineSkinSelect ? elements.onlineSkinSelect.value : pendingSkins[onlineSelectedRole].skin;
+  const type = elements.onlineTypeSelect.value;
+  setPendingSkin(onlineSelectedRole, skin, type);
+  updateOnlinePreview();
+  if (multiplayer.isActive() && typeof multiplayer.getRole === "function" && multiplayer.getRole() === onlineSelectedRole) {
+    applyPendingSkin(onlineSelectedRole);
+  }
+  updateOnlineWarning();
+}
+
+function getFirstAvailableOption(select, preferred) {
+  if (!select) return null;
+  const options = Array.from(select.options);
+  if (preferred) {
+    const found = options.find((option) => option.value === preferred && !option.disabled);
+    if (found) {
+      return found.value;
+    }
+  }
+  const fallback = options.find((option) => !option.disabled);
+  return fallback ? fallback.value : null;
+}
+
+function updateOfflineConflict() {
+  if (elements.offlineConflict) {
+    elements.offlineConflict.hidden = true;
+    elements.offlineConflict.textContent = "";
+  }
+  if (elements.offlineStart) {
+    elements.offlineStart.disabled = false;
+  }
+}
+
+function updateOfflinePreview(player) {
+  const fieldset = elements.offlineFields[player];
+  if (!fieldset) return;
+  const pending = pendingSkins[player] || DEFAULT_SKIN_SELECTION[player];
+  const previewPath = getSkinPreviewPath(pending.skin, pending.type);
+  if (fieldset.preview) {
+    fieldset.preview.src = previewPath;
+    fieldset.preview.alt = `${getSkinLabel(pending.skin)} — ${getTypeLabel(pending.skin, pending.type)}`;
+  }
+  if (fieldset.label) {
+    fieldset.label.textContent = `${getSkinLabel(pending.skin)} — ${getTypeLabel(pending.skin, pending.type)}`;
+  }
+}
+
+function updateOnlinePreview() {
+  if (!elements.onlinePreviewImage || !elements.onlinePreviewLabel) return;
+  if (!onlineSelectedRole) {
+    const fallback = DEFAULT_SKIN_SELECTION.light;
+    elements.onlinePreviewImage.src = getSkinPreviewPath(fallback.skin, fallback.type);
+    elements.onlinePreviewLabel.textContent = "Выберите сторону и скин";
+    return;
+  }
+  const pending = pendingSkins[onlineSelectedRole];
+  const path = getSkinPreviewPath(pending.skin, pending.type);
+  elements.onlinePreviewImage.src = path;
+  elements.onlinePreviewLabel.textContent = `${getSkinLabel(pending.skin)} — ${getTypeLabel(pending.skin, pending.type)}`;
+}
+
+function updateOnlineWarning() {
+  if (!elements.onlineTypeWarning) return;
+  let message = "";
+  let invalid = false;
+  if (!onlineSelectedRole) {
+    message = "Выберите сторону, чтобы указать скин.";
+    invalid = true;
+  } else {
+    const pending = pendingSkins[onlineSelectedRole];
+    if (!pending || !pending.skin || !pending.type) {
+      message = "Выберите скин и тип.";
+      invalid = true;
+    }
+  }
+  elements.onlineTypeWarning.hidden = !invalid || message.length === 0;
+  elements.onlineTypeWarning.textContent = message;
+  if (elements.connectButton) {
+    elements.connectButton.disabled = invalid;
+  }
+}
+
+function applyOfflineSelection() {
+  applySelectedLayoutFromControls();
+  multiplayer.handleOfflineSelection();
+  applyAllPendingSkins({ broadcast: false });
+  updateLegendImages();
+  return true;
+}
+
+function openOfflineSetup() {
+  syncOfflineSelectorsWithPending();
+  updateOfflineConflict();
+  updateLayoutSelectors();
+  showOverlayElement(elements.offlineOverlay);
+}
+
+function closeOfflineSetup() {
+  hideOverlayElement(elements.offlineOverlay);
+}
+
+function openTraining() {
+  showOverlayElement(elements.trainingOverlay);
+}
+
+function closeTraining() {
+  hideOverlayElement(elements.trainingOverlay);
+}
+
+function showStartScreen() {
+  showOverlayElement(elements.startScreen);
+}
+
+function hideStartScreen() {
+  hideOverlayElement(elements.startScreen);
+}
+
+function showOverlayElement(element) {
+  if (!element) return;
+  element.hidden = false;
+  element.setAttribute("aria-hidden", "false");
+}
+
+function hideOverlayElement(element) {
+  if (!element) return;
+  element.hidden = true;
+  element.setAttribute("aria-hidden", "true");
+}
+
+function setPendingSkin(player, skin, type) {
+  const skinKey = SKINS[skin] ? skin : DEFAULT_SKIN_SELECTION[player].skin;
+  const typeKey = SKINS[skinKey].types[type] ? type : Object.keys(SKINS[skinKey].types)[0];
+  ensureSkinConfig(skinKey);
+  pendingSkins[player] = { skin: skinKey, type: typeKey };
+}
+
+function applyPendingSkin(player, { broadcast = true } = {}) {
+  const next = cloneSkinSelection(skinSelection);
+  next[player] = { ...pendingSkins[player] };
+  applySkinSelection(next, { broadcast });
+}
+
+function applyAllPendingSkins({ broadcast = true } = {}) {
+  applySkinSelection(pendingSkins, { broadcast });
+}
+
+function applySkinSelection(selection, { broadcast = true, preservePendingFor = null } = {}) {
+  const previousPending = cloneSkinSelection(pendingSkins);
+  skinSelection = cloneSkinSelection(selection);
+  playerSkins = cloneSkinSelection(skinSelection);
+  const nextPending = cloneSkinSelection(skinSelection);
+  if (preservePendingFor && previousPending[preservePendingFor]) {
+    nextPending[preservePendingFor] = { ...previousPending[preservePendingFor] };
+  }
+  pendingSkins = nextPending;
+  preloadSkinConfigs(playerSkins);
+  updateLegendImages();
+  renderBoard();
+  updateOnlineWarning();
+  if (broadcast) {
+    broadcastGameState("skin-change");
+  }
+}
+
+function updateLegendImages() {
+  if (!elements.legendImages) return;
+  elements.legendImages.forEach((img) => {
+    const player = img.dataset.player || "light";
+    const piece = img.dataset.piece;
+    if (!piece) return;
+    const selection = skinSelection[player] || DEFAULT_SKIN_SELECTION[player];
+    img.src = `pieces/skins/${selection.skin}/${selection.type}/${piece}.png`;
+  });
+}
+
+function getSkinPreviewPath(skin, type) {
+  const skinDef = SKINS[skin];
+  if (!skinDef) {
+    const fallback = DEFAULT_SKIN_SELECTION.light;
+    return `pieces/skins/${fallback.skin}/${fallback.type}/laser.png`;
+  }
+  const typeDef = skinDef.types[type];
+  if (typeDef && typeDef.preview) {
+    return typeDef.preview;
+  }
+  if (skinDef.preview) {
+    return skinDef.preview;
+  }
+  const typeKey = typeDef ? type : Object.keys(skinDef.types)[0];
+  return `pieces/skins/${skin}/${typeKey}/laser.png`;
+}
+
+function getSkinLabel(skin) {
+  return SKINS[skin]?.label || skin;
+}
+
+function getTypeLabel(skin, type) {
+  return SKINS[skin]?.types?.[type]?.label || type;
+}
+
+function getPieceImageUrl(piece) {
+  const selection = skinSelection[piece.player] || DEFAULT_SKIN_SELECTION[piece.player];
+  return `pieces/skins/${selection.skin}/${selection.type}/${piece.type}.png`;
+}
+
+function getOpponent(player) {
+  return player === "light" ? "shadow" : "light";
+}
+
+function cloneSkinSelection(selection) {
+  const result = {};
+  for (const player of Object.keys(DEFAULT_SKIN_SELECTION)) {
+    const source = selection && selection[player] ? selection[player] : DEFAULT_SKIN_SELECTION[player];
+    result[player] = { skin: source.skin, type: source.type };
+  }
+  return result;
 }
 
 function renderBoard() {
@@ -259,13 +1545,19 @@ function renderBoard() {
       const piece = board[y][x];
       cell.classList.toggle("cell--light", (x + y) % 2 === 0);
       cell.classList.toggle("cell--selected", selectedCell && selectedCell.x === x && selectedCell.y === y);
+      const isRecent = Boolean(
+        lastMove &&
+        ((lastMove.from && lastMove.from.x === x && lastMove.from.y === y) ||
+          (lastMove.to && lastMove.to.x === x && lastMove.to.y === y))
+      );
+      cell.classList.toggle("cell--recent", isRecent);
       cell.classList.remove("cell--option", "cell--swap");
       if (piece) {
         const def = PIECE_DEFS[piece.type];
         const wrapper = document.createElement("div");
         wrapper.className = `piece piece--${piece.player}`;
         const image = document.createElement("img");
-        image.src = def.images[piece.player];
+        image.src = getPieceImageUrl(piece);
         image.alt = "";
         image.className = "piece__image";
         image.style.transform = `rotate(${piece.orientation * 90}deg)`;
@@ -365,6 +1657,10 @@ function executeMove(option, piece, from) {
     }
     board[from.y][from.x] = targetPiece;
     board[option.y][option.x] = piece;
+    lastMove = {
+      from: { x: from.x, y: from.y },
+      to: { x: option.x, y: option.y }
+    };
     setStatus(`${PLAYERS[currentPlayer].name}: ${PIECE_DEFS[piece.type].name} меняется местами с ${PIECE_DEFS[targetPiece.type].name} на ${toNotation(option.x, option.y)}.`);
     endTurn();
     broadcastGameState("swap");
@@ -379,6 +1675,10 @@ function executeMove(option, piece, from) {
 
   board[from.y][from.x] = null;
   board[option.y][option.x] = piece;
+  lastMove = {
+    from: { x: from.x, y: from.y },
+    to: { x: option.x, y: option.y }
+  };
   setStatus(`${PLAYERS[currentPlayer].name}: ${PIECE_DEFS[piece.type].name} перемещён на ${toNotation(option.x, option.y)}.`);
 
   endTurn();
@@ -398,6 +1698,7 @@ function rotateSelected(delta) {
   }
 
   piece.orientation = mod4(piece.orientation + delta);
+  lastMove = null;
   renderBoard();
   const dirSymbol = delta > 0 ? "↻" : "↺";
   setStatus(`${PLAYERS[currentPlayer].name}: ${def.name} на ${toNotation(selectedCell.x, selectedCell.y)} повёрнут ${delta > 0 ? "по" : "против"} часовой стрелки.`);
@@ -408,10 +1709,12 @@ function rotateSelected(delta) {
 function endTurn() {
   clearSelection({ silent: true });
   const activePlayer = currentPlayer;
+  playSkinSound(activePlayer, "move");
   const laserResult = normaliseLaserResult(fireLaser(activePlayer));
   lastLaserResult = laserResult;
   renderBoard();
   highlightLaserPath(laserResult);
+  handleLaserImpact(laserResult);
   if (laserResult.hit) {
     const hitPiece = laserResult.hit.piece;
     const owner = PLAYERS[hitPiece.player].name;
@@ -438,18 +1741,27 @@ function endTurn() {
 
 function finishGame(winner) {
   const loser = winner === "light" ? "shadow" : "light";
+  playSkinSound(winner, "victory");
   elements.endgame.hidden = false;
   elements.endgame.setAttribute("aria-hidden", "false");
   elements.endgameTitle.textContent = `${PLAYERS[winner].name} побеждает!`;
-  elements.endgameSubtitle.textContent = `Волхв ${PLAYERS[loser].name} уничтожен лучом.`;
+  elements.endgameSubtitle.textContent = `Поздравляем! ${PLAYERS[loser].name} уничтожен лучом.`;
   setStatus(`${PLAYERS[winner].name} добились победы.`);
   updateRotateControls(false);
 }
 
 function fireLaser(player) {
   const emitterPos = findEmitter(player);
+  const selection = getPlayerSkin(player);
+  const skinSnapshot = selection ? { skin: selection.skin, type: selection.type } : null;
   if (!emitterPos) {
-    return { path: [], firer: PLAYERS[player].laserName, origin: null };
+    return {
+      path: [],
+      firer: PLAYERS[player].laserName,
+      origin: null,
+      player,
+      skin: skinSnapshot
+    };
   }
 
   let { x, y } = emitterPos;
@@ -466,7 +1778,9 @@ function fireLaser(player) {
         hit: null,
         firer: PLAYERS[player].laserName,
         origin: emitterPos,
-        termination: computeExitPoint(previous, direction)
+        termination: computeExitPoint(previous, direction),
+        player,
+        skin: skinSnapshot
       };
     }
 
@@ -481,23 +1795,111 @@ function fireLaser(player) {
     const interaction = resolveLaserInteraction(target, direction);
     if (interaction.destroy) {
       board[y][x] = null;
+      return {
+        path,
+        hit: { piece: target, x, y },
+        firer: PLAYERS[player].laserName,
+        origin: emitterPos,
+        termination: { x: x + 0.5, y: y + 0.5 },
+        player,
+        skin: skinSnapshot
+      };
     }
     if (interaction.stop) {
       const result = {
         path,
-        hit: interaction.destroy ? { piece: target, x, y } : null,
+        hit: null,
         firer: PLAYERS[player].laserName,
         origin: emitterPos,
-        termination: { x: x + 0.5, y: y + 0.5 }
+        termination: { x: x + 0.5, y: y + 0.5 },
+        player,
+        skin: skinSnapshot
       };
-      if (!interaction.destroy) {
-        result.blocked = { piece: target, x, y };
-      }
+      result.blocked = { piece: target, x, y };
       return result;
     }
     previous = { x, y };
     direction = interaction.nextDirection;
   }
+}
+
+function simulateLaserTrace(boardState, player) {
+  const snapshot = cloneBoardState(boardState);
+  const emitter = findEmitterOnBoard(snapshot, player);
+  if (!emitter) {
+    return null;
+  }
+
+  let { x, y } = emitter;
+  let direction = snapshot[y][x] && Number.isFinite(snapshot[y][x].orientation)
+    ? mod4(snapshot[y][x].orientation)
+    : 0;
+  const path = [];
+  let previous = { x, y };
+  const selection = getPlayerSkin(player);
+  const skinSnapshot = selection ? { skin: selection.skin, type: selection.type } : null;
+
+  while (true) {
+    const nextX = x + DIRECTIONS[direction].dx;
+    const nextY = y + DIRECTIONS[direction].dy;
+    if (!inBounds(nextX, nextY)) {
+      return {
+        path,
+        hit: null,
+        firer: PLAYERS[player].laserName,
+        origin: emitter,
+        termination: computeExitPoint(previous, direction),
+        player,
+        skin: skinSnapshot
+      };
+    }
+
+    x = nextX;
+    y = nextY;
+    path.push({ x, y });
+    const target = snapshot[y][x];
+    if (!target) {
+      previous = { x, y };
+      continue;
+    }
+
+    const interaction = resolveLaserInteraction(target, direction);
+    if (interaction.destroy) {
+      snapshot[y][x] = null;
+    }
+    if (interaction.stop) {
+      const result = {
+        path,
+        hit: interaction.destroy ? { piece: clonePiece(target), x, y } : null,
+        firer: PLAYERS[player].laserName,
+        origin: emitter,
+        termination: { x: x + 0.5, y: y + 0.5 },
+        player,
+        skin: skinSnapshot
+      };
+      if (!interaction.destroy) {
+        result.blocked = { piece: clonePiece(target), x, y };
+      }
+      return result;
+    }
+
+    previous = { x, y };
+    direction = interaction.nextDirection;
+  }
+}
+
+function findEmitterOnBoard(boardState, player) {
+  for (let y = 0; y < boardState.length; y += 1) {
+    const row = boardState[y];
+    if (!Array.isArray(row)) continue;
+    for (let x = 0; x < row.length; x += 1) {
+      const piece = row[x];
+      if (piece && piece.player === player && piece.type === "laser") {
+        return { x, y };
+      }
+    }
+  }
+  return null;
 }
 
 function resolveLaserInteraction(piece, incomingDirection) {
@@ -577,9 +1979,11 @@ function findEmitter(player) {
 function highlightLaserPath(result) {
   clearLaserPath({ preserveState: true });
   if (!result || !result.origin) {
+    resetLaserOverlayTheme();
     return;
   }
 
+  applyLaserVisualTheme(result);
   drawLaserBeam(result);
 }
 
@@ -589,6 +1993,9 @@ function clearLaserPath({ preserveState = false } = {}) {
   }
   if (!preserveState) {
     lastLaserResult = null;
+    lastLaserEffectSignature = null;
+    lastLaserEffectTimestamp = 0;
+    resetLaserOverlayTheme();
   }
 }
 
@@ -638,6 +2045,253 @@ function drawLaserBeam(result) {
 
 function toCellCenter(x, y) {
   return { x: x + 0.5, y: y + 0.5 };
+}
+
+function applyLaserVisualTheme(result) {
+  if (!elements.laserOverlay) return;
+  if (!result) {
+    resetLaserOverlayTheme();
+    return;
+  }
+  let selection = null;
+  if (result.skin && result.skin.skin) {
+    selection = { skin: result.skin.skin, type: result.skin.type };
+  } else if (result.player) {
+    selection = getPlayerSkin(result.player);
+  }
+  if (!selection) {
+    resetLaserOverlayTheme();
+    return;
+  }
+  ensureSkinConfig(selection.skin);
+  const config = getSkinConfig(selection);
+  const laser = config && config.laser;
+  if (!laser) {
+    resetLaserOverlayTheme();
+    return;
+  }
+  elements.laserOverlay.dataset.laserSkin = selection.skin;
+  elements.laserOverlay.dataset.laserType = selection.type || "";
+  setLaserOverlayProperty("--laser-core-color", laser.coreColor || null);
+  setLaserOverlayProperty("--laser-beam-gradient", laser.beamGradient || null);
+  setLaserOverlayProperty("--laser-glow-color", laser.glowColor || null);
+  setLaserOverlayProperty("--laser-impact-gradient", laser.impactGradient || null);
+  setLaserOverlayProperty("--laser-impact-shadow", laser.impactShadow || null);
+}
+
+function setLaserOverlayProperty(property, value) {
+  if (!elements.laserOverlay) return;
+  if (value) {
+    elements.laserOverlay.style.setProperty(property, value);
+  } else {
+    elements.laserOverlay.style.removeProperty(property);
+  }
+}
+
+function resetLaserOverlayTheme() {
+  if (!elements.laserOverlay) return;
+  [
+    "--laser-core-color",
+    "--laser-beam-gradient",
+    "--laser-glow-color",
+    "--laser-impact-gradient",
+    "--laser-impact-shadow"
+  ].forEach((prop) => elements.laserOverlay.style.removeProperty(prop));
+  if (elements.laserOverlay.dataset) {
+    delete elements.laserOverlay.dataset.laserSkin;
+    delete elements.laserOverlay.dataset.laserType;
+  }
+}
+
+function triggerPieceDestructionEffects({ attackerSelection, victimSelection, center }) {
+  if (!elements.effectsOverlay || !center) return;
+  if (victimSelection) {
+    spawnEffectForSelection(victimSelection, "ownDestructionClass", center);
+  }
+  if (attackerSelection) {
+    spawnEffectForSelection(attackerSelection, "enemyDestructionClass", center);
+  }
+}
+
+function spawnEffectForSelection(selection, classKey, center) {
+  if (!selection || !selection.skin || !elements.effectsOverlay) return;
+  const snapshot = { skin: selection.skin, type: selection.type };
+  const spawnIfReady = () => spawnEffectFromConfig(snapshot, classKey, center);
+  if (spawnIfReady()) {
+    return;
+  }
+  const pending = ensureSkinConfig(snapshot.skin);
+  if (pending && typeof pending.then === "function") {
+    pending
+      .then(() => {
+        spawnIfReady();
+      })
+      .catch(() => {});
+  }
+}
+
+function spawnEffectFromConfig(selection, classKey, center) {
+  const config = getSkinConfig(selection);
+  const animations = config && config.animations;
+  if (!animations) return false;
+  const descriptor = animations[classKey];
+  const normalised = normaliseAnimationDescriptor(descriptor);
+  if (!normalised) return false;
+  const { classes, offsetX, offsetY, scale } = normalised;
+  if (!classes.length) return false;
+  const effect = document.createElement("div");
+  const classList = classes.filter((cls) => cls && cls !== BASE_EFFECT_CLASS);
+  effect.classList.add("piece-effect", BASE_EFFECT_CLASS, ...classList);
+  const adjustedX = clamp(center.x + offsetX, 0.5, BOARD_WIDTH - 0.5);
+  const adjustedY = clamp(center.y + offsetY, 0.5, BOARD_HEIGHT - 0.5);
+  effect.style.left = `${(adjustedX / BOARD_WIDTH) * 100}%`;
+  effect.style.top = `${(adjustedY / BOARD_HEIGHT) * 100}%`;
+  if (typeof scale === "number" && Number.isFinite(scale) && scale > 0) {
+    effect.style.setProperty("--effect-scale", String(scale));
+  }
+  elements.effectsOverlay.appendChild(effect);
+  const remove = () => {
+    if (effect.parentElement) {
+      effect.parentElement.removeChild(effect);
+    }
+  };
+  effect.addEventListener("animationend", remove, { once: true });
+  effect.addEventListener("transitionend", remove, { once: true });
+  window.setTimeout(remove, 1500);
+  return true;
+}
+
+function normaliseAnimationDescriptor(descriptor) {
+  if (!descriptor) return null;
+
+  const classSet = new Set();
+  let scale = null;
+  let offsetX = 0;
+  let offsetY = 0;
+
+  const appendClasses = (value) => {
+    if (Array.isArray(value)) {
+      value.forEach(appendClasses);
+      return;
+    }
+    if (!value && value !== 0) {
+      return;
+    }
+    String(value)
+      .split(/\s+/)
+      .map((cls) => cls.trim())
+      .filter(Boolean)
+      .forEach((cls) => classSet.add(cls));
+  };
+
+  const applyOffset = (value) => {
+    if (!value && value !== 0) {
+      return;
+    }
+    if (Array.isArray(value)) {
+      if (value.length > 0 && Number.isFinite(Number(value[0]))) {
+        offsetX = Number(value[0]);
+      }
+      if (value.length > 1 && Number.isFinite(Number(value[1]))) {
+        offsetY = Number(value[1]);
+      }
+      return;
+    }
+    if (typeof value === "object") {
+      const maybeX = Number(value.x ?? value.dx);
+      const maybeY = Number(value.y ?? value.dy);
+      if (Number.isFinite(maybeX)) {
+        offsetX = maybeX;
+      }
+      if (Number.isFinite(maybeY)) {
+        offsetY = maybeY;
+      }
+      return;
+    }
+    const numeric = Number(value);
+    if (Number.isFinite(numeric)) {
+      offsetX = numeric;
+      offsetY = numeric;
+    }
+  };
+
+  if (Array.isArray(descriptor)) {
+    descriptor.forEach(appendClasses);
+  } else if (typeof descriptor === "string") {
+    appendClasses(descriptor);
+  } else if (typeof descriptor === "object") {
+    if (Array.isArray(descriptor.classes)) {
+      descriptor.classes.forEach(appendClasses);
+    }
+    if (descriptor.class) {
+      appendClasses(descriptor.class);
+    }
+    if (descriptor.className) {
+      appendClasses(descriptor.className);
+    }
+    if (descriptor.offset !== undefined) {
+      applyOffset(descriptor.offset);
+    }
+    if (descriptor.scale !== undefined) {
+      const numeric = Number(descriptor.scale);
+      if (Number.isFinite(numeric) && numeric > 0) {
+        scale = numeric;
+      }
+    }
+  }
+
+  const classes = Array.from(classSet).filter(Boolean);
+  if (!classes.length) {
+    return null;
+  }
+
+  return { classes, offsetX, offsetY, scale };
+}
+
+function computeLaserSignature(result) {
+  if (!result) return null;
+  const origin = result.origin ? `${result.origin.x},${result.origin.y}` : "none";
+  const termination = result.termination ? `${result.termination.x},${result.termination.y}` : "none";
+  const path = Array.isArray(result.path)
+    ? result.path.map((step) => `${step.x},${step.y}`).join("|")
+    : "";
+  const hitPiece = result.hit && result.hit.piece ? `${result.hit.piece.player}:${result.hit.piece.type}` : "no-piece";
+  const hit = result.hit ? `${result.hit.x},${result.hit.y}:${hitPiece}` : "none";
+  return `${result.player || ""}#${origin}#${path}#${hit}#${termination}`;
+}
+
+function handleLaserImpact(result) {
+  if (!result || !result.hit) {
+    return;
+  }
+  const signature = computeLaserSignature(result);
+  const now = Date.now();
+  if (signature && signature === lastLaserEffectSignature && now - lastLaserEffectTimestamp < 250) {
+    return;
+  }
+  if (signature) {
+    lastLaserEffectSignature = signature;
+    lastLaserEffectTimestamp = now;
+  }
+  const attacker = result.player || null;
+  const attackerSelection = result.skin && result.skin.skin
+    ? { skin: result.skin.skin, type: result.skin.type }
+    : attacker
+      ? getPlayerSkin(attacker)
+      : null;
+  const victimPiece = result.hit.piece || null;
+  const victimSelection = victimPiece ? getPlayerSkin(victimPiece.player) : null;
+  const center = toCellCenter(result.hit.x, result.hit.y);
+  triggerPieceDestructionEffects({ attackerSelection, victimSelection, center });
+  if (attacker && victimPiece && attacker !== victimPiece.player) {
+    playSkinSound(attacker, "destroyEnemy");
+  }
+}
+
+function clearEffectsOverlay() {
+  if (elements.effectsOverlay) {
+    elements.effectsOverlay.replaceChildren();
+  }
 }
 
 function computeExitPoint(previous, direction) {
@@ -793,6 +2447,13 @@ function normaliseLaserResult(result) {
       ? { x: result.termination.x, y: result.termination.y }
       : null
   };
+  copy.player = typeof result.player === "string" ? result.player : null;
+  if (result.skin && result.skin.skin) {
+    copy.skin = {
+      skin: result.skin.skin,
+      type: result.skin.type
+    };
+  }
   if (result.hit) {
     copy.hit = {
       x: result.hit.x,
@@ -837,6 +2498,102 @@ function cloneBoardState(boardState) {
   return next;
 }
 
+function piecesEqual(a, b) {
+  if (!a && !b) {
+    return true;
+  }
+  if (!a || !b) {
+    return false;
+  }
+  return a.type === b.type && a.player === b.player && mod4(a.orientation || 0) === mod4(b.orientation || 0);
+}
+
+function boardsEqual(a, b) {
+  if (!a || !b) {
+    return false;
+  }
+  for (let y = 0; y < BOARD_HEIGHT; y += 1) {
+    const rowA = Array.isArray(a[y]) ? a[y] : [];
+    const rowB = Array.isArray(b[y]) ? b[y] : [];
+    for (let x = 0; x < BOARD_WIDTH; x += 1) {
+      const pieceA = rowA[x] || null;
+      const pieceB = rowB[x] || null;
+      if (!piecesEqual(pieceA, pieceB)) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+function findRemovedPieces(previousBoard, currentBoard) {
+  if (!previousBoard || !currentBoard) {
+    return [];
+  }
+  const removed = [];
+  for (let y = 0; y < BOARD_HEIGHT; y += 1) {
+    for (let x = 0; x < BOARD_WIDTH; x += 1) {
+      const before = previousBoard[y][x];
+      const after = currentBoard[y][x];
+      if (before && !after) {
+        removed.push({ x, y, piece: clonePiece(before) });
+      }
+    }
+  }
+  return removed;
+}
+
+function reconstructLaserSimulation(previousBoard, currentBoard, player) {
+  const removedPieces = findRemovedPieces(previousBoard, currentBoard);
+  for (const candidate of removedPieces) {
+    const restoredBoard = cloneBoardState(currentBoard);
+    restoredBoard[candidate.y][candidate.x] = clonePiece(candidate.piece);
+    const result = simulateLaserTrace(restoredBoard, player);
+    if (result && result.hit && result.hit.x === candidate.x && result.hit.y === candidate.y) {
+      return result;
+    }
+  }
+  return null;
+}
+
+function normaliseCoordinatePoint(point) {
+  if (!point || typeof point !== "object") {
+    return null;
+  }
+  const x = Number(point.x);
+  const y = Number(point.y);
+  if (!Number.isFinite(x) || !Number.isFinite(y)) {
+    return null;
+  }
+  if (x < 0 || x >= BOARD_WIDTH || y < 0 || y >= BOARD_HEIGHT) {
+    return null;
+  }
+  return { x, y };
+}
+
+function normaliseLastMove(move) {
+  if (!move || typeof move !== "object") {
+    return null;
+  }
+  const from = normaliseCoordinatePoint(move.from);
+  const to = normaliseCoordinatePoint(move.to);
+  if (!from || !to) {
+    return null;
+  }
+  return { from, to };
+}
+
+function cloneLastMove(move) {
+  const normalised = normaliseLastMove(move);
+  if (!normalised) {
+    return null;
+  }
+  return {
+    from: { x: normalised.from.x, y: normalised.from.y },
+    to: { x: normalised.to.x, y: normalised.to.y }
+  };
+}
+
 function serialiseGameState() {
   return {
     board: cloneBoardState(board),
@@ -848,18 +2605,47 @@ function serialiseGameState() {
       title: elements.endgameTitle ? elements.endgameTitle.textContent : "",
       subtitle: elements.endgameSubtitle ? elements.endgameSubtitle.textContent : ""
     },
-    laser: lastLaserResult ? normaliseLaserResult(lastLaserResult) : null
+    laser: lastLaserResult ? normaliseLaserResult(lastLaserResult) : null,
+    skins: cloneSkinSelection(skinSelection),
+    lastMove: cloneLastMove(lastMove),
+    layout: normaliseLayoutKey(currentLayoutKey)
   };
 }
 
-function applyRemoteState(state) {
+function applyRemoteState(state, options = {}) {
   if (!state) return;
+  const previousBoard = cloneBoardState(board);
+  const previousLaserResult = lastLaserResult;
+  const preserveRole = options.preservePendingFor
+    ? options.preservePendingFor
+    : typeof multiplayer.getRole === "function"
+      ? multiplayer.getRole()
+      : null;
+  const hasLaserOverride = Object.prototype.hasOwnProperty.call(options, "laser");
+  const hasLaserInState = state && Object.prototype.hasOwnProperty.call(state, "laser");
+  const incomingLaser = hasLaserOverride
+    ? options.laser
+    : hasLaserInState
+      ? state.laser
+      : null;
+
   multiplayer.suppress(() => {
+    setCurrentLayout(state.layout, { silent: true });
+    lastMove = normaliseLastMove(state.lastMove);
     board = cloneBoardState(state.board);
+    clearEffectsOverlay();
+    if (state.skins) {
+      const skinOptions = { broadcast: false };
+      if (preserveRole) {
+        skinOptions.preservePendingFor = preserveRole;
+      }
+      applySkinSelection(state.skins, skinOptions);
+    }
     currentPlayer = state.currentPlayer === "shadow" ? "shadow" : "light";
     if (typeof state.turnCounter === "number" && Number.isFinite(state.turnCounter)) {
       turnCounter = state.turnCounter;
     }
+    applyRemoteSkins(state.skins);
     clearSelection({ silent: true });
     updateTurnIndicator();
     if (state.endgame && state.endgame.visible) {
@@ -880,13 +2666,30 @@ function applyRemoteState(state) {
     } else if (multiplayer.canAct()) {
       setStatus(`${PLAYERS[currentPlayer].name}: выберите фигуру.`);
     }
-    lastLaserResult = state.laser ? normaliseLaserResult(state.laser) : null;
+    const lastMover = state.currentPlayer === "shadow" ? "light" : "shadow";
+    const boardChanged = !boardsEqual(previousBoard, board);
+    let nextLaserResult = null;
+    if (incomingLaser) {
+      nextLaserResult = normaliseLaserResult(incomingLaser);
+    } else if (boardChanged) {
+      const reconstructed = reconstructLaserSimulation(previousBoard, board, lastMover);
+      const simulated = reconstructed || simulateLaserTrace(board, lastMover);
+      if (simulated) {
+        nextLaserResult = normaliseLaserResult(simulated);
+      }
+    } else if (previousLaserResult) {
+      nextLaserResult = normaliseLaserResult(previousLaserResult);
+    }
+    lastLaserResult = nextLaserResult;
     if (lastLaserResult) {
       highlightLaserPath(lastLaserResult);
     } else {
       clearLaserPath();
     }
   });
+  if (lastLaserResult && lastLaserResult.hit) {
+    handleLaserImpact(lastLaserResult);
+  }
 }
 
 function broadcastGameState(reason) {
@@ -911,13 +2714,12 @@ function createMultiplayerController() {
     if (!elements.connectionOverlay) {
       return;
     }
-    showOverlay();
     updatePlayersUI();
-    const defaultUrl = deriveDefaultServerUrl();
-    if (elements.serverInput && !elements.serverInput.value) {
-      elements.serverInput.value = defaultUrl;
+    if (elements.serverInput) {
+      elements.serverInput.value = deriveDefaultServerUrl();
     }
-    setOverlayStatus("Подключитесь к комнате или продолжите офлайн.");
+    hideOverlay();
+    setOverlayStatus("Введите параметры комнаты для сетевой игры.");
     window.addEventListener("beforeunload", () => {
       cleanupSocket(true);
     });
@@ -926,13 +2728,13 @@ function createMultiplayerController() {
   function handleConnectSubmission() {
     if (!elements.connectionForm) return;
     const formData = new FormData(elements.connectionForm);
-    const server = (formData.get("server") || "").toString().trim();
+    applySelectedLayoutFromControls();
+    const serverInput = (formData.get("server") || "").toString().trim();
+    const server = serverInput || deriveDefaultServerUrl();
     const room = (formData.get("room") || "").toString().trim().toLowerCase();
     const role = (formData.get("role") || "").toString();
-    if (!server) {
-      setOverlayStatus("Укажите адрес сервера.");
-      return;
-    }
+    const skin = (formData.get("skin") || "").toString();
+    const skinType = (formData.get("skinType") || "").toString();
     if (!room || room.length < 2) {
       setOverlayStatus("Название комнаты должно содержать минимум 2 символа.");
       return;
@@ -941,9 +2743,15 @@ function createMultiplayerController() {
       setOverlayStatus("Выберите сторону для игры.");
       return;
     }
+    const pending = pendingSkins[role];
+    if (!pending || !pending.skin || !pending.type) {
+      updateOnlineWarning();
+      return;
+    }
+    applyPendingSkin(role, { broadcast: false });
     state.role = role;
     updatePlayersUI();
-    connectToServer(server, room, role);
+    connectToServer(server, room, role, pending);
   }
 
   function handleOfflineSelection() {
@@ -953,7 +2761,7 @@ function createMultiplayerController() {
     setOverlayStatus("");
   }
 
-  function connectToServer(serverUrl, roomId, role) {
+  function connectToServer(serverUrl, roomId, role, desiredSkin) {
     let parsedUrl;
     try {
       parsedUrl = new URL(serverUrl);
@@ -978,7 +2786,7 @@ function createMultiplayerController() {
 
     ws.onopen = () => {
       setOverlayStatus("Соединение установлено. Ожидаем подтверждения...");
-      send({ type: "join", roomId, role });
+      send({ type: "join", roomId, role, skin: desiredSkin ? desiredSkin.skin : null, skinType: desiredSkin ? desiredSkin.type : null });
     };
     ws.onmessage = (event) => {
       handleMessage(event);
@@ -1007,9 +2815,11 @@ function createMultiplayerController() {
         hideOverlay();
         updatePlayers(payload.players);
         if (payload.state) {
-          applyRemoteState(payload.state);
+          applyRemoteState(payload.state, { laser: payload.laser, preservePendingFor: state.role });
+          reconcileLocalSkinSelection();
         } else {
           broadcastGameState("sync");
+          reconcileLocalSkinSelection();
         }
         if (typeof payload.message === "string" && payload.message) {
           setStatus(payload.message);
@@ -1020,7 +2830,21 @@ function createMultiplayerController() {
         break;
       case "state":
         if (payload.state) {
-          applyRemoteState(payload.state);
+          applyRemoteState(payload.state, { laser: payload.laser, preservePendingFor: state.role });
+          reconcileLocalSkinSelection();
+        } else if (Object.prototype.hasOwnProperty.call(payload, "laser")) {
+          lastLaserResult = payload.laser ? normaliseLaserResult(payload.laser) : null;
+          if (!lastLaserResult && payload.author) {
+            const simulated = simulateLaserTrace(board, payload.author);
+            if (simulated) {
+              lastLaserResult = normaliseLaserResult(simulated);
+            }
+          }
+          if (lastLaserResult) {
+            highlightLaserPath(lastLaserResult);
+          } else {
+            clearLaserPath();
+          }
         }
         if (payload.players) {
           updatePlayers(payload.players);
@@ -1060,6 +2884,22 @@ function createMultiplayerController() {
     updatePlayersUI();
   }
 
+  function reconcileLocalSkinSelection({ broadcast = true } = {}) {
+    if (!state.connected || !state.role) {
+      return;
+    }
+    const role = state.role;
+    const desired = pendingSkins[role];
+    if (!desired) {
+      return;
+    }
+    const actual = skinSelection[role] || DEFAULT_SKIN_SELECTION[role];
+    if (actual.skin === desired.skin && actual.type === desired.type) {
+      return;
+    }
+    applyPendingSkin(role, { broadcast });
+  }
+
   function updatePlayersUI() {
     if (!elements.connectionPlayers) return;
     const items = elements.connectionPlayers.querySelectorAll("[data-role]");
@@ -1079,12 +2919,6 @@ function createMultiplayerController() {
     });
   }
 
-  function setOverlayStatus(message) {
-    if (elements.connectionStatus) {
-      elements.connectionStatus.textContent = message;
-    }
-  }
-
   function showOverlay() {
     if (!elements.connectionOverlay) return;
     elements.connectionOverlay.hidden = false;
@@ -1101,7 +2935,7 @@ function createMultiplayerController() {
     if (!elements.connectionForm) return;
     const controls = elements.connectionForm.querySelectorAll("input, button");
     controls.forEach((control) => {
-      if (control.id === "offline-button") return;
+      if (control.id === "online-back") return;
       control.disabled = disabled;
     });
   }
@@ -1115,6 +2949,14 @@ function createMultiplayerController() {
       : "Подключитесь к комнате или продолжите офлайн.";
     setOverlayStatus(message);
     setFormDisabled(false);
+    handleOnlineRoleChange(state.role || onlineSelectedRole);
+    updateOnlinePreview();
+    updateOnlineWarning();
+  }
+
+  function closeOverlay() {
+    hideOverlay();
+    setOverlayStatus("");
   }
 
   function cleanupSocket(silent = false) {
@@ -1137,8 +2979,11 @@ function createMultiplayerController() {
   function resetConnectionState() {
     state.connected = false;
     state.roomId = null;
+    state.role = null;
     state.players = { light: false, shadow: false };
     updatePlayersUI();
+    onlineSelectedRole = null;
+    handleOnlineRoleChange(null);
   }
 
   function send(payload) {
@@ -1149,16 +2994,7 @@ function createMultiplayerController() {
   }
 
   function deriveDefaultServerUrl() {
-    const { protocol, hostname, port } = window.location;
-    if (protocol === "http:" || protocol === "https:") {
-      const scheme = protocol === "https:" ? "wss" : "ws";
-      const host = hostname || "localhost";
-      if (port) {
-        return `${scheme}://${host}:${port}`;
-      }
-      return `${scheme}://${host}${scheme === "ws" ? ":8787" : ""}`;
-    }
-    return "ws://localhost:8787";
+    return DEFAULT_SERVER_URL;
   }
 
   return {
@@ -1166,8 +3002,24 @@ function createMultiplayerController() {
     handleConnectSubmission,
     handleOfflineSelection,
     openOverlay,
+    closeOverlay,
+    getRole() {
+      return state.role;
+    },
     sendState(reason, statePayload) {
-      send({ type: "state", roomId: state.roomId, role: state.role, reason, state: statePayload });
+      const laserSnapshot = statePayload && Object.prototype.hasOwnProperty.call(statePayload, "laser")
+        ? statePayload.laser
+        : lastLaserResult
+          ? normaliseLaserResult(lastLaserResult)
+          : null;
+      send({
+        type: "state",
+        roomId: state.roomId,
+        role: state.role,
+        reason,
+        state: statePayload,
+        laser: laserSnapshot
+      });
     },
     canBroadcast() {
       return Boolean(state.connected && state.ws && state.ws.readyState === WebSocket.OPEN && state.suppressDepth === 0);

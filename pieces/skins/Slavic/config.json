@@ -1,0 +1,66 @@
+{
+  "Type1": {
+    "laser": {
+      "coreColor": "#ff8240",
+      "beamGradient": "linear-gradient(90deg, rgba(32, 10, 0, 0.92) 0%, rgba(138, 48, 8, 0.78) 24%, rgba(255, 138, 76, 0.95) 52%, rgba(176, 72, 22, 0.8) 78%, rgba(28, 6, 0, 0.92) 100%)",
+      "glowColor": "rgba(255, 152, 92, 0.78)",
+      "impactGradient": "radial-gradient(circle, rgba(255, 210, 176, 0.95) 0%, rgba(214, 104, 42, 0.82) 45%, rgba(64, 18, 0, 0.9) 78%, rgba(0, 0, 0, 0.85) 100%)",
+      "impactShadow": "rgba(255, 142, 72, 0.74)"
+    },
+    "animations": {
+      "ownDestructionClass": {
+        "classes": [
+          "piece-effect--impact",
+          "piece-effect--slavic-type1-own"
+        ],
+        "offset": { "x": 0, "y": 0 },
+        "scale": 1.25
+      },
+      "enemyDestructionClass": {
+        "classes": [
+          "piece-effect--impact",
+          "piece-effect--slavic-type1-enemy"
+        ],
+        "offset": { "x": 0, "y": 0 },
+        "scale": 1.9
+      }
+    },
+    "sounds": {
+      "move": "pieces/skins/Slavic/audio/type1-move.mp3",
+      "destroyEnemy": "pieces/skins/Slavic/audio/type1-destroy.mp3",
+      "victory": "pieces/skins/Slavic/audio/type1-victory.mp3"
+    }
+  },
+  "Type2": {
+    "laser": {
+      "coreColor": "#4fb4ff",
+      "beamGradient": "linear-gradient(90deg, rgba(6, 14, 24, 0.94) 0%, rgba(20, 64, 110, 0.78) 26%, rgba(108, 198, 255, 0.95) 54%, rgba(34, 98, 162, 0.82) 78%, rgba(4, 12, 20, 0.94) 100%)",
+      "glowColor": "rgba(136, 210, 255, 0.78)",
+      "impactGradient": "radial-gradient(circle, rgba(204, 238, 255, 0.95) 0%, rgba(88, 168, 226, 0.82) 45%, rgba(14, 46, 78, 0.9) 78%, rgba(0, 0, 0, 0.85) 100%)",
+      "impactShadow": "rgba(118, 194, 255, 0.74)"
+    },
+    "animations": {
+      "ownDestructionClass": {
+        "classes": [
+          "piece-effect--impact",
+          "piece-effect--slavic-type2-own"
+        ],
+        "offset": { "x": 0, "y": 0 },
+        "scale": 1.2
+      },
+      "enemyDestructionClass": {
+        "classes": [
+          "piece-effect--impact",
+          "piece-effect--slavic-type2-enemy"
+        ],
+        "offset": { "x": 0, "y": 0 },
+        "scale": 1.8
+      }
+    },
+    "sounds": {
+      "move": "pieces/skins/Slavic/audio/type2-move.mp3",
+      "destroyEnemy": "pieces/skins/Slavic/audio/type2-destroy.mp3",
+      "victory": "pieces/skins/Slavic/audio/type2-victory.mp3"
+    }
+  }
+}
