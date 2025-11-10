@@ -826,7 +826,7 @@ body.theme-light .piece {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.22), transparent 65%);
   filter: blur(0.5px);
   opacity: 0.65;
-  z-index: -1;
+  z-index: -2;
   pointer-events: none;
   transition: transform 0.25s ease, opacity 0.25s ease;
 }
@@ -842,22 +842,27 @@ body.theme-light .piece {
 .piece--hero::after {
   content: "";
   position: absolute;
-  inset: 16%;
+  inset: var(--hero-highlight-inset, 12%);
   border-radius: 999px;
-  background: radial-gradient(circle, var(--hero-highlight-color, rgba(255, 255, 255, 0.6)) 0%, transparent 70%);
-  opacity: var(--hero-highlight-opacity, 0.45);
-  filter: blur(var(--hero-highlight-blur, 22px));
-  transform: scale(var(--hero-highlight-scale, 1));
-  transition: opacity 0.35s ease, transform 0.35s ease;
+  background:
+    radial-gradient(circle at center, rgba(255, 255, 255, 0.45) 0%, transparent 65%),
+    radial-gradient(circle at center, var(--hero-highlight-color, rgba(255, 255, 255, 0.7)) 0%, transparent 72%);
+  opacity: var(--hero-highlight-opacity, 0.6);
+  filter: blur(var(--hero-highlight-blur, 26px));
+  transform: scale(var(--hero-highlight-scale, 1.02));
+  transition: opacity 0.42s ease, transform 0.42s ease;
+  box-shadow: 0 0 var(--hero-highlight-glow-radius, 46px)
+    var(--hero-highlight-glow-spread, 12px)
+    var(--hero-highlight-color, rgba(255, 255, 255, 0.68));
   pointer-events: none;
-  z-index: -2;
+  z-index: -1;
   mix-blend-mode: screen;
 }
 
 .cell:hover .piece--hero::after,
 .cell.cell--selected .piece--hero::after {
   opacity: var(--hero-highlight-active-opacity, 0.72);
-  transform: scale(calc(var(--hero-highlight-scale, 1) * 1.05));
+  transform: scale(calc(var(--hero-highlight-scale, 1.02) * 1.05));
 }
 
 .cell:hover .piece::before,

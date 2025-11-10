@@ -196,6 +196,8 @@ const THEME_STORAGE_KEY = "laser-theme";
 const DEFAULT_SERVER_URL = "wss://mazepark-1.onrender.com";
 const BASE_EFFECT_CLASS = "piece-effect--impact";
 const PIECE_BASE_SCALE = 1.15;
+const DEFAULT_ROTATION_DURATION = 420;
+const MIN_ROTATION_DURATION = 380;
 
 const PLAYERS = {
   light: {
@@ -413,11 +415,13 @@ let lastMove = null;
 let skinSelection = cloneSkinSelection(DEFAULT_SKIN_SELECTION);
 let pendingSkins = cloneSkinSelection(DEFAULT_SKIN_SELECTION);
 let onlineSelectedRole = null;
+let lastBoardThemeSignature = null;
 
 preloadSkinConfigs(DEFAULT_SKIN_SELECTION);
 
 const elements = {
   board: document.getElementById("board"),
+  boardWrapper: document.querySelector(".board-wrapper"),
   status: document.getElementById("status"),
   turn: document.getElementById("turn-indicator"),
   rotateLeft: document.getElementById("rotate-left"),
@@ -1885,7 +1889,98 @@ function cloneSkinSelection(selection) {
   return result;
 }
 
+function determineBoardThemeCandidate() {
+  const priorities = ["light", "shadow"];
+  for (const player of priorities) {
+    const selection = getPlayerSkin(player);
+    if (!selection || !selection.skin) {
+      continue;
+    }
+    const config = getSkinConfig(selection);
+    if (config && config.board) {
+      return { selection, settings: config.board };
+    }
+  }
+  return null;
+}
+
+function applyBoardTheme(settings) {
+  const boardEl = elements.board;
+  if (!boardEl) {
+    return;
+  }
+  const wrapper = elements.boardWrapper;
+
+  const setCustomVar = (prop, value) => {
+    if (value === undefined || value === null || value === "") {
+      boardEl.style.removeProperty(prop);
+    } else {
+      boardEl.style.setProperty(prop, String(value));
+    }
+  };
+
+  const cell = settings && settings.cell ? settings.cell : null;
+  setCustomVar("--cell-dark", cell && cell.dark ? cell.dark : "");
+  setCustomVar("--cell-light", cell && cell.light ? cell.light : "");
+  setCustomVar("--cell-border", cell && cell.border ? cell.border : "");
+  setCustomVar("--cell-inner-glow", cell && cell.innerGlow ? cell.innerGlow : "");
+
+  const overlay = settings && settings.overlay ? settings.overlay : null;
+  setCustomVar("--board-overlay-primary", overlay && overlay.primary ? overlay.primary : "");
+  setCustomVar("--board-overlay-secondary", overlay && overlay.secondary ? overlay.secondary : "");
+  setCustomVar("--board-overlay-opacity", overlay && overlay.opacity !== undefined ? overlay.opacity : "");
+  setCustomVar("--board-overlay-blend", overlay && overlay.blendMode ? overlay.blendMode : "");
+
+  if (settings && settings.background) {
+    boardEl.style.background = settings.background;
+  } else {
+    boardEl.style.removeProperty("background");
+  }
+
+  const frame = settings && settings.frame ? settings.frame : null;
+  if (frame && frame.border) {
+    boardEl.style.border = frame.border;
+  } else {
+    boardEl.style.removeProperty("border");
+  }
+  if (frame && frame.shadow) {
+    boardEl.style.boxShadow = frame.shadow;
+  } else {
+    boardEl.style.removeProperty("box-shadow");
+  }
+
+  const wrapperSettings = settings && settings.wrapper ? settings.wrapper : null;
+  if (wrapper) {
+    if (wrapperSettings && wrapperSettings.background) {
+      wrapper.style.background = wrapperSettings.background;
+    } else {
+      wrapper.style.removeProperty("background");
+    }
+    if (wrapperSettings && wrapperSettings.shadow) {
+      wrapper.style.boxShadow = wrapperSettings.shadow;
+    } else {
+      wrapper.style.removeProperty("box-shadow");
+    }
+    if (wrapperSettings && wrapperSettings.filter) {
+      wrapper.style.filter = wrapperSettings.filter;
+    } else {
+      wrapper.style.removeProperty("filter");
+    }
+  }
+}
+
+function updateBoardTheme() {
+  const candidate = determineBoardThemeCandidate();
+  const signature = candidate ? `${candidate.selection.skin}:${candidate.selection.type}` : "";
+  if (signature === lastBoardThemeSignature) {
+    return;
+  }
+  lastBoardThemeSignature = signature;
+  applyBoardTheme(candidate ? candidate.settings : null);
+}
+
 function renderBoard() {
+  updateBoardTheme();
   const playerSelectionCache = {};
   const typeConfigCache = {};
   for (let y = 0; y < BOARD_HEIGHT; y++) {
@@ -1962,21 +2057,14 @@ function applyHeroHighlight(wrapper, config) {
   if (!highlight) {
     return;
   }
-  if (highlight.color) {
-    wrapper.style.setProperty("--hero-highlight-color", highlight.color);
-  }
-  if (Number.isFinite(highlight.idleOpacity)) {
-    wrapper.style.setProperty("--hero-highlight-opacity", String(highlight.idleOpacity));
-  }
-  if (Number.isFinite(highlight.activeOpacity)) {
-    wrapper.style.setProperty("--hero-highlight-active-opacity", String(highlight.activeOpacity));
-  }
-  if (Number.isFinite(highlight.blur)) {
-    wrapper.style.setProperty("--hero-highlight-blur", `${highlight.blur}px`);
-  }
-  if (Number.isFinite(highlight.scale)) {
-    wrapper.style.setProperty("--hero-highlight-scale", String(highlight.scale));
-  }
+  wrapper.style.setProperty("--hero-highlight-color", highlight.color);
+  wrapper.style.setProperty("--hero-highlight-opacity", String(highlight.idleOpacity));
+  wrapper.style.setProperty("--hero-highlight-active-opacity", String(highlight.activeOpacity));
+  wrapper.style.setProperty("--hero-highlight-blur", `${highlight.blur}px`);
+  wrapper.style.setProperty("--hero-highlight-scale", String(highlight.scale));
+  wrapper.style.setProperty("--hero-highlight-inset", highlight.inset);
+  wrapper.style.setProperty("--hero-highlight-glow-radius", `${highlight.glowRadius}px`);
+  wrapper.style.setProperty("--hero-highlight-glow-spread", `${highlight.glowSpread}px`);
 }
 
 function getHeroHighlightSettings(config) {
@@ -1989,13 +2077,22 @@ function getHeroHighlightSettings(config) {
   if (!color) {
     return null;
   }
-  const idleOpacity = Number.isFinite(data?.idleOpacity) ? data.idleOpacity : 0.45;
-  const activeOpacity = Number.isFinite(data?.activeOpacity)
+  const baseIdle = Number.isFinite(data?.idleOpacity) ? data.idleOpacity : 0.6;
+  const idleOpacity = clamp(baseIdle, 0.48, 0.92);
+  const baseActive = Number.isFinite(data?.activeOpacity)
     ? data.activeOpacity
-    : Math.min(idleOpacity + 0.25, 0.85);
-  const blur = Number.isFinite(data?.blur) ? data.blur : 24;
-  const scale = Number.isFinite(data?.scale) ? data.scale : 1;
-  return { color, idleOpacity, activeOpacity, blur, scale };
+    : Math.min(idleOpacity + 0.2, 0.88);
+  const activeOpacity = clamp(Math.max(baseActive, idleOpacity + 0.05), idleOpacity, 0.96);
+  const blur = Number.isFinite(data?.blur) ? Math.max(12, data.blur) : 26;
+  const scale = Number.isFinite(data?.scale) ? Math.max(0.9, data.scale) : 1.02;
+  const insetValue = Number.isFinite(data?.inset) ? clamp(data.inset, 0, 0.35) : 0.12;
+  const glowRadius = Number.isFinite(data?.glowRadius) ? Math.max(0, data.glowRadius) : 46;
+  const glowSpread = Number.isFinite(data?.glowSpread)
+    ? clamp(data.glowSpread, -8, 28)
+    : 12;
+  const insetPercent = Number((insetValue * 100).toFixed(1));
+  const inset = `${insetPercent}%`;
+  return { color, idleOpacity, activeOpacity, blur, scale, inset, glowRadius, glowSpread };
 }
 
 function applyPieceRotation(image, previousOrientation, currentOrientation, rotationSettings) {
@@ -2012,9 +2109,12 @@ function applyPieceRotation(image, previousOrientation, currentOrientation, rota
     image.getAnimations().forEach((animation) => animation.cancel());
   }
 
-  const duration = rotationSettings && Number.isFinite(rotationSettings.duration)
+  const requestedDuration = rotationSettings && Number.isFinite(rotationSettings.duration)
     ? Math.max(0, rotationSettings.duration)
-    : 260;
+    : null;
+  const duration = requestedDuration === null
+    ? DEFAULT_ROTATION_DURATION
+    : Math.max(requestedDuration, MIN_ROTATION_DURATION);
   const easing = rotationSettings && typeof rotationSettings.easing === "string"
     ? rotationSettings.easing
     : "cubic-bezier(0.25, 0.8, 0.4, 1)";
