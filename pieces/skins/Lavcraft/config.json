@@ -24,6 +24,19 @@
         ],
         "offset": { "x": 0, "y": 0 },
         "scale": 1.9
+      },
+      "rotation": {
+        "duration": 300,
+        "easing": "cubic-bezier(0.25, 1, 0.3, 1)"
+      }
+    },
+    "hero": {
+      "highlight": {
+        "color": "rgba(82, 226, 198, 0.72)",
+        "idleOpacity": 0.46,
+        "activeOpacity": 0.75,
+        "blur": 30,
+        "scale": 1.08
       }
     },
     "sounds": {
@@ -57,6 +70,19 @@
         ],
         "offset": { "x": 0, "y": 0 },
         "scale": 1.8
+      },
+      "rotation": {
+        "duration": 300,
+        "easing": "cubic-bezier(0.25, 1, 0.3, 1)"
+      }
+    },
+    "hero": {
+      "highlight": {
+        "color": "rgba(154, 124, 250, 0.75)",
+        "idleOpacity": 0.46,
+        "activeOpacity": 0.75,
+        "blur": 30,
+        "scale": 1.08
       }
     },
     "sounds": {

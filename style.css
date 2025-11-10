@@ -337,12 +337,24 @@ body.theme-light .button--primary {
 .skin-grid {
   display: grid;
   gap: 0.85rem;
-  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
 }
 
-@media (max-width: 680px) {
+@media (max-width: 820px) {
   .skin-grid {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .skin-grid {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  }
+}
+
+@media (max-width: 420px) {
+  .skin-grid {
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   }
 }
 
@@ -825,6 +837,27 @@ body.theme-light .piece {
   background: linear-gradient(140deg, rgba(107, 154, 255, 0.45), rgba(255, 255, 255, 0.08));
 }
 
+.piece--hero::after {
+  content: "";
+  position: absolute;
+  inset: 16%;
+  border-radius: 999px;
+  background: radial-gradient(circle, var(--hero-highlight-color, rgba(255, 255, 255, 0.6)) 0%, transparent 70%);
+  opacity: var(--hero-highlight-opacity, 0.45);
+  filter: blur(var(--hero-highlight-blur, 22px));
+  transform: scale(var(--hero-highlight-scale, 1));
+  transition: opacity 0.35s ease, transform 0.35s ease;
+  pointer-events: none;
+  z-index: -2;
+  mix-blend-mode: screen;
+}
+
+.cell:hover .piece--hero::after,
+.cell.cell--selected .piece--hero::after {
+  opacity: var(--hero-highlight-active-opacity, 0.72);
+  transform: scale(calc(var(--hero-highlight-scale, 1) * 1.05));
+}
+
 .cell:hover .piece::before,
 .cell.cell--selected .piece::before {
   transform: scale(1.05);
@@ -833,8 +866,8 @@ body.theme-light .piece {
 
 .piece__image {
   display: block;
-  width: 110%;
-  height: 110%;
+  width: 126.5%;
+  height: 126.5%;
   max-width: none;
   pointer-events: none;
   user-select: none;
@@ -864,8 +897,10 @@ body.theme-light .piece {
   max-width: min(260px, 80%);
   border-radius: 18px;
   padding: 1rem 1.25rem 1.15rem;
-  background: rgba(15, 20, 23, 0.92);
-  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.35);
+  background: rgba(15, 20, 23, 0.45);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(22px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   display: grid;
   gap: 0.75rem;
   text-align: left;
