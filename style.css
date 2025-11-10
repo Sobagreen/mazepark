@@ -866,8 +866,8 @@ body.theme-light .piece {
 
 .piece__image {
   display: block;
-  width: 126.5%;
-  height: 126.5%;
+  width: 110%;
+  height: 110%;
   max-width: none;
   pointer-events: none;
   user-select: none;
