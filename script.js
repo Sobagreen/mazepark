@@ -195,6 +195,26 @@ const FILES = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".slice(0, BOARD_WIDTH);
 const THEME_STORAGE_KEY = "laser-theme";
 const DEFAULT_SERVER_URL = "wss://mazepark-1.onrender.com";
 const BASE_EFFECT_CLASS = "piece-effect--impact";
+const PLAYER_ID_STORAGE_KEY = "laser-player-id";
+const DEFAULT_PLAYER_RATING = 1200;
+const HISTORY_EXPORT_THRESHOLD = 6;
+const MAX_HISTORY_LENGTH = 256;
+const MOVE_DIRECTION_LABELS = {
+  "0,-1": "↑",
+  "1,-1": "↗",
+  "1,0": "→",
+  "1,1": "↘",
+  "0,1": "↓",
+  "-1,1": "↙",
+  "-1,0": "←",
+  "-1,-1": "↖"
+};
+const ORIENTATION_LABELS = {
+  0: "↑",
+  1: "→",
+  2: "↓",
+  3: "←"
+};
 
 const PLAYERS = {
   light: {
@@ -410,6 +430,12 @@ let lastMove = null;
 let skinSelection = cloneSkinSelection(DEFAULT_SKIN_SELECTION);
 let pendingSkins = cloneSkinSelection(DEFAULT_SKIN_SELECTION);
 let onlineSelectedRole = null;
+let moveHistory = [];
+let pendingMoveRecord = null;
+let historySession = { exported: false, matchId: null, finalised: false };
+let playerProfile = null;
+let leaderboardSnapshot = [];
+let activeBoardTheme = null;
 
 preloadSkinConfigs(DEFAULT_SKIN_SELECTION);
 
@@ -443,6 +469,8 @@ const elements = {
   connectionForm: document.getElementById("connection-form"),
   connectionStatus: document.getElementById("connection-status"),
   connectionPlayers: document.getElementById("connection-players"),
+  connectionLeaderboard: document.getElementById("connection-leaderboard"),
+  connectionPlayerRating: document.getElementById("connection-player-rating"),
   connectButton: document.getElementById("connect-button"),
   serverInput: document.getElementById("server-url"),
   roomInput: document.getElementById("room-id"),
@@ -484,8 +512,12 @@ const elements = {
       description: document.getElementById("offline-shadow-preview-description")
     }
   },
-  legendImages: Array.from(document.querySelectorAll("[data-piece-image]"))
+  legendImages: Array.from(document.querySelectorAll("[data-piece-image]")),
+  playerRating: document.getElementById("player-rating"),
+  leaderboard: document.getElementById("leaderboard")
 };
+
+playerProfile = loadOrCreatePlayerProfile();
 
 const cells = [];
 const multiplayer = createMultiplayerController();
@@ -498,8 +530,11 @@ initialiseTheme();
 multiplayer.init();
 startNewGame();
 showStartScreen();
+updateRatingDisplays();
+prefetchGlobalRatings();
 
 function startNewGame() {
+  resetHistorySession();
   applySelectedLayoutFromControls();
   lastMove = null;
   board = createEmptyBoard();
@@ -549,11 +584,11 @@ function placeInitialPieces() {
 }
 
 function initialiseSkinControls() {
-  if (elements.onlineSkin) {
-    populateSkinSelect(elements.onlineSkin);
+  if (elements.onlineSkinSelect) {
+    populateSkinSelect(elements.onlineSkinSelect);
   }
-  if (elements.onlineType) {
-    populateTypeSelect(elements.onlineType, getPlayerSkin("light").skin);
+  if (elements.onlineTypeSelect) {
+    populateTypeSelect(elements.onlineTypeSelect, getPlayerSkin("light").skin);
   }
 
   if (elements.offlineLightSkin) {
@@ -634,20 +669,20 @@ function updateOfflineSkinControls() {
 }
 
 function updateOnlineSkinControls() {
-  if (!elements.onlineSkin || !elements.onlineType) return;
-  populateSkinSelect(elements.onlineSkin);
+  if (!elements.onlineSkinSelect || !elements.onlineTypeSelect) return;
+  populateSkinSelect(elements.onlineSkinSelect);
 
   const checkedRole = getCheckedRole();
   if (checkedRole) {
-    selectedOnlineRole = checkedRole;
+    onlineSelectedRole = checkedRole;
   }
 
-  const role = selectedOnlineRole;
-  elements.onlineSkin.disabled = !role;
-  elements.onlineType.disabled = !role;
+  const role = onlineSelectedRole;
+  elements.onlineSkinSelect.disabled = !role;
+  elements.onlineTypeSelect.disabled = !role;
 
   if (!role) {
-    elements.onlineType.innerHTML = "";
+    elements.onlineTypeSelect.innerHTML = "";
     updateSkinPreviews();
     return;
   }
@@ -656,12 +691,12 @@ function updateOnlineSkinControls() {
   const other = role === "light" ? "shadow" : "light";
   const otherSelection = getPlayerSkin(other);
 
-  elements.onlineSkin.value = selection.skin;
-  populateTypeSelect(elements.onlineType, selection.skin);
-  Array.from(elements.onlineType.options).forEach((option) => {
+  elements.onlineSkinSelect.value = selection.skin;
+  populateTypeSelect(elements.onlineTypeSelect, selection.skin);
+  Array.from(elements.onlineTypeSelect.options).forEach((option) => {
     option.disabled = otherSelection.skin === selection.skin && otherSelection.type === option.value;
   });
-  elements.onlineType.value = selection.type;
+  elements.onlineTypeSelect.value = selection.type;
 }
 
 function updateSkinPreviews() {
@@ -677,7 +712,7 @@ function updateSkinPreviews() {
 
   const onlineContainer = document.querySelector("[data-preview-context='online']");
   if (onlineContainer) {
-    const role = selectedOnlineRole || "light";
+    const role = onlineSelectedRole || "light";
     updatePreviewContainer(onlineContainer, getPlayerSkin(role));
   }
 
@@ -723,10 +758,12 @@ function ensureSkinConfig(skinKey) {
       .then((response) => (response.ok ? response.json() : null))
       .then((json) => {
         skinConfigCache[skinKey] = json && typeof json === "object" ? json : {};
+        scheduleBoardThemeRefresh();
         return skinConfigCache[skinKey];
       })
       .catch(() => {
         skinConfigCache[skinKey] = {};
+        scheduleBoardThemeRefresh();
         return skinConfigCache[skinKey];
       });
   }
@@ -899,7 +936,7 @@ function hideConnectionOverlay() {
     elements.connectionOverlay.hidden = true;
     elements.connectionOverlay.setAttribute("aria-hidden", "true");
   }
-  selectedOnlineRole = null;
+  onlineSelectedRole = null;
   updateOnlineSkinControls();
 }
 
@@ -1090,7 +1127,7 @@ function attachEventListeners() {
     const roleInputs = elements.connectionForm.querySelectorAll('input[name="role"]');
     roleInputs.forEach((input) => {
       input.addEventListener("change", () => {
-        selectedOnlineRole = input.value === "shadow" ? "shadow" : "light";
+        onlineSelectedRole = input.value === "shadow" ? "shadow" : "light";
         updateOnlineSkinControls();
         updateSkinPreviews();
       });
@@ -1758,6 +1795,7 @@ function cloneSkinSelection(selection) {
 }
 
 function renderBoard() {
+  applyBoardTheme();
   for (let y = 0; y < BOARD_HEIGHT; y++) {
     for (let x = 0; x < BOARD_WIDTH; x++) {
       const cell = cells[y][x];
@@ -1781,6 +1819,7 @@ function renderBoard() {
         image.className = "piece__image";
         image.style.transform = `rotate(${piece.orientation * 90}deg)`;
         wrapper.appendChild(image);
+        applyPieceLighting(wrapper, piece);
         wrapper.setAttribute("aria-label", `${def.name} (${PLAYERS[piece.player].name})`);
         cell.replaceChildren(wrapper);
       } else {
@@ -1795,6 +1834,446 @@ function renderBoard() {
       cell.classList.add("cell--swap");
     }
   }
+}
+
+function applyPieceLighting(wrapper, piece) {
+  if (!wrapper || !piece || piece.type !== "volhv") {
+    return;
+  }
+  const selection = skinSelection[piece.player] || DEFAULT_SKIN_SELECTION[piece.player];
+  ensureSkinConfig(selection.skin);
+  const config = getSkinConfig(selection);
+  const lighting = config && config.heroLighting && (config.heroLighting[piece.type] || config.heroLighting.volhv);
+  if (!lighting) {
+    return;
+  }
+  wrapper.classList.add("piece--hero-premium");
+  const halo = document.createElement("div");
+  halo.className = "piece-lighting piece-lighting--halo";
+  if (lighting.haloGradient) {
+    halo.style.setProperty("--hero-halo", lighting.haloGradient);
+  }
+  if (lighting.innerGlow) {
+    halo.style.setProperty("--hero-inner-glow", lighting.innerGlow);
+  }
+  if (lighting.outerGlow) {
+    halo.style.setProperty("--hero-outer-glow", lighting.outerGlow);
+  }
+  if (lighting.pulse && lighting.pulse.from) {
+    halo.style.setProperty("--hero-pulse-from", lighting.pulse.from);
+  }
+  if (lighting.pulse && lighting.pulse.to) {
+    halo.style.setProperty("--hero-pulse-to", lighting.pulse.to);
+  }
+  const beam = document.createElement("div");
+  beam.className = "piece-lighting piece-lighting--beam";
+  if (lighting.beamColor) {
+    beam.style.setProperty("--hero-beam", lighting.beamColor);
+  }
+  wrapper.appendChild(halo);
+  wrapper.appendChild(beam);
+}
+
+function resetHistorySession({ keepMoves = false } = {}) {
+  if (!keepMoves) {
+    moveHistory = [];
+  }
+  pendingMoveRecord = null;
+  historySession = {
+    exported: false,
+    matchId: keepMoves ? historySession.matchId || null : null,
+    finalised: false,
+    lastExportedLength: keepMoves ? Math.min(historySession.lastExportedLength || 0, moveHistory.length) : 0
+  };
+}
+
+function computeDirectionLabel(vector) {
+  if (!vector) return null;
+  const dx = Number.isFinite(vector.dx) ? vector.dx : 0;
+  const dy = Number.isFinite(vector.dy) ? vector.dy : 0;
+  if (!dx && !dy) {
+    return null;
+  }
+  const key = `${Math.sign(dx)},${Math.sign(dy)}`;
+  return MOVE_DIRECTION_LABELS[key] || null;
+}
+
+function finaliseMoveHistory({ turn, player, capture, destroyedHero }) {
+  if (!pendingMoveRecord) {
+    return null;
+  }
+  const from = pendingMoveRecord.from;
+  const to = pendingMoveRecord.to;
+  const entry = {
+    turn,
+    player,
+    pieceType: pendingMoveRecord.pieceType,
+    action: pendingMoveRecord.action,
+    from: from ? toNotation(from.x, from.y) : null,
+    to: to ? toNotation(to.x, to.y) : null,
+    direction: pendingMoveRecord.vector ? computeDirectionLabel(pendingMoveRecord.vector) : null,
+    capture: capture
+      ? {
+          pieceType: capture.pieceType,
+          player: capture.player,
+          at: capture.position ? toNotation(capture.position.x, capture.position.y) : null
+        }
+      : null,
+    destroyedHero: destroyedHero || null
+  };
+  if (pendingMoveRecord.rotation) {
+    const rotation = pendingMoveRecord.rotation;
+    entry.rotation = {
+      direction: rotation.delta > 0 ? "↻" : "↺",
+      degrees: rotation.delta * 90,
+      before: ORIENTATION_LABELS[mod4(rotation.before)] || rotation.before,
+      after: ORIENTATION_LABELS[mod4(rotation.after)] || rotation.after
+    };
+  } else {
+    entry.rotation = null;
+  }
+  if (pendingMoveRecord.swapWith) {
+    entry.swapWith = pendingMoveRecord.swapWith;
+    entry.swapWithPlayer = pendingMoveRecord.swapWithPlayer || null;
+  }
+  moveHistory = moveHistory.concat(entry).slice(-MAX_HISTORY_LENGTH);
+  pendingMoveRecord = null;
+  return entry;
+}
+
+function serialiseHistoryForTransmission() {
+  return moveHistory.map((entry, index) => ({
+    order: index + 1,
+    turn: entry.turn,
+    player: entry.player,
+    pieceType: entry.pieceType,
+    action: entry.action,
+    from: entry.from,
+    to: entry.to,
+    direction: entry.direction,
+    rotation: entry.rotation,
+    capture: entry.capture,
+    destroyedHero: entry.destroyedHero,
+    swapWith: entry.swapWith || null,
+    swapWithPlayer: entry.swapWithPlayer || null
+  }));
+}
+
+function maybeSendHistoryUpdate({ final = false, destroyedHero = null, winner = null } = {}) {
+  if (!multiplayer || typeof multiplayer.sendHistory !== "function") {
+    return;
+  }
+  if (!multiplayer.isActive()) {
+    return;
+  }
+  if (!playerProfile || !playerProfile.id) {
+    return;
+  }
+  if (!moveHistory.length) {
+    return;
+  }
+  if (!final) {
+    if (moveHistory.length <= HISTORY_EXPORT_THRESHOLD) {
+      return;
+    }
+    if (moveHistory.length === historySession.lastExportedLength) {
+      return;
+    }
+  }
+  const historyPayload = serialiseHistoryForTransmission();
+  const message = {
+    history: historyPayload,
+    final,
+    destroyedHero,
+    winner,
+    turn: turnCounter,
+    layout: currentLayoutKey,
+    skins: cloneSkinSelection(skinSelection),
+    rating: playerProfile.rating,
+    matchId: historySession.matchId || null
+  };
+  multiplayer.sendHistory(message);
+  historySession.lastExportedLength = moveHistory.length;
+  if (final) {
+    historySession.finalised = true;
+  } else {
+    historySession.exported = true;
+  }
+}
+
+function clearBoardTheme() {
+  if (!elements.board) return;
+  const boardEl = elements.board;
+  boardEl.removeAttribute("data-board-theme");
+  [
+    "--board-theme-background",
+    "--board-theme-grid",
+    "--board-overlay-primary",
+    "--board-overlay-secondary",
+    "--board-overlay-opacity",
+    "--board-overlay-blend",
+    "--cell-light",
+    "--cell-dark",
+    "--board-grid-opacity"
+  ].forEach((prop) => {
+    boardEl.style.removeProperty(prop);
+  });
+  const wrapper = boardEl.parentElement;
+  if (wrapper) {
+    wrapper.removeAttribute("data-board-frame");
+    wrapper.style.removeProperty("--board-frame-background");
+  }
+  activeBoardTheme = null;
+}
+
+function applyBoardTheme() {
+  if (!elements.board) return;
+  let theme = null;
+  let selectionSource = null;
+  let owner = currentPlayer;
+  const primarySelection = skinSelection[currentPlayer] || DEFAULT_SKIN_SELECTION[currentPlayer];
+  ensureSkinConfig(primarySelection.skin);
+  let config = getSkinConfig(primarySelection);
+  if (config && config.board) {
+    theme = config.board;
+    selectionSource = primarySelection;
+  } else {
+    const opponent = getOpponent(currentPlayer);
+    const opponentSelection = skinSelection[opponent] || DEFAULT_SKIN_SELECTION[opponent];
+    ensureSkinConfig(opponentSelection.skin);
+    config = getSkinConfig(opponentSelection);
+    if (config && config.board) {
+      theme = config.board;
+      selectionSource = opponentSelection;
+      owner = opponent;
+    }
+  }
+  if (!theme || !selectionSource) {
+    if (activeBoardTheme) {
+      clearBoardTheme();
+    }
+    return;
+  }
+  const themeKey = `${selectionSource.skin}:${selectionSource.type}`;
+  if (activeBoardTheme && activeBoardTheme.key === themeKey) {
+    return;
+  }
+  const boardEl = elements.board;
+  activeBoardTheme = { key: themeKey, owner };
+  boardEl.dataset.boardTheme = theme.theme || themeKey;
+  if (theme.background) {
+    boardEl.style.setProperty("--board-theme-background", theme.background);
+  } else {
+    boardEl.style.removeProperty("--board-theme-background");
+  }
+  if (theme.grid) {
+    boardEl.style.setProperty("--board-theme-grid", theme.grid);
+    const gridOpacity = Object.prototype.hasOwnProperty.call(theme, "gridOpacity")
+      ? theme.gridOpacity
+      : 0.32;
+    boardEl.style.setProperty("--board-grid-opacity", gridOpacity);
+  } else {
+    boardEl.style.removeProperty("--board-theme-grid");
+    boardEl.style.removeProperty("--board-grid-opacity");
+  }
+  if (theme.light) {
+    boardEl.style.setProperty("--cell-light", theme.light);
+  } else {
+    boardEl.style.removeProperty("--cell-light");
+  }
+  if (theme.dark) {
+    boardEl.style.setProperty("--cell-dark", theme.dark);
+  } else {
+    boardEl.style.removeProperty("--cell-dark");
+  }
+  const overlay = theme.overlay || {};
+  if (overlay.primary) {
+    boardEl.style.setProperty("--board-overlay-primary", overlay.primary);
+  }
+  if (overlay.secondary) {
+    boardEl.style.setProperty("--board-overlay-secondary", overlay.secondary);
+  }
+  if (overlay.opacity !== undefined) {
+    boardEl.style.setProperty("--board-overlay-opacity", overlay.opacity);
+  }
+  if (overlay.blend) {
+    boardEl.style.setProperty("--board-overlay-blend", overlay.blend);
+  }
+  if (!overlay.primary) {
+    boardEl.style.removeProperty("--board-overlay-primary");
+  }
+  if (!overlay.secondary) {
+    boardEl.style.removeProperty("--board-overlay-secondary");
+  }
+  if (overlay.opacity === undefined) {
+    boardEl.style.removeProperty("--board-overlay-opacity");
+  }
+  if (!overlay.blend) {
+    boardEl.style.removeProperty("--board-overlay-blend");
+  }
+  const wrapper = boardEl.parentElement;
+  if (wrapper) {
+    if (theme.frame) {
+      wrapper.dataset.boardFrame = "visible";
+      wrapper.style.setProperty("--board-frame-background", theme.frame);
+    } else {
+      wrapper.removeAttribute("data-board-frame");
+      wrapper.style.removeProperty("--board-frame-background");
+    }
+  }
+}
+
+function scheduleBoardThemeRefresh() {
+  if (typeof requestAnimationFrame === "function") {
+    requestAnimationFrame(() => applyBoardTheme());
+  } else {
+    setTimeout(() => applyBoardTheme(), 16);
+  }
+}
+
+function generatePlayerId() {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return `player-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function loadOrCreatePlayerProfile() {
+  let stored = null;
+  if (typeof localStorage !== "undefined") {
+    try {
+      const raw = localStorage.getItem(PLAYER_ID_STORAGE_KEY);
+      if (raw) {
+        stored = JSON.parse(raw);
+      }
+    } catch (err) {
+      stored = null;
+    }
+  }
+  const profile = {
+    id: stored && typeof stored.id === "string" && stored.id.trim() ? stored.id : generatePlayerId(),
+    rating: stored && Number.isFinite(stored.rating) ? Number(stored.rating) : DEFAULT_PLAYER_RATING
+  };
+  persistPlayerProfile(profile);
+  return profile;
+}
+
+function persistPlayerProfile(profile) {
+  if (typeof localStorage === "undefined" || !profile) {
+    return;
+  }
+  try {
+    localStorage.setItem(PLAYER_ID_STORAGE_KEY, JSON.stringify({ id: profile.id, rating: profile.rating }));
+  } catch (err) {
+    // ignore storage errors
+  }
+}
+
+function updatePlayerRating(nextRating) {
+  if (!playerProfile) {
+    return;
+  }
+  if (!Number.isFinite(nextRating)) {
+    return;
+  }
+  const rounded = Math.round(nextRating);
+  if (playerProfile.rating !== rounded) {
+    playerProfile.rating = rounded;
+    persistPlayerProfile(playerProfile);
+    updateRatingDisplays();
+  }
+}
+
+function formatPlayerId(value) {
+  if (!value || typeof value !== "string") return "Игрок";
+  if (value.length <= 8) return value;
+  return `${value.slice(0, 4)}…${value.slice(-2)}`;
+}
+
+function renderLeaderboard(listElement, items) {
+  if (!listElement) return;
+  listElement.innerHTML = "";
+  if (!Array.isArray(items) || items.length === 0) {
+    const empty = document.createElement("li");
+    empty.className = "rating__empty";
+    empty.textContent = "Данные временно недоступны";
+    listElement.appendChild(empty);
+    return;
+  }
+  items.slice(0, 10).forEach((entry, index) => {
+    const li = document.createElement("li");
+    li.className = "rating__item";
+    const name = entry.name || formatPlayerId(entry.id || entry.playerId || "Игрок");
+    const score = Number.isFinite(entry.rating) ? Math.round(entry.rating) : "—";
+    li.innerHTML = `
+      <span class="rating__position">${index + 1}</span>
+      <span class="rating__name">${name}</span>
+      <span class="rating__score">${score}</span>
+    `;
+    listElement.appendChild(li);
+  });
+}
+
+function updateRatingDisplays() {
+  const ratingText = playerProfile && Number.isFinite(playerProfile.rating)
+    ? `Ваш рейтинг: ${Math.round(playerProfile.rating)}`
+    : "Онлайн-рейтинг недоступен";
+  if (elements.playerRating) {
+    elements.playerRating.textContent = ratingText;
+  }
+  if (elements.connectionPlayerRating) {
+    elements.connectionPlayerRating.textContent = ratingText;
+  }
+  renderLeaderboard(elements.leaderboard, leaderboardSnapshot);
+  renderLeaderboard(elements.connectionLeaderboard, leaderboardSnapshot);
+}
+
+function deriveHttpEndpoint(wsUrl, pathname) {
+  try {
+    const url = new URL(wsUrl);
+    url.protocol = url.protocol === "wss:" ? "https:" : "http:";
+    url.pathname = pathname;
+    return url;
+  } catch (err) {
+    return null;
+  }
+}
+
+async function prefetchGlobalRatings() {
+  if (typeof fetch !== "function") return;
+  const endpoint = deriveHttpEndpoint(DEFAULT_SERVER_URL, "/ratings");
+  if (!endpoint) return;
+  if (playerProfile && playerProfile.id) {
+    endpoint.searchParams.set("playerId", playerProfile.id);
+  }
+  try {
+    const response = await fetch(endpoint.toString(), { credentials: "omit" });
+    if (!response.ok) return;
+    const payload = await response.json();
+    if (payload && Array.isArray(payload.leaderboard)) {
+      leaderboardSnapshot = payload.leaderboard;
+    }
+    if (payload && payload.player && Number.isFinite(payload.player.rating)) {
+      updatePlayerRating(payload.player.rating);
+    } else {
+      updateRatingDisplays();
+    }
+  } catch (err) {
+    // ignore network failures
+  }
+}
+
+function handleRatingsUpdate(payload) {
+  if (!payload) {
+    return;
+  }
+  if (payload.player && Number.isFinite(payload.player.rating)) {
+    updatePlayerRating(payload.player.rating);
+  }
+  if (Array.isArray(payload.leaderboard)) {
+    leaderboardSnapshot = payload.leaderboard;
+  }
+  updateRatingDisplays();
 }
 
 function handleCellInteraction(x, y) {
@@ -1874,6 +2353,16 @@ function executeMove(option, piece, from) {
     if (!targetPiece) {
       return;
     }
+    pendingMoveRecord = {
+      action: "swap",
+      from: { x: from.x, y: from.y },
+      to: { x: option.x, y: option.y },
+      pieceType: piece.type,
+      player: piece.player,
+      vector: { dx: option.x - from.x, dy: option.y - from.y },
+      swapWith: targetPiece.type,
+      swapWithPlayer: targetPiece.player
+    };
     board[from.y][from.x] = targetPiece;
     board[option.y][option.x] = piece;
     lastMove = {
@@ -1892,6 +2381,14 @@ function executeMove(option, piece, from) {
     return;
   }
 
+  pendingMoveRecord = {
+    action: "move",
+    from: { x: from.x, y: from.y },
+    to: { x: option.x, y: option.y },
+    pieceType: piece.type,
+    player: piece.player,
+    vector: { dx: option.x - from.x, dy: option.y - from.y }
+  };
   board[from.y][from.x] = null;
   board[option.y][option.x] = piece;
   lastMove = {
@@ -1916,7 +2413,21 @@ function rotateSelected(delta) {
     return;
   }
 
-  piece.orientation = mod4(piece.orientation + delta);
+  const previousOrientation = piece.orientation;
+  const nextOrientation = mod4(piece.orientation + delta);
+  pendingMoveRecord = {
+    action: delta > 0 ? "rotate-cw" : "rotate-ccw",
+    from: { x: selectedCell.x, y: selectedCell.y },
+    to: { x: selectedCell.x, y: selectedCell.y },
+    pieceType: piece.type,
+    player: piece.player,
+    rotation: {
+      delta,
+      before: previousOrientation,
+      after: nextOrientation
+    }
+  };
+  piece.orientation = nextOrientation;
   lastMove = null;
   renderBoard();
   const dirSymbol = delta > 0 ? "↻" : "↺";
@@ -1928,27 +2439,48 @@ function rotateSelected(delta) {
 function endTurn() {
   clearSelection({ silent: true });
   const activePlayer = currentPlayer;
+  const turnNumber = turnCounter;
   playSkinSound(activePlayer, "move");
   const laserResult = normaliseLaserResult(fireLaser(activePlayer));
   lastLaserResult = laserResult;
   renderBoard();
   highlightLaserPath(laserResult);
   handleLaserImpact(laserResult);
+  let captureInfo = null;
+  let destroyedHero = null;
   if (laserResult.hit) {
     const hitPiece = laserResult.hit.piece;
     const owner = PLAYERS[hitPiece.player].name;
     const pieceName = PIECE_DEFS[hitPiece.type].name;
     const cell = toNotation(laserResult.hit.x, laserResult.hit.y);
     setStatus(`${laserResult.firer} испепеляет ${pieceName} (${owner}) на ${cell}.`);
+    captureInfo = {
+      player: hitPiece.player,
+      pieceType: hitPiece.type,
+      position: { x: laserResult.hit.x, y: laserResult.hit.y }
+    };
     if (hitPiece.type === "volhv") {
-      finishGame(activePlayer);
-      return;
+      destroyedHero = hitPiece.player;
     }
   } else if (laserResult.blocked) {
     const blockPiece = laserResult.blocked.piece;
     const owner = PLAYERS[blockPiece.player].name;
     const cell = toNotation(laserResult.blocked.x, laserResult.blocked.y);
     setStatus(`${laserResult.firer} не проходит через ${PIECE_DEFS[blockPiece.type].name} на ${cell}.`);
+  }
+  const historyEntry = finaliseMoveHistory({
+    turn: turnNumber,
+    player: activePlayer,
+    capture: captureInfo,
+    destroyedHero
+  });
+  if (destroyedHero) {
+    maybeSendHistoryUpdate({ final: true, destroyedHero, winner: activePlayer });
+    finishGame(activePlayer);
+    return;
+  }
+  if (historyEntry) {
+    maybeSendHistoryUpdate();
   }
   currentPlayer = activePlayer === "light" ? "shadow" : "light";
   turnCounter += 1;
@@ -2833,6 +3365,7 @@ function serialiseGameState() {
 
 function applyRemoteState(state, options = {}) {
   if (!state) return;
+  pendingMoveRecord = null;
   const previousBoard = cloneBoardState(board);
   const previousLaserResult = lastLaserResult;
   const preserveRole = options.preservePendingFor
@@ -2926,7 +3459,10 @@ function createMultiplayerController() {
     roomId: null,
     serverUrl: null,
     players: { light: false, shadow: false },
-    suppressDepth: 0
+    suppressDepth: 0,
+    playerId: playerProfile ? playerProfile.id : null,
+    historyMatchId: null,
+    lastHistoryAck: 0
   };
 
   function init() {
@@ -2939,6 +3475,7 @@ function createMultiplayerController() {
     }
     hideOverlay();
     setOverlayStatus("Введите параметры комнаты для сетевой игры.");
+    state.playerId = playerProfile ? playerProfile.id : null;
     window.addEventListener("beforeunload", () => {
       cleanupSocket(true);
     });
@@ -2999,13 +3536,22 @@ function createMultiplayerController() {
 
     state.serverUrl = parsedUrl.toString();
     state.roomId = roomId;
+    state.playerId = playerProfile ? playerProfile.id : null;
 
     const ws = new WebSocket(state.serverUrl);
     state.ws = ws;
 
     ws.onopen = () => {
       setOverlayStatus("Соединение установлено. Ожидаем подтверждения...");
-      send({ type: "join", roomId, role, skin: desiredSkin ? desiredSkin.skin : null, skinType: desiredSkin ? desiredSkin.type : null });
+      send({
+        type: "join",
+        roomId,
+        role,
+        skin: desiredSkin ? desiredSkin.skin : null,
+        skinType: desiredSkin ? desiredSkin.type : null,
+        playerId: state.playerId,
+        rating: playerProfile ? playerProfile.rating : null
+      });
     };
     ws.onmessage = (event) => {
       handleMessage(event);
@@ -3040,6 +3586,14 @@ function createMultiplayerController() {
           broadcastGameState("sync");
           reconcileLocalSkinSelection();
         }
+        if (payload.matchId) {
+          state.historyMatchId = payload.matchId;
+          historySession.matchId = payload.matchId;
+          historySession.lastExportedLength = payload.exportedLength || moveHistory.length;
+        }
+        if (payload.ratings) {
+          handleRatingsUpdate(payload.ratings);
+        }
         if (typeof payload.message === "string" && payload.message) {
           setStatus(payload.message);
         }
@@ -3072,6 +3626,21 @@ function createMultiplayerController() {
       case "error":
         setOverlayStatus(payload.message || "Сервер отклонил подключение.");
         handleSocketClosure("Соединение закрыто.");
+        break;
+      case "history-ack":
+        if (payload.matchId) {
+          state.historyMatchId = payload.matchId;
+          historySession.matchId = payload.matchId;
+        }
+        if (typeof payload.exportedLength === "number") {
+          historySession.lastExportedLength = payload.exportedLength;
+        }
+        if (payload.ratings) {
+          handleRatingsUpdate(payload.ratings);
+        }
+        break;
+      case "ratings":
+        handleRatingsUpdate(payload.ratings || payload);
         break;
       default:
         break;
@@ -3171,6 +3740,7 @@ function createMultiplayerController() {
     handleOnlineRoleChange(state.role || onlineSelectedRole);
     updateOnlinePreview();
     updateOnlineWarning();
+    updateRatingDisplays();
   }
 
   function closeOverlay() {
@@ -3200,6 +3770,10 @@ function createMultiplayerController() {
     state.roomId = null;
     state.role = null;
     state.players = { light: false, shadow: false };
+    state.historyMatchId = null;
+    state.lastHistoryAck = 0;
+    resetHistorySession({ keepMoves: true });
+    historySession.matchId = null;
     updatePlayersUI();
     onlineSelectedRole = null;
     handleOnlineRoleChange(null);
@@ -3239,6 +3813,22 @@ function createMultiplayerController() {
         state: statePayload,
         laser: laserSnapshot
       });
+    },
+    sendHistory(historyPayload) {
+      if (!state.connected || !state.ws || state.ws.readyState !== WebSocket.OPEN) {
+        return;
+      }
+      const payload = {
+        type: "history",
+        roomId: state.roomId,
+        role: state.role,
+        playerId: state.playerId,
+        ...historyPayload
+      };
+      if (!payload.matchId && state.historyMatchId) {
+        payload.matchId = state.historyMatchId;
+      }
+      send(payload);
     },
     canBroadcast() {
       return Boolean(state.connected && state.ws && state.ws.readyState === WebSocket.OPEN && state.suppressDepth === 0);
