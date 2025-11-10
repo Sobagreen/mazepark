@@ -151,6 +151,12 @@
 
       <p id="connection-status" class="connection-status" role="status"></p>
 
+      <section class="connection-rating" aria-live="polite">
+        <h2 class="connection-rating__title">Глобальный рейтинг</h2>
+        <p id="connection-player-rating" class="connection-rating__value rating__value">Рейтинг недоступен.</p>
+        <ol id="connection-leaderboard" class="connection-rating__list rating__list" aria-label="Лидеры онлайн режима"></ol>
+      </section>
+
       <div class="connection-actions">
         <button type="submit" id="connect-button" class="button button--primary">Подключиться</button>
         <button type="button" id="online-back" class="button button--ghost">Назад</button>
@@ -192,6 +198,11 @@
         <h2>Фигура</h2>
         <p id="piece-name" class="piece-panel__name">—</p>
         <p id="piece-details" class="piece-panel__details">Коснитесь своей фигуры, чтобы узнать её свойства.</p>
+      </section>
+      <section class="panel panel--rating" aria-live="polite">
+        <h2>Рейтинг</h2>
+        <p id="player-rating" class="rating__value">Онлайн-рейтинг недоступен</p>
+        <ol id="leaderboard" class="rating__list" aria-label="Топ игроков"></ol>
       </section>
     </aside>
   </main>

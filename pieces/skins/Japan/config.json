@@ -25,6 +25,20 @@
         "offset": { "x": 0, "y": 0 },
         "scale": 1.6
       }
+    },
+    "board": {
+      "theme": "japan-garden",
+      "background": "linear-gradient(135deg, rgba(9, 21, 12, 0.92) 0%, rgba(34, 73, 40, 0.82) 48%, rgba(14, 31, 18, 0.95) 100%)",
+      "grid": "rgba(170, 231, 159, 0.18)",
+      "light": "rgba(214, 238, 210, 0.95)",
+      "dark": "rgba(48, 85, 54, 0.92)",
+      "overlay": {
+        "primary": "rgba(156, 214, 144, 0.32)",
+        "secondary": "rgba(50, 95, 54, 0.35)",
+        "opacity": 0.4,
+        "blend": "screen"
+      },
+      "frame": "linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(186, 228, 177, 0.4) 50%, rgba(10, 24, 12, 0.7) 100%)"
     }
   },
   "Type2": {
@@ -53,6 +67,20 @@
         "offset": { "x": 0, "y": 0 },
         "scale": 1.6
       }
+    },
+    "board": {
+      "theme": "japan-imperial",
+      "background": "linear-gradient(135deg, rgba(8, 18, 12, 0.92) 0%, rgba(40, 86, 48, 0.86) 50%, rgba(10, 22, 13, 0.95) 100%)",
+      "grid": "rgba(162, 226, 152, 0.2)",
+      "light": "rgba(225, 245, 220, 0.95)",
+      "dark": "rgba(44, 82, 50, 0.92)",
+      "overlay": {
+        "primary": "rgba(148, 210, 138, 0.38)",
+        "secondary": "rgba(36, 74, 40, 0.32)",
+        "opacity": 0.42,
+        "blend": "screen"
+      },
+      "frame": "linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(166, 216, 156, 0.45) 52%, rgba(6, 16, 9, 0.7) 100%)"
     }
   }
 }

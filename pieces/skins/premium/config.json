@@ -26,6 +26,18 @@
         "scale": 1.8
       }
     },
+    "heroLighting": {
+      "volhv": {
+        "haloGradient": "radial-gradient(circle, rgba(255, 240, 206, 0.95) 0%, rgba(255, 226, 158, 0.7) 38%, rgba(106, 82, 24, 0.45) 62%, rgba(24, 14, 0, 0) 100%)",
+        "innerGlow": "rgba(255, 225, 149, 0.75)",
+        "outerGlow": "rgba(212, 175, 55, 0.45)",
+        "beamColor": "rgba(255, 235, 190, 0.55)",
+        "pulse": {
+          "from": "rgba(255, 226, 149, 0.35)",
+          "to": "rgba(255, 244, 214, 0.85)"
+        }
+      }
+    },
     "sounds": {
       "move": "pieces/skins/premium/audio/move.wav",
       "destroyEnemy": "pieces/skins/premium/audio/destroy-enemy.wav",
@@ -57,6 +69,18 @@
         ],
         "offset": { "x": 0, "y": 0 },
         "scale": 1.8
+      }
+    },
+    "heroLighting": {
+      "volhv": {
+        "haloGradient": "radial-gradient(circle, rgba(255, 236, 194, 0.95) 0%, rgba(248, 205, 124, 0.7) 36%, rgba(94, 70, 18, 0.45) 60%, rgba(26, 16, 0, 0) 100%)",
+        "innerGlow": "rgba(255, 220, 149, 0.78)",
+        "outerGlow": "rgba(218, 180, 72, 0.42)",
+        "beamColor": "rgba(255, 240, 210, 0.6)",
+        "pulse": {
+          "from": "rgba(255, 220, 149, 0.32)",
+          "to": "rgba(255, 240, 206, 0.88)"
+        }
       }
     },
     "sounds": {
