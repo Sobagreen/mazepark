@@ -1,0 +1,123 @@
+{
+  "Slavic": {
+    "label": "Славянский орден",
+    "preview": "pieces/skins/Slavic/Type1/volhv.png",
+    "configPath": "pieces/skins/Slavic/config.json",
+    "types": {
+      "Type1": {
+        "label": "Перун",
+        "preview": "pieces/skins/Slavic/Type1/volhv.png",
+        "description": "Гром в его жилах, молния — в его кулаке; когда он гневается, небеса плачут огнём."
+      },
+      "Type2": {
+        "label": "Чернобог",
+        "preview": "pieces/skins/Slavic/Type2/volhv.png",
+        "description": "Тьма в обличье судьбы — он не приносит хаос, он есть его сердце."
+      }
+    }
+  },
+  "Japan": {
+    "label": "Япония",
+    "preview": "pieces/skins/Japan/Type1/preview.png",
+    "configPath": "pieces/skins/Japan/config.json",
+    "types": {
+      "Type1": {
+        "label": "Гейша",
+        "preview": "pieces/skins/Japan/Type1/volhv.png",
+        "description": "Танцующая тень с клинком в рукаве — её улыбка губительней цунами."
+      },
+      "Type2": {
+        "label": "Император",
+        "preview": "pieces/skins/Japan/Type2/volhv.png",
+        "description": "Железная воля в шелках, владыка восходящего солнца, чей взор смиряет саму бурю."
+      }
+    }
+  },
+  "Greece": {
+    "label": "Греция",
+    "preview": "pieces/skins/Greece/Type1/preview.png",
+    "configPath": "pieces/skins/Greece/config.json",
+    "types": {
+      "Type1": {
+        "label": "Легионер",
+        "preview": "pieces/skins/Greece/Type1/volhv.png",
+        "description": "Щит эллинов и меч порядка — он не отступает, он становится легендой."
+      },
+      "Type2": {
+        "label": "Амазонка",
+        "preview": "pieces/skins/Greece/Type2/volhv.png",
+        "description": "Гроза фаланг и певица битвы — она сражается не за победу, а за славу."
+      }
+    }
+  },
+  "Lavcraft": {
+    "label": "Говард Лавкрафт",
+    "preview": "pieces/skins/Lavcraft/Type1/preview.png",
+    "configPath": "pieces/skins/Lavcraft/config.json",
+    "types": {
+      "Type1": {
+        "label": "Ктулху",
+        "preview": "pieces/skins/Lavcraft/Type1/volhv.png",
+        "description": "Сон ужаса, что спит под волнами — и в чьём пробуждении гибнет разум."
+      },
+      "Type2": {
+        "label": "Жрец ордена",
+        "preview": "pieces/skins/Lavcraft/Type2/volhv.png",
+        "description": "Голос Безумного Бога на земле — каждый его ритуал рвёт завесу между мирами."
+      }
+    }
+  },
+  "Egypt": {
+    "label": "Египет",
+    "preview": "pieces/skins/Egypt/Type1/preview.png",
+    "configPath": "pieces/skins/Egypt/config.json",
+    "types": {
+      "Type1": {
+        "label": "Наложница",
+        "preview": "pieces/skins/Egypt/Type1/volhv.png",
+        "description": "Яд в амбре, шепот в царской ночи — её любовь рушит империи."
+      },
+      "Type2": {
+        "label": "Фараон",
+        "preview": "pieces/skins/Egypt/Type2/volhv.png",
+        "description": "Бог на троне из песка и золота, чей приказ вечен, как сама вечность."
+      }
+    }
+  },
+  "premium": {
+    "label": "Премиум",
+    "preview": "pieces/skins/premium/Type1/volhv.png",
+    "configPath": "pieces/skins/premium/config.json",
+    "types": {
+      "Type1": {
+        "label": "Божество",
+        "preview": "pieces/skins/premium/Type1/volhv.png",
+        "description": "Тот, кто пишет реальность пальцем на воде — и стирает её одним вздохом."
+      },
+      "Type2": {
+        "label": "Программист",
+        "preview": "pieces/skins/premium/Type1/volhv.png",
+        "description": "Архитектор космоса из нулей и единиц — его баги становятся законами физики."
+      }
+    }
+  },
+  "Arnuvo": {
+    "label": "Arnuvo",
+    "preview": "pieces/skins/premium/Type1/volhv.png",
+    "configPath": "pieces/skins/Arnuvo/config.json",
+    "types": {
+      "Type1": {
+        "label": "Эфридика",
+        "preview": "data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%20120%20120%27%3E%0A%20%20%3Crect%20width%3D%27120%27%20height%3D%27120%27%20rx%3D%2722%27%20fill%3D%27%23fde4f8%27/%3E%0A%20%20%3Ccircle%20cx%3D%2760%27%20cy%3D%2746%27%20r%3D%2730%27%20fill%3D%27%23f8bbd0%27/%3E%0A%20%20%3Cpath%20d%3D%27M60%2028c16%2010%2028%2022%2028%2034%200%2016-13%2030-28%2030s-28-14-28-30c0-12%2012-24%2028-34z%27%20fill%3D%27%23f06292%27/%3E%0A%20%20%3Ctext%20x%3D%2760%27%20y%3D%2792%27%20text-anchor%3D%27middle%27%20font-family%3D%27Montserrat%2CArial%27%20font-size%3D%2720%27%20fill%3D%27%237b1fa2%27%3E%D0%AD%D1%84%3C/text%3E%0A%3C/svg%3E",
+        "description": "Нежно-розовый лазер, чьё прикосновение оставляет после себя парящий лепестковый шлейф.",
+        "assetBase": "premium/Type1"
+      },
+      "Type2": {
+        "label": "Серсея",
+        "preview": "data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%20120%20120%27%3E%0A%20%20%3Crect%20width%3D%27120%27%20height%3D%27120%27%20rx%3D%2722%27%20fill%3D%27%23fbe9f2%27/%3E%0A%20%20%3Ccircle%20cx%3D%2760%27%20cy%3D%2746%27%20r%3D%2730%27%20fill%3D%27%23f3d1ff%27/%3E%0A%20%20%3Cpath%20d%3D%27M34%2074c10%2012%2026%2018%2026%2018s16-6%2026-18c6-8%206-18%200-28-6-10-18-16-26-16s-20%206-26%2016c-6%2010-6%2020%200%2028z%27%20fill%3D%27%23ce93d8%27/%3E%0A%20%20%3Ctext%20x%3D%2760%27%20y%3D%2792%27%20text-anchor%3D%27middle%27%20font-family%3D%27Montserrat%2CArial%27%20font-size%3D%2720%27%20fill%3D%27%236a1b9a%27%3E%D0%A1%D0%B5%3C/text%3E%0A%3C/svg%3E",
+        "description": "Розовый луч с бархатной дымкой и разрушение фигур в виде распускающейся розы.",
+        "assetBase": "premium/Type1"
+      }
+    }
+  }
+}
