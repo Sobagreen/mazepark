@@ -18,6 +18,8 @@ function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
 }
 
+const FILES = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".slice(0, BOARD_WIDTH);
+
 const DIRECTIONS = [
   { dx: 0, dy: -1 }, // вверх
   { dx: 1, dy: 0 },  // вправо
