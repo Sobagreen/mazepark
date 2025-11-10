@@ -195,6 +195,7 @@ const FILES = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".slice(0, BOARD_WIDTH);
 const THEME_STORAGE_KEY = "laser-theme";
 const DEFAULT_SERVER_URL = "wss://mazepark-1.onrender.com";
 const BASE_EFFECT_CLASS = "piece-effect--impact";
+const PIECE_BASE_SCALE = 1.15;
 
 const PLAYERS = {
   light: {
@@ -378,6 +379,8 @@ let playerSkins = cloneSkinSelection(DEFAULT_SKIN_SELECTION);
 const skinConfigCache = {};
 const skinConfigPromises = {};
 const skinAudioCache = new Map();
+const pieceOrientationCache = new Map();
+const ambientAudio = createAmbientAudioManager();
 
 const DIRECTIONS = [
   { dx: 0, dy: -1 }, // вверх
@@ -503,6 +506,7 @@ function startNewGame() {
   applySelectedLayoutFromControls();
   lastMove = null;
   board = createEmptyBoard();
+  pieceOrientationCache.clear();
   placeInitialPieces();
   currentPlayer = "light";
   turnCounter = 1;
@@ -514,6 +518,14 @@ function startNewGame() {
   elements.endgame.hidden = true;
   elements.endgame.setAttribute("aria-hidden", "true");
   updateLayoutSelectors();
+  if (ambientAudio) {
+    if (isElementVisible(elements.startScreen)) {
+      ambientAudio.stop("game");
+    } else {
+      ambientAudio.stop("intro");
+      ambientAudio.switchTo("game");
+    }
+  }
   broadcastGameState("new-game");
 }
 
@@ -723,10 +735,16 @@ function ensureSkinConfig(skinKey) {
       .then((response) => (response.ok ? response.json() : null))
       .then((json) => {
         skinConfigCache[skinKey] = json && typeof json === "object" ? json : {};
+        if (typeof refreshPieceArt === "function") {
+          refreshPieceArt({ silent: true });
+        }
         return skinConfigCache[skinKey];
       })
       .catch(() => {
         skinConfigCache[skinKey] = {};
+        if (typeof refreshPieceArt === "function") {
+          refreshPieceArt({ silent: true });
+        }
         return skinConfigCache[skinKey];
       });
   }
@@ -835,6 +853,104 @@ function playSkinSound(playerOrSelection, cue) {
   }
   const instance = base.cloneNode(true);
   instance.play().catch(() => {});
+}
+
+function createAmbientAudioManager() {
+  if (typeof Audio !== "function") {
+    return null;
+  }
+
+  const tracks = {
+    intro: new Audio("audio/intro.wav"),
+    game: new Audio("audio/game.wav")
+  };
+
+  let currentTrack = null;
+  let pendingTrack = null;
+
+  Object.values(tracks).forEach((track) => {
+    if (!track) return;
+    track.loop = true;
+    track.preload = "auto";
+    track.volume = 0.6;
+  });
+
+  const stopTrack = (track) => {
+    if (!track) return;
+    track.pause();
+    try {
+      track.currentTime = 0;
+    } catch (err) {
+      /* ignore */
+    }
+  };
+
+  const attemptPlay = (name) => {
+    const track = tracks[name];
+    if (!track) return;
+    if (currentTrack && currentTrack !== track) {
+      stopTrack(currentTrack);
+    }
+    currentTrack = track;
+    pendingTrack = null;
+    const promise = track.play();
+    if (promise && typeof promise.catch === "function") {
+      promise.catch(() => {
+        pendingTrack = name;
+      });
+    }
+  };
+
+  const requestPlay = (name) => {
+    if (!tracks[name]) {
+      return;
+    }
+    pendingTrack = name;
+    attemptPlay(name);
+  };
+
+  const resumePending = () => {
+    if (!pendingTrack) {
+      return;
+    }
+    const target = pendingTrack;
+    pendingTrack = null;
+    attemptPlay(target);
+  };
+
+  if (typeof window !== "undefined") {
+    window.addEventListener("pointerdown", resumePending, { passive: true });
+    window.addEventListener("keydown", resumePending, { passive: true });
+  }
+
+  return {
+    switchTo(name) {
+      if (!name) {
+        if (currentTrack) {
+          stopTrack(currentTrack);
+          currentTrack = null;
+        }
+        pendingTrack = null;
+        return;
+      }
+      requestPlay(name);
+    },
+    stop(name) {
+      if (name && tracks[name]) {
+        if (currentTrack === tracks[name]) {
+          currentTrack = null;
+        }
+        stopTrack(tracks[name]);
+        if (pendingTrack === name) {
+          pendingTrack = null;
+        }
+      } else if (!name) {
+        Object.values(tracks).forEach(stopTrack);
+        currentTrack = null;
+        pendingTrack = null;
+      }
+    }
+  };
 }
 
 function getCheckedRole() {
@@ -1628,12 +1744,23 @@ function closeTraining() {
   hideOverlayElement(elements.trainingOverlay);
 }
 
+function isElementVisible(element) {
+  return Boolean(element) && element.hidden === false;
+}
+
 function showStartScreen() {
   showOverlayElement(elements.startScreen);
+  if (ambientAudio) {
+    ambientAudio.stop("game");
+    ambientAudio.switchTo("intro");
+  }
 }
 
 function hideStartScreen() {
   hideOverlayElement(elements.startScreen);
+  if (ambientAudio) {
+    ambientAudio.stop("intro");
+  }
 }
 
 function showOverlayElement(element) {
@@ -1676,6 +1803,7 @@ function applySkinSelection(selection, { broadcast = true, preservePendingFor = 
   pendingSkins = nextPending;
   preloadSkinConfigs(playerSkins);
   updateLegendImages();
+  pieceOrientationCache.clear();
   renderBoard();
   updateSkinPreviews();
   updateOnlineWarning();
@@ -1758,10 +1886,13 @@ function cloneSkinSelection(selection) {
 }
 
 function renderBoard() {
+  const playerSelectionCache = {};
+  const typeConfigCache = {};
   for (let y = 0; y < BOARD_HEIGHT; y++) {
     for (let x = 0; x < BOARD_WIDTH; x++) {
       const cell = cells[y][x];
       const piece = board[y][x];
+      const cacheKey = `${x},${y}`;
       cell.classList.toggle("cell--light", (x + y) % 2 === 0);
       cell.classList.toggle("cell--selected", selectedCell && selectedCell.x === x && selectedCell.y === y);
       const isRecent = Boolean(
@@ -1779,12 +1910,38 @@ function renderBoard() {
         image.src = getPieceImageUrl(piece);
         image.alt = "";
         image.className = "piece__image";
-        image.style.transform = `rotate(${piece.orientation * 90}deg)`;
+        image.dataset.orientation = String(mod4(piece.orientation || 0));
+
+        const selection = playerSelectionCache[piece.player] || getPlayerSkin(piece.player);
+        playerSelectionCache[piece.player] = selection;
+        let config = null;
+        if (selection && selection.skin && selection.type) {
+          const selectionKey = `${selection.skin}:${selection.type}`;
+          config = typeConfigCache[selectionKey];
+          if (!config) {
+            config = getSkinConfig(selection);
+            typeConfigCache[selectionKey] = config;
+          }
+        }
+
+        if (piece.type === "volhv") {
+          wrapper.classList.add("piece--hero");
+          applyHeroHighlight(wrapper, config);
+        }
+
+        const cached = pieceOrientationCache.get(cacheKey);
+        const signature = `${piece.player}:${piece.type}`;
+        const previousOrientation = cached && cached.signature === signature ? cached.orientation : null;
+        const currentOrientation = mod4(piece.orientation || 0);
+        applyPieceRotation(image, previousOrientation, currentOrientation, config && config.animations ? config.animations.rotation : null);
+        pieceOrientationCache.set(cacheKey, { orientation: currentOrientation, signature });
+
         wrapper.appendChild(image);
         wrapper.setAttribute("aria-label", `${def.name} (${PLAYERS[piece.player].name})`);
         cell.replaceChildren(wrapper);
       } else {
         cell.replaceChildren();
+        pieceOrientationCache.delete(cacheKey);
       }
     }
   }
@@ -1795,6 +1952,142 @@ function renderBoard() {
       cell.classList.add("cell--swap");
     }
   }
+}
+
+function applyHeroHighlight(wrapper, config) {
+  if (!wrapper) {
+    return;
+  }
+  const highlight = getHeroHighlightSettings(config);
+  if (!highlight) {
+    return;
+  }
+  if (highlight.color) {
+    wrapper.style.setProperty("--hero-highlight-color", highlight.color);
+  }
+  if (Number.isFinite(highlight.idleOpacity)) {
+    wrapper.style.setProperty("--hero-highlight-opacity", String(highlight.idleOpacity));
+  }
+  if (Number.isFinite(highlight.activeOpacity)) {
+    wrapper.style.setProperty("--hero-highlight-active-opacity", String(highlight.activeOpacity));
+  }
+  if (Number.isFinite(highlight.blur)) {
+    wrapper.style.setProperty("--hero-highlight-blur", `${highlight.blur}px`);
+  }
+  if (Number.isFinite(highlight.scale)) {
+    wrapper.style.setProperty("--hero-highlight-scale", String(highlight.scale));
+  }
+}
+
+function getHeroHighlightSettings(config) {
+  if (!config || typeof config !== "object") {
+    return null;
+  }
+  const baseColor = config.laser && config.laser.glowColor ? config.laser.glowColor : null;
+  const data = config.hero && config.hero.highlight ? config.hero.highlight : null;
+  const color = data && data.color ? data.color : baseColor;
+  if (!color) {
+    return null;
+  }
+  const idleOpacity = Number.isFinite(data?.idleOpacity) ? data.idleOpacity : 0.45;
+  const activeOpacity = Number.isFinite(data?.activeOpacity)
+    ? data.activeOpacity
+    : Math.min(idleOpacity + 0.25, 0.85);
+  const blur = Number.isFinite(data?.blur) ? data.blur : 24;
+  const scale = Number.isFinite(data?.scale) ? data.scale : 1;
+  return { color, idleOpacity, activeOpacity, blur, scale };
+}
+
+function applyPieceRotation(image, previousOrientation, currentOrientation, rotationSettings) {
+  if (!image) {
+    return;
+  }
+  const next = mod4(currentOrientation || 0);
+  const previous = Number.isFinite(previousOrientation) ? mod4(previousOrientation) : null;
+  const finalAngle = next * 90;
+  const baseTransform = (angle) => `scale(${PIECE_BASE_SCALE}) rotate(${angle}deg)`;
+  image.style.willChange = "transform";
+
+  if (typeof image.getAnimations === "function") {
+    image.getAnimations().forEach((animation) => animation.cancel());
+  }
+
+  const duration = rotationSettings && Number.isFinite(rotationSettings.duration)
+    ? Math.max(0, rotationSettings.duration)
+    : 260;
+  const easing = rotationSettings && typeof rotationSettings.easing === "string"
+    ? rotationSettings.easing
+    : "cubic-bezier(0.25, 0.8, 0.4, 1)";
+  const delay = rotationSettings && Number.isFinite(rotationSettings.delay)
+    ? Math.max(0, rotationSettings.delay)
+    : 0;
+
+  if (previous === null || previous === next) {
+    image.style.transition = "";
+    image.style.transform = baseTransform(finalAngle);
+    return;
+  }
+
+  const startAngle = previous * 90;
+  const canAnimate = typeof requestAnimationFrame === "function";
+  const useWebAnimations = canAnimate && typeof image.animate === "function";
+
+  if (useWebAnimations) {
+    image.style.transition = "";
+    image.style.transform = baseTransform(startAngle);
+    requestAnimationFrame(() => {
+      const animation = image.animate(
+        [
+          { transform: baseTransform(startAngle) },
+          { transform: baseTransform(finalAngle) }
+        ],
+        {
+          duration,
+          easing,
+          delay,
+          fill: "forwards"
+        }
+      );
+      if (animation && animation.finished && typeof animation.finished.then === "function") {
+        animation.finished
+          .then(() => {
+            image.style.transform = baseTransform(finalAngle);
+          })
+          .catch(() => {
+            image.style.transform = baseTransform(finalAngle);
+          });
+      } else {
+        image.style.transform = baseTransform(finalAngle);
+      }
+    });
+    return;
+  }
+
+  if (!canAnimate) {
+    image.style.transition = "";
+    image.style.transform = baseTransform(finalAngle);
+    return;
+  }
+
+  image.style.transition = `transform ${duration}ms ${easing} ${delay}ms`;
+  image.style.transform = baseTransform(startAngle);
+  const handleTransitionEnd = (event) => {
+    if (event.propertyName === "transform") {
+      image.style.transition = "";
+      image.removeEventListener("transitionend", handleTransitionEnd);
+    }
+  };
+  image.addEventListener("transitionend", handleTransitionEnd);
+  requestAnimationFrame(() => {
+    const applyFinal = () => {
+      image.style.transform = baseTransform(finalAngle);
+    };
+    if (delay > 0) {
+      setTimeout(applyFinal, delay);
+    } else {
+      applyFinal();
+    }
+  });
 }
 
 function handleCellInteraction(x, y) {
@@ -2852,6 +3145,7 @@ function applyRemoteState(state, options = {}) {
     setCurrentLayout(state.layout, { silent: true });
     lastMove = normaliseLastMove(state.lastMove);
     board = cloneBoardState(state.board);
+    pieceOrientationCache.clear();
     clearEffectsOverlay();
     if (state.skins) {
       const skinOptions = { broadcast: false };
