@@ -1,383 +1,22 @@
-function duplicateLayout(layout) {
-  return layout.map((row) => row.slice());
-}
+import {
+  duplicateLayout,
+  STARTING_LAYOUT_ORDER,
+  STARTING_LAYOUTS,
+  DEFAULT_LAYOUT_KEY,
+  TOKEN_MAP,
+  BOARD_HEIGHT,
+  BOARD_WIDTH,
+  normaliseLayoutKey,
+  getLayoutTokens
+} from './data/layouts.js';
+import { SkinLibrary } from './skins/library.js';
+import { SkinGallery } from './ui/skin-gallery.js';
+import { GameState } from './state/game-state.js';
+import { SkinStore } from './state/skin-store.js';
 
 function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
 }
-
-const BASE_LAYOUT = [
-  ["Л1ВН", "П", "П", "П", "1Щ1ВН", "В1ВВ", "2Щ1ВН", "1З1ВН", "П", "П"],
-  ["П", "П", "2З1Л", "П", "П", "П", "П", "П", "П", "П"],
-  ["П", "П", "П", "7З2ВВ", "П", "П", "П", "П", "П", "П"],
-  ["3З1П", "П", "5З2Л", "П", "1Т1П", "2Т1ВН", "П", "4З1ВН", "П", "6З2ВВ"],
-  ["5З1ВН", "П", "3З2ВВ", "П", "1Т2ВН", "2Т2П", "П", "6З1П", "П", "4З2Л"],
-  ["П", "П", "П", "П", "П", "П", "7З1ВН", "П", "П", "П"],
-  ["П", "П", "П", "П", "П", "П", "П", "2З2П", "П", "П"],
-  ["П", "П", "1З2ВВ", "1Щ2ВВ", "В2ВВ", "2Щ2ВВ", "П", "П", "П", "Л2ВВ"]
-];
-
-const MODERN_LAYOUT = [
-  ["1З1ВВ", "1З1П", "1З1ВН", "1З1Л", "П", "П", "П", "П", "П", "П"],
-  ["П", "П", "П", "П", "П", "П", "П", "П", "П", "П"],
-  ["П", "П", "П", "П", "П", "П", "П", "П", "П", "П"],
-  ["П", "П", "П", "П", "П", "П", "П", "П", "П", "П"],
-  ["П", "П", "П", "П", "П", "П", "П", "П", "П", "П"],
-  ["П", "П", "П", "П", "П", "П", "П", "П", "П", "П"],
-  ["П", "П", "П", "П", "П", "П", "П", "П", "П", "П"],
-  ["1З2ВВ", "1З2П", "1З2ВН", "1З2Л", "П", "П", "П", "П", "П", "П"]
-];
-
-const LEGACY_LAYOUT = [
-  ["Л1ВН", "П", "П", "П", "1З1Л", "1Щ1ВН", "2З1ВН", "П", "П", "П"],
-  ["П", "П", "П", "П", "П", "В1ВН", "П", "П", "П", "П"],
-  ["3З1П", "П", "П", "П", "4З1Л", "2Щ1ВН", "1Т1ВН", "П", "П", "П"],
-  ["5З1ВН", "П", "2Т1П", "П", "1З2ВВ", "П", "2З2ВН", "П", "П", "П"],
-  ["П", "П", "П", "6З1ВВ", "П", "7З1ВН", "П", "1Т2Л", "П", "3З2ВВ"],
-  ["П", "П", "П", "2Т2ВН", "1Щ2ВВ", "4З2П", "П", "П", "П", "5З2Л"],
-  ["П", "П", "П", "П", "В2ВВ", "П", "П", "П", "П", "П"],
-  ["П", "П", "П", "6З2ВВ", "2Щ2ВВ", "7З2П", "П", "П", "П", "Л2ВВ"]
-];
-
-const STARTING_LAYOUT_ORDER = ["basic", "modern", "legacy"];
-
-const STARTING_LAYOUTS = {
-  basic: { label: "Базовая", tokens: BASE_LAYOUT },
-  modern: { label: "Модерн", tokens: MODERN_LAYOUT },
-  legacy: { label: "Легаси", tokens: LEGACY_LAYOUT }
-};
-
-const DEFAULT_LAYOUT_KEY = "basic";
-
-const TOKEN_MAP = {
-  П: null,
-
-  // === Лазеры ===
-  "Л1ВВ": { type: "laser", player: "light", orientation: 0 },
-  "Л1П":  { type: "laser", player: "light", orientation: 1 },
-  "Л1ВН": { type: "laser", player: "light", orientation: 2 },
-  "Л1Л":  { type: "laser", player: "light", orientation: 3 },
-
-  "Л2ВВ": { type: "laser", player: "shadow", orientation: 0 },
-  "Л2П":  { type: "laser", player: "shadow", orientation: 1 },
-  "Л2ВН": { type: "laser", player: "shadow", orientation: 2 },
-  "Л2Л":  { type: "laser", player: "shadow", orientation: 3 },
-
-  // === Волхвы ===
-  "В1ВВ": { type: "volhv", player: "light", orientation: 0 },
-  "В1П":  { type: "volhv", player: "light", orientation: 1 },
-  "В1ВН": { type: "volhv", player: "light", orientation: 2 },
-  "В1Л":  { type: "volhv", player: "light", orientation: 3 },
-
-  "В2ВВ": { type: "volhv", player: "shadow", orientation: 0 },
-  "В2П":  { type: "volhv", player: "shadow", orientation: 1 },
-  "В2ВН": { type: "volhv", player: "shadow", orientation: 2 },
-  "В2Л":  { type: "volhv", player: "shadow", orientation: 3 },
-
-  // === Зеркала Light (З1) ===
-  "1З1ВВ": { type: "mirror", player: "light", orientation: 0 },
-  "1З1П":  { type: "mirror", player: "light", orientation: 1 },
-  "1З1ВН": { type: "mirror", player: "light", orientation: 2 },
-  "1З1Л":  { type: "mirror", player: "light", orientation: 3 },
-
-  "2З1ВВ": { type: "mirror", player: "light", orientation: 0 },
-  "2З1П":  { type: "mirror", player: "light", orientation: 1 },
-  "2З1ВН": { type: "mirror", player: "light", orientation: 2 },
-  "2З1Л":  { type: "mirror", player: "light", orientation: 3 },
-
-  "3З1ВВ": { type: "mirror", player: "light", orientation: 0 },
-  "3З1П":  { type: "mirror", player: "light", orientation: 1 },
-  "3З1ВН": { type: "mirror", player: "light", orientation: 2 },
-  "3З1Л":  { type: "mirror", player: "light", orientation: 3 },
-
-  "4З1ВВ": { type: "mirror", player: "light", orientation: 0 },
-  "4З1П":  { type: "mirror", player: "light", orientation: 1 },
-  "4З1ВН": { type: "mirror", player: "light", orientation: 2 },
-  "4З1Л":  { type: "mirror", player: "light", orientation: 3 },
-
-  "5З1ВВ": { type: "mirror", player: "light", orientation: 0 },
-  "5З1П":  { type: "mirror", player: "light", orientation: 1 },
-  "5З1ВН": { type: "mirror", player: "light", orientation: 2 },
-  "5З1Л":  { type: "mirror", player: "light", orientation: 3 },
-
-  "6З1ВВ": { type: "mirror", player: "light", orientation: 0 },
-  "6З1П":  { type: "mirror", player: "light", orientation: 1 },
-  "6З1ВН": { type: "mirror", player: "light", orientation: 2 },
-  "6З1Л":  { type: "mirror", player: "light", orientation: 3 },
-
-  "7З1ВВ": { type: "mirror", player: "light", orientation: 0 },
-  "7З1П":  { type: "mirror", player: "light", orientation: 1 },
-  "7З1ВН": { type: "mirror", player: "light", orientation: 2 },
-  "7З1Л":  { type: "mirror", player: "light", orientation: 3 },
-
-  // === Зеркала Shadow (З2) ===
-  "1З2ВВ": { type: "mirror", player: "shadow", orientation: 0 },
-  "1З2П":  { type: "mirror", player: "shadow", orientation: 1 },
-  "1З2ВН": { type: "mirror", player: "shadow", orientation: 2 },
-  "1З2Л":  { type: "mirror", player: "shadow", orientation: 3 },
-
-  "2З2ВВ": { type: "mirror", player: "shadow", orientation: 0 },
-  "2З2П":  { type: "mirror", player: "shadow", orientation: 1 },
-  "2З2ВН": { type: "mirror", player: "shadow", orientation: 2 },
-  "2З2Л":  { type: "mirror", player: "shadow", orientation: 3 },
-
-  "3З2ВВ": { type: "mirror", player: "shadow", orientation: 0 },
-  "3З2П":  { type: "mirror", player: "shadow", orientation: 1 },
-  "3З2ВН": { type: "mirror", player: "shadow", orientation: 2 },
-  "3З2Л":  { type: "mirror", player: "shadow", orientation: 3 },
-
-  "4З2ВВ": { type: "mirror", player: "shadow", orientation: 0 },
-  "4З2П":  { type: "mirror", player: "shadow", orientation: 1 },
-  "4З2ВН": { type: "mirror", player: "shadow", orientation: 2 },
-  "4З2Л":  { type: "mirror", player: "shadow", orientation: 3 },
-
-  "5З2ВВ": { type: "mirror", player: "shadow", orientation: 0 },
-  "5З2П":  { type: "mirror", player: "shadow", orientation: 1 },
-  "5З2ВН": { type: "mirror", player: "shadow", orientation: 2 },
-  "5З2Л":  { type: "mirror", player: "shadow", orientation: 3 },
-
-  "6З2ВВ": { type: "mirror", player: "shadow", orientation: 0 },
-  "6З2П":  { type: "mirror", player: "shadow", orientation: 1 },
-  "6З2ВН": { type: "mirror", player: "shadow", orientation: 2 },
-  "6З2Л":  { type: "mirror", player: "shadow", orientation: 3 },
-
-  "7З2ВВ": { type: "mirror", player: "shadow", orientation: 0 },
-  "7З2П":  { type: "mirror", player: "shadow", orientation: 1 },
-  "7З2ВН": { type: "mirror", player: "shadow", orientation: 2 },
-  "7З2Л":  { type: "mirror", player: "shadow", orientation: 3 },
-
-  // === Щиты ===
-  "1Щ1ВВ": { type: "shield", player: "light", orientation: 0 },
-  "1Щ1П":  { type: "shield", player: "light", orientation: 1 },
-  "1Щ1ВН": { type: "shield", player: "light", orientation: 2 },
-  "1Щ1Л":  { type: "shield", player: "light", orientation: 3 },
-
-  "1Щ2ВВ": { type: "shield", player: "shadow", orientation: 0 },
-  "1Щ2П":  { type: "shield", player: "shadow", orientation: 1 },
-  "1Щ2ВН": { type: "shield", player: "shadow", orientation: 2 },
-  "1Щ2Л":  { type: "shield", player: "shadow", orientation: 3 },
-
-  "2Щ1ВВ": { type: "shield", player: "light", orientation: 0 },
-  "2Щ1П":  { type: "shield", player: "light", orientation: 1 },
-  "2Щ1ВН": { type: "shield", player: "light", orientation: 2 },
-  "2Щ1Л":  { type: "shield", player: "light", orientation: 3 },
-
-  "2Щ2ВВ": { type: "shield", player: "shadow", orientation: 0 },
-  "2Щ2П":  { type: "shield", player: "shadow", orientation: 1 },
-  "2Щ2ВН": { type: "shield", player: "shadow", orientation: 2 },
-  "2Щ2Л":  { type: "shield", player: "shadow", orientation: 3 },
-
-  // === Тотемы ===
-  "1Т1ВВ": { type: "totem", player: "light", orientation: 0 },
-  "1Т1П":  { type: "totem", player: "light", orientation: 1 },
-  "1Т1ВН": { type: "totem", player: "light", orientation: 2 },
-  "1Т1Л":  { type: "totem", player: "light", orientation: 3 },
-
-  "1Т2ВВ": { type: "totem", player: "shadow", orientation: 0 },
-  "1Т2П":  { type: "totem", player: "shadow", orientation: 1 },
-  "1Т2ВН": { type: "totem", player: "shadow", orientation: 2 },
-  "1Т2Л":  { type: "totem", player: "shadow", orientation: 3 },
-
-  "2Т1ВВ": { type: "totem", player: "light", orientation: 0 },
-  "2Т1П":  { type: "totem", player: "light", orientation: 1 },
-  "2Т1ВН": { type: "totem", player: "light", orientation: 2 },
-  "2Т1Л":  { type: "totem", player: "light", orientation: 3 },
-
-  "2Т2ВВ": { type: "totem", player: "shadow", orientation: 0 },
-  "2Т2П":  { type: "totem", player: "shadow", orientation: 1 },
-  "2Т2ВН": { type: "totem", player: "shadow", orientation: 2 },
-  "2Т2Л":  { type: "totem", player: "shadow", orientation: 3 }
-};
-
-const BOARD_HEIGHT = STARTING_LAYOUTS[DEFAULT_LAYOUT_KEY].tokens.length;
-const BOARD_WIDTH = STARTING_LAYOUTS[DEFAULT_LAYOUT_KEY].tokens[0].length;
-const FILES = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".slice(0, BOARD_WIDTH);
-const THEME_STORAGE_KEY = "laser-theme";
-const DEFAULT_SERVER_URL = "wss://mazepark-1.onrender.com";
-const BASE_EFFECT_CLASS = "piece-effect--impact";
-
-const PLAYERS = {
-  light: {
-    name: "Первый игрок",
-    glyph: "☼",
-    laserName: "Луч первого Игрока"
-  },
-  shadow: {
-    name: "Второй Игрок",
-    glyph: "☽",
-    laserName: "Луч второго игрока"
-  }
-};
-
-const PIECE_DEFS = {
-  laser: {
-    name: "Луч",
-    canRotate: true,
-    description: "После действия активного игрока излучает свет. Не двигается и неуязвим, можно лишь поворачивать направление луча.",
-    movement: () => []
-  },
-  volhv: {
-    name: "Герой",
-    canRotate: false,
-    description: "Главная фигура. Ходит на одну клетку в любом направлении. Попадание луча в Героя заканчивает партию.",
-    movement: (board, x, y, piece) => adjacentMoves(board, x, y, piece)
-  },
-  mirror: {
-    name: "Зеркало",
-    canRotate: true,
-    description: "Вещь с отражательным эффектом. Одна зеркальная сторона. Отражает луч под прямым углом,уязвимо с открытых сторон.",
-    movement: (board, x, y, piece) => adjacentMoves(board, x, y, piece)
-  },
-  shield: {
-    name: "Щит",
-    canRotate: true,
-    description: "Вещь с защитным эффектом, может гасить луч,но только лицевой стороной. С боков и тыла может быть уничтожена.",
-    movement: (board, x, y, piece) => adjacentMoves(board, x, y, piece)
-  },
-  totem: {
-    name: "Тотем",
-    canRotate: true,
-    description: "Двустороннее зеркало. Отражает луч на 90 градусов с двух сторон. МОЖЕТ МЕНЯТЬСЯ МЕСТАМИ С ЗЕРКАЛОМ ИЛИ ЩИТОМ ПОБЛИЗОСТИ.",
-    movement: (board, x, y, piece) => totemMoves(board, x, y, piece)
-  }
-};
-
-const SKINS = {
-  Slavic: {
-    label: "Славянский орден",
-    preview: "pieces/skins/Slavic/Type1/volhv.png",
-    configPath: "pieces/skins/Slavic/config.json",
-    types: {
-      Type1: {
-        label: "Перун",
-        preview: "pieces/skins/Slavic/Type1/volhv.png",
-        description: "Гром в его жилах, молния — в его кулаке; когда он гневается, небеса плачут огнём."
-      },
-      Type2: {
-        label: "Чернобог",
-        preview: "pieces/skins/Slavic/Type2/volhv.png",
-        description: "Тьма в обличье судьбы — он не приносит хаос, он есть его сердце."
-      }
-    }
-  },
-  Japan: {
-    label: "Япония",
-    preview: "pieces/skins/Japan/Type1/preview.png",
-    configPath: "pieces/skins/Japan/config.json",
-    types: {
-      Type1: {
-        label: "Гейша",
-        preview: "pieces/skins/Japan/Type1/volhv.png",
-        description: "Танцующая тень с клинком в рукаве — её улыбка губительней цунами."
-      },
-      Type2: {
-        label: "Император",
-        preview: "pieces/skins/Japan/Type2/volhv.png",
-        description: "Железная воля в шелках, владыка восходящего солнца, чей взор смиряет саму бурю."
-      }
-    }
-  },
-  Greece: {
-    label: "Греция",
-    preview: "pieces/skins/Greece/Type1/preview.png",
-    configPath: "pieces/skins/Greece/config.json",
-    types: {
-      Type1: {
-        label: "Легионер",
-        preview: "pieces/skins/Greece/Type1/volhv.png",
-        description: "Щит эллинов и меч порядка — он не отступает, он становится легендой."
-      },
-      Type2: {
-        label: "Амазонка",
-        preview: "pieces/skins/Greece/Type2/volhv.png",
-        description: "Гроза фаланг и певица битвы — она сражается не за победу, а за славу."
-      }
-    }
-  },
-  Lavcraft: {
-    label: "Говард Лавкрафт",
-    preview: "pieces/skins/Lavcraft/Type1/preview.png",
-    configPath: "pieces/skins/Lavcraft/config.json",
-    types: {
-      Type1: {
-        label: "Ктулху",
-        preview: "pieces/skins/Lavcraft/Type1/volhv.png",
-        description: "Сон ужаса, что спит под волнами — и в чьём пробуждении гибнет разум."
-      },
-      Type2: {
-        label: "Жрец ордена",
-        preview: "pieces/skins/Lavcraft/Type2/volhv.png",
-        description: "Голос Безумного Бога на земле — каждый его ритуал рвёт завесу между мирами."
-      }
-    }
-  },
-  Egypt: {
-    label: "Египет",
-    preview: "pieces/skins/Egypt/Type1/preview.png",
-    configPath: "pieces/skins/Egypt/config.json",
-    types: {
-      Type1: {
-        label: "Наложница",
-        preview: "pieces/skins/Egypt/Type1/volhv.png",
-        description: "Яд в амбре, шепот в царской ночи — её любовь рушит империи."
-      },
-      Type2: {
-        label: "Фараон",
-        preview: "pieces/skins/Egypt/Type2/volhv.png",
-        description: "Бог на троне из песка и золота, чей приказ вечен, как сама вечность."
-      }
-    }
-  },
-  premium: {
-    label: "Премиум",
-    preview: "pieces/skins/premium/Type1/volhv.png",
-    configPath: "pieces/skins/premium/config.json",
-    types: {
-      Type1: {
-        label: "Божество",
-        preview: "pieces/skins/premium/Type1/volhv.png",
-        description: "Тот, кто пишет реальность пальцем на воде — и стирает её одним вздохом."
-      },
-      Type2: {
-        label: "Программист",
-        preview: "pieces/skins/premium/Type1/volhv.png",
-        description: "Архитектор космоса из нулей и единиц — его баги становятся законами физики."
-      }
-    }
-  },
-  Arnuvo: {
-    label: "Arnuvo",
-    preview: "pieces/skins/premium/Type1/volhv.png",
-    configPath: "pieces/skins/Arnuvo/config.json",
-    types: {
-      Type1: {
-        label: "Эфридика",
-        preview: "data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%20120%20120%27%3E%0A%20%20%3Crect%20width%3D%27120%27%20height%3D%27120%27%20rx%3D%2722%27%20fill%3D%27%23fde4f8%27/%3E%0A%20%20%3Ccircle%20cx%3D%2760%27%20cy%3D%2746%27%20r%3D%2730%27%20fill%3D%27%23f8bbd0%27/%3E%0A%20%20%3Cpath%20d%3D%27M60%2028c16%2010%2028%2022%2028%2034%200%2016-13%2030-28%2030s-28-14-28-30c0-12%2012-24%2028-34z%27%20fill%3D%27%23f06292%27/%3E%0A%20%20%3Ctext%20x%3D%2760%27%20y%3D%2792%27%20text-anchor%3D%27middle%27%20font-family%3D%27Montserrat%2CArial%27%20font-size%3D%2720%27%20fill%3D%27%237b1fa2%27%3E%D0%AD%D1%84%3C/text%3E%0A%3C/svg%3E",
-        description: "Нежно-розовый лазер, чьё прикосновение оставляет после себя парящий лепестковый шлейф.",
-        assetBase: "premium/Type1"
-      },
-      Type2: {
-        label: "Серсея",
-        preview: "data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%20120%20120%27%3E%0A%20%20%3Crect%20width%3D%27120%27%20height%3D%27120%27%20rx%3D%2722%27%20fill%3D%27%23fbe9f2%27/%3E%0A%20%20%3Ccircle%20cx%3D%2760%27%20cy%3D%2746%27%20r%3D%2730%27%20fill%3D%27%23f3d1ff%27/%3E%0A%20%20%3Cpath%20d%3D%27M34%2074c10%2012%2026%2018%2026%2018s16-6%2026-18c6-8%206-18%200-28-6-10-18-16-26-16s-20%206-26%2016c-6%2010-6%2020%200%2028z%27%20fill%3D%27%23ce93d8%27/%3E%0A%20%20%3Ctext%20x%3D%2760%27%20y%3D%2792%27%20text-anchor%3D%27middle%27%20font-family%3D%27Montserrat%2CArial%27%20font-size%3D%2720%27%20fill%3D%27%236a1b9a%27%3E%D0%A1%D0%B5%3C/text%3E%0A%3C/svg%3E",
-        description: "Розовый луч с бархатной дымкой и разрушение фигур в виде распускающейся розы.",
-        assetBase: "premium/Type1"
-      }
-    }
-  }
-};
-
-const DEFAULT_SKIN_SELECTION = {
-  light: { skin: "Slavic", type: "Type1" },
-  shadow: { skin: "Slavic", type: "Type2" }
-};
-
-const AVAILABLE_SKINS = SKINS;
-const DEFAULT_PLAYER_SKINS = DEFAULT_SKIN_SELECTION;
-let playerSkins = cloneSkinSelection(DEFAULT_SKIN_SELECTION);
-
-const skinConfigCache = {};
-const skinConfigPromises = {};
-const skinAudioCache = new Map();
 
 const DIRECTIONS = [
   { dx: 0, dy: -1 }, // вверх
@@ -395,24 +34,20 @@ const DIAGONALS = [
 
 const ADJACENT = [...DIRECTIONS, ...DIAGONALS];
 
-let currentLayoutKey = DEFAULT_LAYOUT_KEY;
-let board = createEmptyBoard();
-let currentPlayer = "light";
-let selectedCell = null;
-let currentOptions = [];
-let turnCounter = 1;
-let currentTheme = "dark";
-let lastStatusMessage = "";
-let lastLaserResult = null;
-let lastLaserEffectSignature = null;
-let lastLaserEffectTimestamp = 0;
-let lastMove = null;
-let skinSelection = cloneSkinSelection(DEFAULT_SKIN_SELECTION);
-let pendingSkins = cloneSkinSelection(DEFAULT_SKIN_SELECTION);
+const skinLibrary = new SkinLibrary();
+const skinStore = new SkinStore(skinLibrary);
+const gameState = new GameState({
+  defaultLayoutKey: DEFAULT_LAYOUT_KEY,
+  width: BOARD_WIDTH,
+  height: BOARD_HEIGHT
+});
 let onlineSelectedRole = null;
+const galleryInstances = {
+  online: null,
+  offline: { light: null, shadow: null }
+};
 
-preloadSkinConfigs(DEFAULT_SKIN_SELECTION);
-
+let currentTheme = "dark";
 const elements = {
   board: document.getElementById("board"),
   status: document.getElementById("status"),
@@ -490,22 +125,35 @@ const elements = {
 const cells = [];
 const multiplayer = createMultiplayerController();
 
-initialiseBoardGrid();
-setupSkinSelectionUI();
-initialiseLayoutControls();
-attachEventListeners();
-initialiseTheme();
-multiplayer.init();
-startNewGame();
-showStartScreen();
+async function bootstrap() {
+  try {
+    const manifest = await skinLibrary.load();
+    if (manifest && typeof manifest === "object") {
+      skinLibrary.setDefaults(skinLibrary.defaults);
+    }
+  } catch (error) {
+    console.error("Не удалось загрузить манифест скинов:", error);
+  } finally {
+    skinStore.reset({ defaults: skinLibrary.defaults });
+    preloadSkinConfigs(skinStore.getAllActual());
+
+    initialiseBoardGrid();
+    setupSkinSelectionUI();
+    initialiseLayoutControls();
+    attachEventListeners();
+    initialiseTheme();
+    multiplayer.init();
+    startNewGame();
+    showStartScreen();
+  }
+}
+
+bootstrap();
 
 function startNewGame() {
   applySelectedLayoutFromControls();
-  lastMove = null;
-  board = createEmptyBoard();
+  gameState.reset({ layoutKey: gameState.layoutKey });
   placeInitialPieces();
-  currentPlayer = "light";
-  turnCounter = 1;
   clearLaserPath();
   clearEffectsOverlay();
   updateTurnIndicator();
@@ -518,27 +166,18 @@ function startNewGame() {
 }
 
 function createEmptyBoard() {
-  return Array.from({ length: BOARD_HEIGHT }, () => Array(BOARD_WIDTH).fill(null));
-}
-
-function normaliseLayoutKey(key) {
-  return STARTING_LAYOUTS[key] ? key : DEFAULT_LAYOUT_KEY;
-}
-
-function getLayoutTokens(layoutKey) {
-  const key = normaliseLayoutKey(layoutKey);
-  return STARTING_LAYOUTS[key].tokens;
+  return gameState.createEmptyBoard();
 }
 
 function placeInitialPieces() {
-  const layout = getLayoutTokens(currentLayoutKey);
+  const layout = getLayoutTokens(gameState.layoutKey);
   for (let y = 0; y < BOARD_HEIGHT; y++) {
     for (let x = 0; x < BOARD_WIDTH; x++) {
       const row = layout[y] || [];
       const token = row[x];
       const spec = TOKEN_MAP[token];
       if (spec) {
-        board[y][x] = {
+        gameState.board[y][x] = {
           type: spec.type,
           player: spec.player,
           orientation: spec.orientation % 4
@@ -548,60 +187,28 @@ function placeInitialPieces() {
   }
 }
 
-function initialiseSkinControls() {
-  if (elements.onlineSkin) {
-    populateSkinSelect(elements.onlineSkin);
-  }
-  if (elements.onlineType) {
-    populateTypeSelect(elements.onlineType, getPlayerSkin("light").skin);
-  }
-
-  if (elements.offlineLightSkin) {
-    populateSkinSelect(elements.offlineLightSkin);
-  }
-  if (elements.offlineShadowSkin) {
-    populateSkinSelect(elements.offlineShadowSkin);
-  }
-  if (elements.offlineLightType) {
-    populateTypeSelect(elements.offlineLightType, getPlayerSkin("light").skin);
-  }
-  if (elements.offlineShadowType) {
-    populateTypeSelect(elements.offlineShadowType, getPlayerSkin("shadow").skin);
-  }
-
-  updateSkinControls();
-  refreshPieceArt({ silent: true });
+function preloadSkinConfigs(selection) {
+  skinLibrary.preload(selection);
 }
 
-function populateSkinSelect(select) {
-  if (!select) return;
-  const currentValue = select.value;
-  select.innerHTML = "";
-  Object.entries(AVAILABLE_SKINS).forEach(([key, meta]) => {
-    const option = document.createElement("option");
-    option.value = key;
-    option.textContent = meta.label;
-    select.appendChild(option);
-  });
-  if (currentValue && AVAILABLE_SKINS[currentValue]) {
-    select.value = currentValue;
-  }
+function ensureSkinConfig(skinKey) {
+  return skinLibrary.ensureSkinConfig(skinKey);
 }
 
-function populateTypeSelect(select, skinKey) {
-  if (!select) return;
-  const skin = AVAILABLE_SKINS[skinKey] || AVAILABLE_SKINS.Slavic;
-  const currentValue = select.value;
-  select.innerHTML = "";
-  Object.entries(skin.types).forEach(([typeKey, meta]) => {
-    const option = document.createElement("option");
-    option.value = typeKey;
-    option.textContent = meta.label;
-    select.appendChild(option);
-  });
-  if (currentValue && skin.types[currentValue]) {
-    select.value = currentValue;
-  }
+function getSkinConfig(selection) {
+  return skinLibrary.getConfig(selection);
+}
+
+function getPlayerSkin(player) {
+  return skinStore.getActual(player);
+}
+
+function getPendingSkin(player) {
+  return skinStore.getPending(player);
+}
+
+function normaliseSkinChoice(player, skinKey, typeKey) {
+  return skinLibrary.normaliseSelection(player, skinKey, typeKey, skinStore.getDefault(player));
 }
 
 function updateSkinControls() {
@@ -610,58 +217,263 @@ function updateSkinControls() {
   updateSkinPreviews();
 }
 
-function updateOfflineSkinControls() {
-  const players = ["light", "shadow"];
-  for (const player of players) {
-    const skinSelect = player === "light" ? elements.offlineLightSkin : elements.offlineShadowSkin;
-    const typeSelect = player === "light" ? elements.offlineLightType : elements.offlineShadowType;
-    const selection = getPlayerSkin(player);
-    const other = player === "light" ? "shadow" : "light";
-    const otherSelection = getPlayerSkin(other);
-
-    if (skinSelect) {
-      populateSkinSelect(skinSelect);
-      skinSelect.value = selection.skin;
-    }
-    if (typeSelect) {
-      populateTypeSelect(typeSelect, selection.skin);
-      Array.from(typeSelect.options).forEach((option) => {
-        option.disabled = otherSelection.skin === selection.skin && otherSelection.type === option.value;
-      });
-      typeSelect.value = selection.type;
-    }
+function populateSkinSelect(select) {
+  if (!select) return;
+  const previous = select.value;
+  select.innerHTML = "";
+  skinLibrary.getSkinKeys().forEach((skinKey) => {
+    const meta = skinLibrary.getSkinMeta(skinKey);
+    if (!meta) return;
+    const option = document.createElement("option");
+    option.value = skinKey;
+    option.textContent = skinLibrary.getLabel(skinKey);
+    select.appendChild(option);
+  });
+  if (previous && skinLibrary.getSkinMeta(previous)) {
+    select.value = previous;
+  } else if (!select.value && select.options.length > 0) {
+    select.selectedIndex = 0;
   }
 }
 
-function updateOnlineSkinControls() {
-  if (!elements.onlineSkin || !elements.onlineType) return;
-  populateSkinSelect(elements.onlineSkin);
-
-  const checkedRole = getCheckedRole();
-  if (checkedRole) {
-    selectedOnlineRole = checkedRole;
-  }
-
-  const role = selectedOnlineRole;
-  elements.onlineSkin.disabled = !role;
-  elements.onlineType.disabled = !role;
-
-  if (!role) {
-    elements.onlineType.innerHTML = "";
-    updateSkinPreviews();
+function populateTypeSelect(select, skinKey, { player = null } = {}) {
+  if (!select) return;
+  select.innerHTML = "";
+  const skinMeta = skinLibrary.getSkinMeta(skinKey);
+  if (!skinMeta || !skinMeta.types) {
+    select.disabled = true;
     return;
   }
-
-  const selection = getPlayerSkin(role);
-  const other = role === "light" ? "shadow" : "light";
-  const otherSelection = getPlayerSkin(other);
-
-  elements.onlineSkin.value = selection.skin;
-  populateTypeSelect(elements.onlineType, selection.skin);
-  Array.from(elements.onlineType.options).forEach((option) => {
-    option.disabled = otherSelection.skin === selection.skin && otherSelection.type === option.value;
+  const opponent = player ? (player === "light" ? "shadow" : "light") : null;
+  const opponentPending = opponent ? getPendingSkin(opponent) : null;
+  Object.entries(skinMeta.types).forEach(([typeKey, typeMeta]) => {
+    const option = document.createElement("option");
+    option.value = typeKey;
+    option.textContent = typeMeta.label || typeKey;
+    if (opponentPending && opponentPending.skin === skinKey && opponentPending.type === typeKey) {
+      option.disabled = true;
+    }
+    select.appendChild(option);
   });
-  elements.onlineType.value = selection.type;
+  select.disabled = false;
+}
+
+function updateOfflineSkinControls() {
+  if (!elements.offlineFields) return;
+  Object.entries(elements.offlineFields).forEach(([player, fieldset]) => {
+    if (!fieldset) return;
+    const pending = getPendingSkin(player);
+    if (fieldset.skin) {
+      populateSkinSelect(fieldset.skin);
+      fieldset.skin.value = pending.skin;
+    }
+    if (fieldset.type) {
+      populateTypeSelect(fieldset.type, pending.skin, { player });
+      const option = getFirstAvailableOption(fieldset.type, pending.type);
+      if (option) {
+        fieldset.type.value = option;
+        setPendingSkin(player, pending.skin, option);
+      }
+    }
+    if (galleryInstances.offline[player]) {
+      galleryInstances.offline[player].setSelection(pending.skin, pending.type);
+    }
+  });
+  updateOfflineConflict();
+}
+
+function updateOnlineSkinControls() {
+  if (!elements.onlineSkinSelect || !elements.onlineTypeSelect) return;
+  populateSkinSelect(elements.onlineSkinSelect);
+  const role = onlineSelectedRole;
+  elements.onlineSkinSelect.disabled = !role;
+  elements.onlineTypeSelect.disabled = !role;
+  if (!role) {
+    elements.onlineTypeSelect.innerHTML = "";
+    return;
+  }
+  const pending = getPendingSkin(role);
+  const opponent = role === "light" ? "shadow" : "light";
+  const opponentActual = getPlayerSkin(opponent);
+  elements.onlineSkinSelect.value = pending.skin;
+  populateTypeSelect(elements.onlineTypeSelect, pending.skin, { player: role });
+  Array.from(elements.onlineTypeSelect.options).forEach((option) => {
+    option.disabled = opponentActual.skin === pending.skin && opponentActual.type === option.value;
+  });
+  const preferred = getFirstAvailableOption(elements.onlineTypeSelect, pending.type);
+  if (preferred) {
+    elements.onlineTypeSelect.value = preferred;
+    setPendingSkin(role, pending.skin, preferred);
+  }
+}
+
+function syncOfflineSelectorsWithPending() {
+  if (!elements.offlineFields) return;
+  Object.keys(elements.offlineFields).forEach((player) => {
+    const fieldset = elements.offlineFields[player];
+    if (!fieldset) return;
+    const pending = getPendingSkin(player);
+    if (fieldset.skin) {
+      fieldset.skin.value = pending.skin;
+    }
+    if (fieldset.type) {
+      populateTypeSelect(fieldset.type, pending.skin, { player });
+      fieldset.type.value = getFirstAvailableOption(fieldset.type, pending.type) || pending.type;
+    }
+    if (galleryInstances.offline[player]) {
+      galleryInstances.offline[player].setSelection(pending.skin, pending.type);
+    }
+  });
+}
+
+function handleOfflineSkinChange(player, preferredType = null) {
+  const fieldset = elements.offlineFields[player];
+  if (!fieldset || !fieldset.skin) return;
+  const skin = fieldset.skin.value;
+  populateTypeSelect(fieldset.type, skin, { player });
+  const type = getFirstAvailableOption(fieldset.type, preferredType || getPendingSkin(player).type);
+  if (fieldset.type && type) {
+    fieldset.type.value = type;
+  }
+  setPendingSkin(player, skin, type);
+  if (galleryInstances.offline[player]) {
+    galleryInstances.offline[player].setSelection(skin, type);
+  }
+  updateOfflinePreview(player);
+  updateOfflineConflict();
+}
+
+function handleOfflineTypeChange(player) {
+  const fieldset = elements.offlineFields[player];
+  if (!fieldset || !fieldset.type) return;
+  const type = fieldset.type.value;
+  if (!type || fieldset.type.selectedOptions[0]?.disabled) {
+    const fallback = getFirstAvailableOption(fieldset.type);
+    if (fallback) {
+      fieldset.type.value = fallback;
+    }
+  }
+  const skin = fieldset.skin ? fieldset.skin.value : getPendingSkin(player).skin;
+  const selectedType = fieldset.type ? fieldset.type.value : getPendingSkin(player).type;
+  setPendingSkin(player, skin, selectedType);
+  if (galleryInstances.offline[player]) {
+    galleryInstances.offline[player].setSelection(skin, selectedType);
+  }
+  updateOfflinePreview(player);
+  updateOfflineConflict();
+}
+
+function handleOnlineRoleChange(role) {
+  onlineSelectedRole = role || null;
+  skinStore.setOnlineRole(onlineSelectedRole, { silent: true });
+  updateOnlineSkinControls();
+  updateOnlinePreview();
+  updateOnlineWarning();
+}
+
+function handleOnlineSkinChange(preferredType = null) {
+  if (!onlineSelectedRole || !elements.onlineSkinSelect) return;
+  const skin = elements.onlineSkinSelect.value;
+  const current = getPendingSkin(onlineSelectedRole);
+  const desiredType = preferredType || current.type;
+  populateTypeSelect(elements.onlineTypeSelect, skin, { player: onlineSelectedRole });
+  const type = getFirstAvailableOption(elements.onlineTypeSelect, desiredType);
+  if (type) {
+    elements.onlineTypeSelect.value = type;
+  }
+  const appliedType = elements.onlineTypeSelect ? elements.onlineTypeSelect.value : type || desiredType;
+  setPendingSkin(onlineSelectedRole, skin, appliedType);
+  if (galleryInstances.online) {
+    galleryInstances.online.setSelection(skin, appliedType);
+  }
+  updateOnlinePreview();
+  if (multiplayer.isActive() && typeof multiplayer.getRole === "function" && multiplayer.getRole() === onlineSelectedRole) {
+    applyPendingSkin(onlineSelectedRole);
+  }
+  updateOnlineWarning();
+}
+
+function handleOnlineTypeChange() {
+  if (!onlineSelectedRole || !elements.onlineTypeSelect) return;
+  const option = elements.onlineTypeSelect.selectedOptions[0];
+  if (option && option.disabled) {
+    const fallback = getFirstAvailableOption(elements.onlineTypeSelect);
+    if (fallback) {
+      elements.onlineTypeSelect.value = fallback;
+    }
+  }
+  const skin = elements.onlineSkinSelect ? elements.onlineSkinSelect.value : getPendingSkin(onlineSelectedRole).skin;
+  const type = elements.onlineTypeSelect.value;
+  setPendingSkin(onlineSelectedRole, skin, type);
+  if (galleryInstances.online) {
+    galleryInstances.online.setSelection(skin, type);
+  }
+  updateOnlinePreview();
+  if (multiplayer.isActive() && typeof multiplayer.getRole === "function" && multiplayer.getRole() === onlineSelectedRole) {
+    applyPendingSkin(onlineSelectedRole);
+  }
+  updateOnlineWarning();
+}
+
+function getFirstAvailableOption(select, preferred) {
+  if (!select) return null;
+  const options = Array.from(select.options);
+  if (preferred) {
+    const match = options.find((option) => option.value === preferred && !option.disabled);
+    if (match) {
+      return match.value;
+    }
+  }
+  const fallback = options.find((option) => !option.disabled);
+  return fallback ? fallback.value : null;
+}
+
+function updateOfflineConflict() {
+  if (!elements.offlineConflict) return;
+  const light = getPendingSkin("light");
+  const shadow = getPendingSkin("shadow");
+  const conflict = light.skin === shadow.skin && light.type === shadow.type;
+  elements.offlineConflict.hidden = !conflict;
+  elements.offlineConflict.textContent = conflict ? "Обе стороны не могут использовать одинаковый скин." : "";
+  if (elements.offlineStart) {
+    elements.offlineStart.disabled = conflict;
+  }
+}
+
+function updateOfflinePreview(player) {
+  const fieldset = elements.offlineFields[player];
+  if (!fieldset) return;
+  const pending = getPendingSkin(player);
+  const previewPath = getSkinPreviewPath(pending.skin, pending.type);
+  if (fieldset.preview) {
+    fieldset.preview.src = previewPath;
+    fieldset.preview.alt = `${getSkinLabel(pending.skin)} — ${getTypeLabel(pending.skin, pending.type)}`;
+  }
+  if (fieldset.label) {
+    fieldset.label.textContent = `${getSkinLabel(pending.skin)} — ${getTypeLabel(pending.skin, pending.type)}`;
+  }
+  if (fieldset.description) {
+    fieldset.description.textContent = getSkinDescription(pending.skin, pending.type);
+  }
+}
+
+function updateOnlinePreview() {
+  if (!elements.onlinePreviewImage || !elements.onlinePreviewLabel) return;
+  if (!onlineSelectedRole) {
+    const fallback = skinStore.getDefault("light");
+    elements.onlinePreviewImage.src = getSkinPreviewPath(fallback.skin, fallback.type);
+    elements.onlinePreviewLabel.textContent = "Выберите сторону и скин";
+    if (elements.onlinePreviewDescription) {
+      elements.onlinePreviewDescription.textContent = "";
+    }
+    return;
+  }
+  const pending = getPendingSkin(onlineSelectedRole);
+  elements.onlinePreviewImage.src = getSkinPreviewPath(pending.skin, pending.type);
+  elements.onlinePreviewLabel.textContent = `${getSkinLabel(pending.skin)} — ${getTypeLabel(pending.skin, pending.type)}`;
+  if (elements.onlinePreviewDescription) {
+    elements.onlinePreviewDescription.textContent = getSkinDescription(pending.skin, pending.type);
+  }
 }
 
 function updateSkinPreviews() {
@@ -677,111 +489,89 @@ function updateSkinPreviews() {
 
   const onlineContainer = document.querySelector("[data-preview-context='online']");
   if (onlineContainer) {
-    const role = selectedOnlineRole || "light";
+    const role = onlineSelectedRole || "light";
     updatePreviewContainer(onlineContainer, getPlayerSkin(role));
   }
 
-  document.querySelectorAll("img[data-legend-player]").forEach((img) => {
-    const player = img.getAttribute("data-legend-player");
-    const piece = img.getAttribute("data-piece");
-    img.src = getPieceAssetPath(piece, player);
-  });
+  updateLegendImages();
 }
 
 function updatePreviewContainer(container, selection) {
-  if (!container) return;
+  if (!container || !selection) return;
   container.querySelectorAll("img[data-piece]").forEach((img) => {
     const piece = img.getAttribute("data-piece");
     img.src = getSkinAssetPath(selection, piece);
   });
 }
 
-function preloadSkinConfigs(selection) {
-  if (!selection) return;
-  const entries = selection.light || selection.shadow ? Object.values(selection) : [selection];
-  entries.forEach((item) => {
-    if (item && item.skin) {
-      ensureSkinConfig(item.skin);
-    }
+function updateLegendImages() {
+  if (!elements.legendImages) return;
+  elements.legendImages.forEach((img) => {
+    const player = img.dataset.player || "light";
+    const piece = img.dataset.piece;
+    if (!piece) return;
+    const selection = getPlayerSkin(player);
+    img.src = getSkinAssetPath(selection, piece);
   });
 }
 
-function ensureSkinConfig(skinKey) {
-  if (!skinKey) {
-    return null;
-  }
-  if (Object.prototype.hasOwnProperty.call(skinConfigCache, skinKey)) {
-    return skinConfigPromises[skinKey] || null;
-  }
-  const meta = AVAILABLE_SKINS[skinKey];
-  if (!meta || !meta.configPath) {
-    skinConfigCache[skinKey] = {};
-    return null;
-  }
-  if (!skinConfigPromises[skinKey] && typeof fetch === "function") {
-    skinConfigPromises[skinKey] = fetch(meta.configPath)
-      .then((response) => (response.ok ? response.json() : null))
-      .then((json) => {
-        skinConfigCache[skinKey] = json && typeof json === "object" ? json : {};
-        return skinConfigCache[skinKey];
-      })
-      .catch(() => {
-        skinConfigCache[skinKey] = {};
-        return skinConfigCache[skinKey];
-      });
-  }
-  if (!skinConfigPromises[skinKey]) {
-    skinConfigCache[skinKey] = {};
-  }
-  return skinConfigPromises[skinKey] || null;
+function setPendingSkin(player, skin, type) {
+  return skinStore.setPending(player, skin, type, { silent: true });
 }
 
-function getSkinConfig(selection) {
-  if (!selection || !selection.skin) {
-    return null;
-  }
-  const cache = skinConfigCache[selection.skin];
-  if (!cache) {
-    return null;
-  }
-  if (selection.type && cache[selection.type]) {
-    return cache[selection.type];
-  }
-  if (cache.default) {
-    return cache.default;
-  }
-  return null;
+function applyPendingSkin(player, { broadcast = true } = {}) {
+  skinStore.applyPending(player, { silent: true });
+  applySkinSelection(skinStore.getAllActual(), { broadcast, preservePendingFor: player });
 }
 
-function getPlayerSkin(player) {
-  const base = playerSkins[player] || DEFAULT_PLAYER_SKINS[player] || DEFAULT_PLAYER_SKINS.light;
-  const normalised = normaliseSkinChoice(player, base.skin, base.type);
-  playerSkins[player] = normalised;
-  return normalised;
+function applyAllPendingSkins({ broadcast = true } = {}) {
+  skinStore.applyAllPending({ silent: true });
+  applySkinSelection(skinStore.getAllActual(), { broadcast });
 }
 
-function normaliseSkinChoice(player, skinKey, typeKey) {
-  const fallback = DEFAULT_PLAYER_SKINS[player] || DEFAULT_PLAYER_SKINS.light;
-  const skinId = AVAILABLE_SKINS[skinKey] ? skinKey : fallback.skin;
-  const skinMeta = AVAILABLE_SKINS[skinId];
-  let typeId = skinMeta.types[typeKey] ? typeKey : fallback.type;
-  if (!skinMeta.types[typeId]) {
-    const firstType = Object.keys(skinMeta.types)[0];
-    typeId = firstType || "Type1";
+function applySkinSelection(selection, { broadcast = true, preservePendingFor = null } = {}) {
+  const updated = skinStore.updateActual(selection, { preservePendingFor, silent: true });
+  preloadSkinConfigs(updated);
+  syncSkinGalleries();
+  updateOfflineSkinControls();
+  updateOnlineSkinControls();
+  renderBoard();
+  updateSkinPreviews();
+  updateOnlineWarning();
+  if (broadcast) {
+    broadcastGameState("skin-change");
   }
-  ensureSkinConfig(skinId);
-  return { skin: skinId, type: typeId };
+}
+
+function syncSkinGalleries() {
+  const snapshot = skinStore.getSnapshot();
+  Object.entries(galleryInstances.offline).forEach(([player, gallery]) => {
+    if (!gallery) return;
+    const pending = snapshot.pending[player];
+    if (pending) {
+      gallery.setSelection(pending.skin, pending.type);
+    }
+  });
+  if (galleryInstances.online && onlineSelectedRole) {
+    const pending = snapshot.pending[onlineSelectedRole];
+    if (pending) {
+      galleryInstances.online.setSelection(pending.skin, pending.type);
+    }
+  }
 }
 
 function assignPlayerSkin(player, skinKey, typeKey, options = {}) {
+  const { suppressBroadcast = false, silent = false, autoResolveConflict = false } = options;
   const requested = normaliseSkinChoice(player, skinKey, typeKey);
-  playerSkins[player] = requested;
-  ensureSkinConfig(requested.skin);
-  preloadSkinConfigs(playerSkins);
-  refreshPieceArt({ silent: options.silent });
-  updateSkinControls();
-  if (!options.silent && !options.suppressBroadcast) {
-    broadcastGameState("skin-update");
+  const nextSelection = skinStore.getAllActual();
+  nextSelection[player] = requested;
+  applySkinSelection(nextSelection, {
+    broadcast: !suppressBroadcast,
+    preservePendingFor: autoResolveConflict ? player : null
+  });
+  if (!silent) {
+    updateSkinControls();
+    updatePiecePanel();
   }
   return { success: true, selection: requested };
 }
@@ -795,18 +585,7 @@ function refreshPieceArt({ silent = false } = {}) {
 }
 
 function getSkinAssetPath(selection, pieceType) {
-  const fallback = DEFAULT_SKIN_SELECTION.light;
-  const skinKey = selection && selection.skin ? selection.skin : fallback.skin;
-  const typeKey = selection && selection.type ? selection.type : fallback.type;
-  const skinMeta = SKINS[skinKey];
-  const typeMeta = skinMeta?.types?.[typeKey];
-  if (typeMeta && typeMeta.assetBase) {
-    return `pieces/skins/${typeMeta.assetBase}/${pieceType}.png`;
-  }
-  if (skinMeta && skinMeta.assetBase) {
-    return `pieces/skins/${skinMeta.assetBase}/${pieceType}.png`;
-  }
-  return `pieces/skins/${skinKey}/${typeKey}/${pieceType}.png`;
+  return skinLibrary.getAssetPath(selection, pieceType);
 }
 
 function getPieceAssetPath(pieceType, player) {
@@ -815,26 +594,7 @@ function getPieceAssetPath(pieceType, player) {
 }
 
 function playSkinSound(playerOrSelection, cue) {
-  if (!cue || typeof Audio !== "function") return;
-  let selection;
-  if (typeof playerOrSelection === "string") {
-    selection = getPlayerSkin(playerOrSelection);
-  } else {
-    selection = playerOrSelection;
-  }
-  if (!selection || !selection.skin) return;
-  const config = getSkinConfig(selection);
-  const url = config && config.sounds ? config.sounds[cue] : null;
-  if (!url) return;
-  const key = `${selection.skin}:${selection.type}:${cue}`;
-  let base = skinAudioCache.get(key);
-  if (!base) {
-    base = new Audio(url);
-    base.preload = "auto";
-    skinAudioCache.set(key, base);
-  }
-  const instance = base.cloneNode(true);
-  instance.play().catch(() => {});
+  skinLibrary.playSound(playerOrSelection, cue, getPlayerSkin);
 }
 
 function getCheckedRole() {
@@ -850,28 +610,6 @@ function clonePlayerSkinsState() {
     light: { ...getPlayerSkin("light") },
     shadow: { ...getPlayerSkin("shadow") }
   };
-}
-
-function applyRemoteSkins(remoteSkins) {
-  if (!remoteSkins) return;
-  const current = {
-    light: getPlayerSkin("light"),
-    shadow: getPlayerSkin("shadow")
-  };
-  const next = {
-    light: current.light,
-    shadow: current.shadow
-  };
-  if (remoteSkins.light) {
-    next.light = normaliseSkinChoice("light", remoteSkins.light.skin, remoteSkins.light.type);
-  }
-  if (remoteSkins.shadow) {
-    next.shadow = normaliseSkinChoice("shadow", remoteSkins.shadow.skin, remoteSkins.shadow.type);
-  }
-  playerSkins = next;
-  preloadSkinConfigs(playerSkins);
-  refreshPieceArt({ silent: true });
-  updateSkinControls();
 }
 
 function hideStartOverlay() {
@@ -899,7 +637,8 @@ function hideConnectionOverlay() {
     elements.connectionOverlay.hidden = true;
     elements.connectionOverlay.setAttribute("aria-hidden", "true");
   }
-  selectedOnlineRole = null;
+  onlineSelectedRole = null;
+  skinStore.setOnlineRole(null, { silent: true });
   updateOnlineSkinControls();
 }
 
@@ -1089,11 +828,10 @@ function attachEventListeners() {
     });
     const roleInputs = elements.connectionForm.querySelectorAll('input[name="role"]');
     roleInputs.forEach((input) => {
-      input.addEventListener("change", () => {
-        selectedOnlineRole = input.value === "shadow" ? "shadow" : "light";
-        updateOnlineSkinControls();
-        updateSkinPreviews();
-      });
+      input.addEventListener("change", () => handleOnlineRoleChange(input.value));
+      if (input.checked) {
+        onlineSelectedRole = input.value === "shadow" ? "shadow" : "light";
+      }
     });
   }
   if (elements.openConnection) {
@@ -1156,14 +894,14 @@ function attachEventListeners() {
 
 function initialiseSkinGalleries() {
   if (elements.onlineSkinGallery) {
-    createSkinGallery(elements.onlineSkinGallery, (skin, type) => {
+    galleryInstances.online = createSkinGallery(elements.onlineSkinGallery, (skin, type) => {
       selectOnlineSkin(skin, type);
     });
   }
   if (elements.offlineFields) {
     Object.entries(elements.offlineFields).forEach(([player, fieldset]) => {
       if (!fieldset || !fieldset.gallery) return;
-      createSkinGallery(fieldset.gallery, (skin, type) => {
+      galleryInstances.offline[player] = createSkinGallery(fieldset.gallery, (skin, type) => {
         selectOfflineSkin(player, skin, type);
       });
     });
@@ -1171,46 +909,12 @@ function initialiseSkinGalleries() {
 }
 
 function createSkinGallery(container, onSelect) {
-  if (!container) return;
-  container.innerHTML = "";
-  Object.entries(SKINS).forEach(([skinKey, skinMeta]) => {
-    ensureSkinConfig(skinKey);
-    Object.entries(skinMeta.types).forEach(([typeKey]) => {
-      const item = document.createElement("button");
-      item.type = "button";
-      item.className = "skin-gallery__item";
-      item.dataset.skin = skinKey;
-      item.dataset.type = typeKey;
-      item.setAttribute("role", "option");
-      item.setAttribute("aria-selected", "false");
-
-      const thumb = document.createElement("div");
-      thumb.className = "skin-gallery__thumb";
-      const img = document.createElement("img");
-      img.src = getSkinPreviewPath(skinKey, typeKey);
-      img.alt = "";
-      thumb.appendChild(img);
-
-      const meta = document.createElement("div");
-      meta.className = "skin-gallery__meta";
-      const skinLabel = document.createElement("span");
-      skinLabel.className = "skin-gallery__skin";
-      skinLabel.textContent = getSkinLabel(skinKey);
-      const name = document.createElement("span");
-      name.className = "skin-gallery__name";
-      name.textContent = getTypeLabel(skinKey, typeKey);
-      meta.append(skinLabel, name);
-
-      item.append(thumb, meta);
-      item.addEventListener("click", () => {
-        if (typeof onSelect === "function") {
-          onSelect(skinKey, typeKey);
-        }
-      });
-
-      container.appendChild(item);
-    });
+  if (!container) return null;
+  const gallery = new SkinGallery(container, skinLibrary, {
+    onSelect
   });
+  gallery.render();
+  return gallery;
 }
 
 function selectOfflineSkin(player, skin, type) {
@@ -1218,6 +922,9 @@ function selectOfflineSkin(player, skin, type) {
   if (!fieldset) return;
   if (fieldset.skin) {
     fieldset.skin.value = skin;
+  }
+  if (galleryInstances.offline[player]) {
+    galleryInstances.offline[player].setSelection(skin, type);
   }
   handleOfflineSkinChange(player, type);
 }
@@ -1229,6 +936,9 @@ function selectOnlineSkin(skin, type) {
   }
   if (elements.onlineSkinSelect) {
     elements.onlineSkinSelect.value = skin;
+  }
+  if (galleryInstances.online) {
+    galleryInstances.online.setSelection(skin, type);
   }
   handleOnlineSkinChange(type);
 }
@@ -1262,7 +972,8 @@ function setupSkinSelectionUI() {
       fieldset.skin.addEventListener("change", () => handleOfflineSkinChange(player));
     }
     if (fieldset.type) {
-      populateTypeSelect(fieldset.type, pendingSkins[player].skin, { player, mode: "pending" });
+      const pending = getPendingSkin(player);
+      populateTypeSelect(fieldset.type, pending.skin, { player });
       fieldset.type.addEventListener("change", () => handleOfflineTypeChange(player));
     }
   }
@@ -1303,12 +1014,12 @@ function populateLayoutOptions(select) {
     option.textContent = layout.label;
     select.appendChild(option);
   });
-  const desired = STARTING_LAYOUTS[previous] ? previous : currentLayoutKey;
+  const desired = STARTING_LAYOUTS[previous] ? previous : gameState.layoutKey;
   select.value = normaliseLayoutKey(desired);
 }
 
 function updateLayoutSelectors() {
-  const key = normaliseLayoutKey(currentLayoutKey);
+  const key = normaliseLayoutKey(gameState.layoutKey);
   if (elements.offlineLayoutSelect) {
     elements.offlineLayoutSelect.value = key;
   }
@@ -1319,16 +1030,16 @@ function updateLayoutSelectors() {
 
 function setCurrentLayout(layoutKey, { silent = false } = {}) {
   const key = normaliseLayoutKey(layoutKey);
-  if (currentLayoutKey === key) {
+  if (gameState.layoutKey === key) {
     updateLayoutSelectors();
-    return currentLayoutKey;
+    return gameState.layoutKey;
   }
-  currentLayoutKey = key;
+  gameState.layoutKey = key;
   updateLayoutSelectors();
   if (!silent && multiplayer.canBroadcast()) {
     broadcastGameState("layout-change");
   }
-  return currentLayoutKey;
+  return gameState.layoutKey;
 }
 
 function applySelectedLayoutFromControls() {
@@ -1338,268 +1049,6 @@ function applySelectedLayoutFromControls() {
       setCurrentLayout(select.value, { silent: true });
     }
   }
-}
-
-function populateSkinSelect(select) {
-  if (!select) return;
-  select.innerHTML = "";
-  Object.entries(SKINS).forEach(([key, skin]) => {
-    const option = document.createElement("option");
-    option.value = key;
-    option.textContent = skin.label;
-    select.appendChild(option);
-  });
-}
-
-function populateTypeSelect(select, skinKey, { player = null, mode = "actual" } = {}) {
-  if (!select) return;
-  select.innerHTML = "";
-  const skin = SKINS[skinKey];
-  if (!skin) {
-    select.disabled = true;
-    return;
-  }
-  Object.entries(skin.types).forEach(([typeKey, typeDef]) => {
-    const option = document.createElement("option");
-    option.value = typeKey;
-    option.textContent = typeDef.label;
-    select.appendChild(option);
-  });
-  select.disabled = false;
-}
-
-function syncOfflineSelectorsWithPending() {
-  for (const player of Object.keys(elements.offlineFields)) {
-    const fieldset = elements.offlineFields[player];
-    if (!fieldset) continue;
-    const pending = pendingSkins[player];
-    if (fieldset.skin && pending) {
-      fieldset.skin.value = pending.skin;
-    }
-    if (fieldset.type) {
-      populateTypeSelect(fieldset.type, pending.skin, { player, mode: "pending" });
-      const available = getFirstAvailableOption(fieldset.type, pending.type);
-      if (available) {
-        fieldset.type.value = available;
-        setPendingSkin(player, pending.skin, available);
-      }
-      updateOfflinePreview(player);
-    }
-  }
-}
-
-function handleOfflineSkinChange(player, preferredType = null) {
-  const fieldset = elements.offlineFields[player];
-  if (!fieldset || !fieldset.skin) return;
-  const skin = fieldset.skin.value;
-  const pending = pendingSkins[player];
-  const desiredType = preferredType || (pending ? pending.type : null);
-  populateTypeSelect(fieldset.type, skin, { player, mode: "pending" });
-  const type = getFirstAvailableOption(fieldset.type, desiredType);
-  if (fieldset.type && type) {
-    fieldset.type.value = type;
-  }
-  setPendingSkin(player, skin, type);
-  updateOfflinePreview(player);
-  updateOfflineConflict();
-}
-
-function handleOfflineTypeChange(player) {
-  const fieldset = elements.offlineFields[player];
-  if (!fieldset || !fieldset.type) return;
-  const selected = fieldset.type.value;
-  if (!selected || fieldset.type.selectedOptions[0]?.disabled) {
-    const fallback = getFirstAvailableOption(fieldset.type);
-    if (fallback) {
-      fieldset.type.value = fallback;
-    }
-  }
-  const skin = fieldset.skin ? fieldset.skin.value : pendingSkins[player].skin;
-  const type = fieldset.type ? fieldset.type.value : pendingSkins[player].type;
-  setPendingSkin(player, skin, type);
-  updateOfflinePreview(player);
-  updateOfflineConflict();
-}
-
-function handleOnlineRoleChange(role) {
-  onlineSelectedRole = role || null;
-  if (!onlineSelectedRole) {
-    if (elements.onlineSkinSelect) {
-      elements.onlineSkinSelect.disabled = true;
-    }
-    if (elements.onlineTypeSelect) {
-      elements.onlineTypeSelect.disabled = true;
-    }
-    updateOnlinePreview();
-    updateOnlineWarning();
-    return;
-  }
-
-  const pending = pendingSkins[onlineSelectedRole] || DEFAULT_SKIN_SELECTION[onlineSelectedRole];
-  if (elements.onlineSkinSelect) {
-    elements.onlineSkinSelect.disabled = false;
-    elements.onlineSkinSelect.value = pending.skin;
-  }
-  if (elements.onlineTypeSelect) {
-    populateTypeSelect(elements.onlineTypeSelect, pending.skin, { player: onlineSelectedRole, mode: "actual" });
-    const type = getFirstAvailableOption(elements.onlineTypeSelect, pending.type);
-    if (type) {
-      elements.onlineTypeSelect.value = type;
-      setPendingSkin(onlineSelectedRole, pending.skin, type);
-    }
-    elements.onlineTypeSelect.disabled = false;
-  }
-
-  updateOnlinePreview();
-  updateOnlineWarning();
-}
-
-function handleOnlineSkinChange(preferredType = null) {
-  if (!onlineSelectedRole || !elements.onlineSkinSelect) {
-    return;
-  }
-  const skin = elements.onlineSkinSelect.value;
-  const current = pendingSkins[onlineSelectedRole] || DEFAULT_SKIN_SELECTION[onlineSelectedRole];
-  const desiredType = preferredType || current.type;
-  if (elements.onlineTypeSelect) {
-    populateTypeSelect(elements.onlineTypeSelect, skin, { player: onlineSelectedRole, mode: "actual" });
-    const type = getFirstAvailableOption(elements.onlineTypeSelect, desiredType);
-    if (type) {
-      elements.onlineTypeSelect.value = type;
-      setPendingSkin(onlineSelectedRole, skin, type);
-    }
-  } else {
-    setPendingSkin(onlineSelectedRole, skin, desiredType);
-  }
-  updateOnlinePreview();
-  if (multiplayer.isActive() && typeof multiplayer.getRole === "function" && multiplayer.getRole() === onlineSelectedRole) {
-    applyPendingSkin(onlineSelectedRole);
-  }
-  updateOnlineWarning();
-}
-
-function handleOnlineTypeChange() {
-  if (!onlineSelectedRole || !elements.onlineTypeSelect) {
-    return;
-  }
-  const option = elements.onlineTypeSelect.selectedOptions[0];
-  if (option && option.disabled) {
-    const fallback = getFirstAvailableOption(elements.onlineTypeSelect);
-    if (fallback) {
-      elements.onlineTypeSelect.value = fallback;
-    }
-  }
-  const skin = elements.onlineSkinSelect ? elements.onlineSkinSelect.value : pendingSkins[onlineSelectedRole].skin;
-  const type = elements.onlineTypeSelect.value;
-  setPendingSkin(onlineSelectedRole, skin, type);
-  updateOnlinePreview();
-  if (multiplayer.isActive() && typeof multiplayer.getRole === "function" && multiplayer.getRole() === onlineSelectedRole) {
-    applyPendingSkin(onlineSelectedRole);
-  }
-  updateOnlineWarning();
-}
-
-function getFirstAvailableOption(select, preferred) {
-  if (!select) return null;
-  const options = Array.from(select.options);
-  if (preferred) {
-    const found = options.find((option) => option.value === preferred && !option.disabled);
-    if (found) {
-      return found.value;
-    }
-  }
-  const fallback = options.find((option) => !option.disabled);
-  return fallback ? fallback.value : null;
-}
-
-function updateOfflineConflict() {
-  if (elements.offlineConflict) {
-    elements.offlineConflict.hidden = true;
-    elements.offlineConflict.textContent = "";
-  }
-  if (elements.offlineStart) {
-    elements.offlineStart.disabled = false;
-  }
-}
-
-function setGallerySelection(container, skin, type) {
-  if (!container) return;
-  const items = container.querySelectorAll(".skin-gallery__item");
-  items.forEach((item) => {
-    const matches = Boolean(skin && type) && item.dataset.skin === skin && item.dataset.type === type;
-    item.classList.toggle("skin-gallery__item--selected", matches);
-    item.setAttribute("aria-selected", matches ? "true" : "false");
-  });
-}
-
-function updateOfflinePreview(player) {
-  const fieldset = elements.offlineFields[player];
-  if (!fieldset) return;
-  const pending = pendingSkins[player] || DEFAULT_SKIN_SELECTION[player];
-  const previewPath = getSkinPreviewPath(pending.skin, pending.type);
-  if (fieldset.preview) {
-    fieldset.preview.src = previewPath;
-    fieldset.preview.alt = `${getSkinLabel(pending.skin)} — ${getTypeLabel(pending.skin, pending.type)}`;
-  }
-  if (fieldset.label) {
-    fieldset.label.textContent = `${getSkinLabel(pending.skin)} — ${getTypeLabel(pending.skin, pending.type)}`;
-  }
-  if (fieldset.description) {
-    fieldset.description.textContent = getSkinDescription(pending.skin, pending.type);
-  }
-  if (fieldset.gallery) {
-    setGallerySelection(fieldset.gallery, pending.skin, pending.type);
-  }
-}
-
-function updateOnlinePreview() {
-  if (!elements.onlinePreviewImage || !elements.onlinePreviewLabel) return;
-  if (!onlineSelectedRole) {
-    if (elements.onlinePreviewDescription) {
-      elements.onlinePreviewDescription.textContent = "";
-    }
-  }
-  if (!onlineSelectedRole) {
-    const fallback = DEFAULT_SKIN_SELECTION.light;
-    elements.onlinePreviewImage.src = getSkinPreviewPath(fallback.skin, fallback.type);
-    elements.onlinePreviewLabel.textContent = "Выберите сторону и скин";
-    if (elements.onlineSkinGallery) {
-      setGallerySelection(elements.onlineSkinGallery, null, null);
-    }
-    return;
-  }
-  const pending = pendingSkins[onlineSelectedRole];
-  const path = getSkinPreviewPath(pending.skin, pending.type);
-  elements.onlinePreviewImage.src = path;
-  elements.onlinePreviewLabel.textContent = `${getSkinLabel(pending.skin)} — ${getTypeLabel(pending.skin, pending.type)}`;
-  if (elements.onlinePreviewDescription) {
-    elements.onlinePreviewDescription.textContent = getSkinDescription(pending.skin, pending.type);
-  }
-  if (elements.onlineSkinGallery) {
-    setGallerySelection(elements.onlineSkinGallery, pending.skin, pending.type);
-  }
-}
-
-function updateOnlineWarning() {
-  if (!elements.onlineTypeWarning) return;
-  let message = "";
-  let invalid = false;
-  if (!onlineSelectedRole) {
-    message = "Выберите сторону, чтобы указать скин.";
-    invalid = true;
-  } else {
-    const pending = pendingSkins[onlineSelectedRole];
-    if (!pending || !pending.skin || !pending.type) {
-      message = "Выберите скин и тип.";
-      invalid = true;
-    }
-  }
-  elements.onlineTypeWarning.hidden = !invalid || message.length === 0;
-  elements.onlineTypeWarning.textContent = message;
-  if (elements.connectButton) {
-    elements.connectButton.disabled = invalid;
-  }
-}
 
 function applyOfflineSelection() {
   applySelectedLayoutFromControls();
@@ -1648,126 +1097,49 @@ function hideOverlayElement(element) {
   element.setAttribute("aria-hidden", "true");
 }
 
-function setPendingSkin(player, skin, type) {
-  const skinKey = SKINS[skin] ? skin : DEFAULT_SKIN_SELECTION[player].skin;
-  const typeKey = SKINS[skinKey].types[type] ? type : Object.keys(SKINS[skinKey].types)[0];
-  ensureSkinConfig(skinKey);
-  pendingSkins[player] = { skin: skinKey, type: typeKey };
-}
-
-function applyPendingSkin(player, { broadcast = true } = {}) {
-  const next = cloneSkinSelection(skinSelection);
-  next[player] = { ...pendingSkins[player] };
-  applySkinSelection(next, { broadcast });
-}
-
-function applyAllPendingSkins({ broadcast = true } = {}) {
-  applySkinSelection(pendingSkins, { broadcast });
-}
-
-function applySkinSelection(selection, { broadcast = true, preservePendingFor = null } = {}) {
-  const previousPending = cloneSkinSelection(pendingSkins);
-  skinSelection = cloneSkinSelection(selection);
-  playerSkins = cloneSkinSelection(skinSelection);
-  const nextPending = cloneSkinSelection(skinSelection);
-  if (preservePendingFor && previousPending[preservePendingFor]) {
-    nextPending[preservePendingFor] = { ...previousPending[preservePendingFor] };
-  }
-  pendingSkins = nextPending;
-  preloadSkinConfigs(playerSkins);
-  updateLegendImages();
-  renderBoard();
-  updateSkinPreviews();
-  updateOnlineWarning();
-  if (broadcast) {
-    broadcastGameState("skin-change");
-  }
-}
-
-function updateLegendImages() {
-  if (!elements.legendImages) return;
-  elements.legendImages.forEach((img) => {
-    const player = img.dataset.player || "light";
-    const piece = img.dataset.piece;
-    if (!piece) return;
-    const selection = skinSelection[player] || DEFAULT_SKIN_SELECTION[player];
-    img.src = getSkinAssetPath(selection, piece);
-  });
-}
-
 function getSkinPreviewPath(skin, type) {
-  const skinDef = SKINS[skin];
-  if (!skinDef) {
-    const fallback = DEFAULT_SKIN_SELECTION.light;
-    return `pieces/skins/${fallback.skin}/${fallback.type}/laser.png`;
-  }
-  const typeDef = skinDef.types[type];
-  if (typeDef && typeDef.preview) {
-    return typeDef.preview;
-  }
-  if (skinDef.preview) {
-    return skinDef.preview;
-  }
-  if (typeDef && typeDef.assetBase) {
-    return `pieces/skins/${typeDef.assetBase}/laser.png`;
-  }
-  const typeKey = typeDef ? type : Object.keys(skinDef.types)[0];
-  const fallbackMeta = skinDef.types[typeKey];
-  if (fallbackMeta && fallbackMeta.assetBase) {
-    return `pieces/skins/${fallbackMeta.assetBase}/laser.png`;
-  }
-  return `pieces/skins/${skin}/${typeKey}/laser.png`;
+  return skinLibrary.getPreviewPath(skin, type);
 }
 
 function getSkinLabel(skin) {
-  return SKINS[skin]?.label || skin;
+  return skinLibrary.getLabel(skin);
 }
 
 function getTypeLabel(skin, type) {
-  return SKINS[skin]?.types?.[type]?.label || type;
+  return skinLibrary.getTypeLabel(skin, type);
 }
 
 function getSkinDescription(skin, type) {
-  const typeMeta = SKINS[skin]?.types?.[type];
-  if (typeMeta && typeMeta.description) {
-    return typeMeta.description;
+  const fromManifest = skinLibrary.getDescription(skin, type);
+  if (fromManifest) {
+    return fromManifest;
   }
-  const cache = skinConfigCache[skin];
-  if (cache && cache[type] && typeof cache[type].description === "string") {
-    return cache[type].description;
+  const config = skinLibrary.getConfig({ skin, type });
+  if (config && typeof config.description === "string") {
+    return config.description;
   }
   return "";
 }
 
 function getPieceImageUrl(piece) {
-  const selection = skinSelection[piece.player] || DEFAULT_SKIN_SELECTION[piece.player];
-  return getSkinAssetPath(selection, piece.type);
+  return getSkinAssetPath(getPlayerSkin(piece.player), piece.type);
 }
 
 function getOpponent(player) {
   return player === "light" ? "shadow" : "light";
 }
 
-function cloneSkinSelection(selection) {
-  const result = {};
-  for (const player of Object.keys(DEFAULT_SKIN_SELECTION)) {
-    const source = selection && selection[player] ? selection[player] : DEFAULT_SKIN_SELECTION[player];
-    result[player] = { skin: source.skin, type: source.type };
-  }
-  return result;
-}
-
 function renderBoard() {
   for (let y = 0; y < BOARD_HEIGHT; y++) {
     for (let x = 0; x < BOARD_WIDTH; x++) {
       const cell = cells[y][x];
-      const piece = board[y][x];
+      const piece = gameState.board[y][x];
       cell.classList.toggle("cell--light", (x + y) % 2 === 0);
-      cell.classList.toggle("cell--selected", selectedCell && selectedCell.x === x && selectedCell.y === y);
+      cell.classList.toggle("cell--selected", gameState.selectedCell && gameState.selectedCell.x === x && gameState.selectedCell.y === y);
       const isRecent = Boolean(
-        lastMove &&
-        ((lastMove.from && lastMove.from.x === x && lastMove.from.y === y) ||
-          (lastMove.to && lastMove.to.x === x && lastMove.to.y === y))
+        gameState.lastMove &&
+        ((gameState.lastMove.from && gameState.lastMove.from.x === x && gameState.lastMove.from.y === y) ||
+          (gameState.lastMove.to && gameState.lastMove.to.x === x && gameState.lastMove.to.y === y))
       );
       cell.classList.toggle("cell--recent", isRecent);
       cell.classList.remove("cell--option", "cell--swap");
@@ -1788,7 +1160,7 @@ function renderBoard() {
       }
     }
   }
-  for (const option of currentOptions) {
+  for (const option of gameState.currentOptions) {
     const cell = cells[option.y][option.x];
     cell.classList.add("cell--option");
     if (option.swap) {
@@ -1803,64 +1175,64 @@ function handleCellInteraction(x, y) {
     if (multiplayer.isWaitingForOpponent()) {
       setStatus("Ожидаем подключения второго игрока.");
     } else if (multiplayer.isActive()) {
-      setStatus(`${PLAYERS[currentPlayer].name}: сейчас ход соперника.`);
+      setStatus(`${PLAYERS[gameState.currentPlayer].name}: сейчас ход соперника.`);
     }
     return;
   }
 
-  const piece = board[y][x];
-  const current = selectedCell ? board[selectedCell.y][selectedCell.x] : null;
-  const option = currentOptions.find((opt) => opt.x === x && opt.y === y);
+  const piece = gameState.board[y][x];
+  const current = gameState.selectedCell ? gameState.board[gameState.selectedCell.y][gameState.selectedCell.x] : null;
+  const option = gameState.currentOptions.find((opt) => opt.x === x && opt.y === y);
 
   if (option && current) {
-    executeMove(option, current, selectedCell);
+    executeMove(option, current, gameState.selectedCell);
     return;
   }
 
-  if (piece && piece.player === currentPlayer) {
+  if (piece && piece.player === gameState.currentPlayer) {
     selectCell(x, y);
-  } else if (piece && piece.player !== currentPlayer) {
-    setStatus(`${PLAYERS[currentPlayer].name}: нельзя управлять фигурой соперника.`);
+  } else if (piece && piece.player !== gameState.currentPlayer) {
+    setStatus(`${PLAYERS[gameState.currentPlayer].name}: нельзя управлять фигурой соперника.`);
   } else {
     clearSelection();
   }
 }
 
 function selectCell(x, y) {
-  selectedCell = { x, y };
-  const piece = board[y][x];
+  gameState.selectedCell = { x, y };
+  const piece = gameState.board[y][x];
   const def = PIECE_DEFS[piece.type];
-  currentOptions = def.movement(board, x, y, piece);
+  gameState.currentOptions = def.movement(gameState.board, x, y, piece);
   renderBoard();
   updateRotateControls(def.canRotate);
-  const movesText = currentOptions.length
-    ? `Доступно ходов: ${currentOptions
+  const movesText = gameState.currentOptions.length
+    ? `Доступно ходов: ${gameState.currentOptions
         .map((opt) => `${toNotation(opt.x, opt.y)}${opt.swap ? "⇄" : ""}`)
         .join(", ")}.`
     : def.canRotate
       ? "Можно только повернуть выбранную фигуру."
       : "Для этой фигуры доступных действий нет.";
-  setStatus(`${PLAYERS[currentPlayer].name}: ${def.name} на ${toNotation(x, y)}. ${movesText}`);
+  setStatus(`${PLAYERS[gameState.currentPlayer].name}: ${def.name} на ${toNotation(x, y)}. ${movesText}`);
   updatePiecePanel(piece, toNotation(x, y));
 }
 
 function clearSelection({ silent = false } = {}) {
-  selectedCell = null;
-  currentOptions = [];
+  gameState.selectedCell = null;
+  gameState.currentOptions = [];
   renderBoard();
   updateRotateControls(false);
   updatePiecePanel();
   if (!silent) {
-    setStatus(`${PLAYERS[currentPlayer].name}: выберите фигуру.`);
+    setStatus(`${PLAYERS[gameState.currentPlayer].name}: выберите фигуру.`);
   }
 }
 
 function updateRotateControls(enabled) {
-  const piece = selectedCell ? board[selectedCell.y][selectedCell.x] : null;
+  const piece = gameState.selectedCell ? gameState.board[gameState.selectedCell.y][gameState.selectedCell.x] : null;
   const canRotate = Boolean(
     enabled &&
     piece &&
-    piece.player === currentPlayer &&
+    piece.player === gameState.currentPlayer &&
     multiplayer.canAct()
   );
   elements.rotateLeft.disabled = !canRotate;
@@ -1868,69 +1240,69 @@ function updateRotateControls(enabled) {
 }
 
 function executeMove(option, piece, from) {
-  const targetPiece = board[option.y][option.x];
+  const targetPiece = gameState.board[option.y][option.x];
 
   if (option.swap) {
     if (!targetPiece) {
       return;
     }
-    board[from.y][from.x] = targetPiece;
-    board[option.y][option.x] = piece;
-    lastMove = {
+    gameState.board[from.y][from.x] = targetPiece;
+    gameState.board[option.y][option.x] = piece;
+    gameState.lastMove = {
       from: { x: from.x, y: from.y },
       to: { x: option.x, y: option.y }
     };
-    setStatus(`${PLAYERS[currentPlayer].name}: ${PIECE_DEFS[piece.type].name} меняется местами с ${PIECE_DEFS[targetPiece.type].name} на ${toNotation(option.x, option.y)}.`);
+    setStatus(`${PLAYERS[gameState.currentPlayer].name}: ${PIECE_DEFS[piece.type].name} меняется местами с ${PIECE_DEFS[targetPiece.type].name} на ${toNotation(option.x, option.y)}.`);
     endTurn();
     broadcastGameState("swap");
     return;
   }
 
   if (targetPiece) {
-    setStatus(`${PLAYERS[currentPlayer].name}: клетка ${toNotation(option.x, option.y)} уже занята.`);
+    setStatus(`${PLAYERS[gameState.currentPlayer].name}: клетка ${toNotation(option.x, option.y)} уже занята.`);
     renderBoard();
     return;
   }
 
-  board[from.y][from.x] = null;
-  board[option.y][option.x] = piece;
-  lastMove = {
+  gameState.board[from.y][from.x] = null;
+  gameState.board[option.y][option.x] = piece;
+  gameState.lastMove = {
     from: { x: from.x, y: from.y },
     to: { x: option.x, y: option.y }
   };
-  setStatus(`${PLAYERS[currentPlayer].name}: ${PIECE_DEFS[piece.type].name} перемещён на ${toNotation(option.x, option.y)}.`);
+  setStatus(`${PLAYERS[gameState.currentPlayer].name}: ${PIECE_DEFS[piece.type].name} перемещён на ${toNotation(option.x, option.y)}.`);
 
   endTurn();
   broadcastGameState(option.swap ? "swap" : "move");
 }
 
 function rotateSelected(delta) {
-  if (!selectedCell) return;
-  const piece = board[selectedCell.y][selectedCell.x];
+  if (!gameState.selectedCell) return;
+  const piece = gameState.board[gameState.selectedCell.y][gameState.selectedCell.x];
   const def = PIECE_DEFS[piece.type];
-  if (!def.canRotate || piece.player !== currentPlayer) return;
+  if (!def.canRotate || piece.player !== gameState.currentPlayer) return;
   if (!multiplayer.canAct()) {
     if (multiplayer.isActive()) {
-      setStatus(`${PLAYERS[currentPlayer].name}: сейчас ход соперника.`);
+      setStatus(`${PLAYERS[gameState.currentPlayer].name}: сейчас ход соперника.`);
     }
     return;
   }
 
   piece.orientation = mod4(piece.orientation + delta);
-  lastMove = null;
+  gameState.lastMove = null;
   renderBoard();
   const dirSymbol = delta > 0 ? "↻" : "↺";
-  setStatus(`${PLAYERS[currentPlayer].name}: ${def.name} на ${toNotation(selectedCell.x, selectedCell.y)} повёрнут ${delta > 0 ? "по" : "против"} часовой стрелки.`);
+  setStatus(`${PLAYERS[gameState.currentPlayer].name}: ${def.name} на ${toNotation(gameState.selectedCell.x, gameState.selectedCell.y)} повёрнут ${delta > 0 ? "по" : "против"} часовой стрелки.`);
   endTurn();
   broadcastGameState(delta > 0 ? "rotate-cw" : "rotate-ccw");
 }
 
 function endTurn() {
   clearSelection({ silent: true });
-  const activePlayer = currentPlayer;
+  const activePlayer = gameState.currentPlayer;
   playSkinSound(activePlayer, "move");
   const laserResult = normaliseLaserResult(fireLaser(activePlayer));
-  lastLaserResult = laserResult;
+  gameState.lastLaserResult = laserResult;
   renderBoard();
   highlightLaserPath(laserResult);
   handleLaserImpact(laserResult);
@@ -1950,11 +1322,11 @@ function endTurn() {
     const cell = toNotation(laserResult.blocked.x, laserResult.blocked.y);
     setStatus(`${laserResult.firer} не проходит через ${PIECE_DEFS[blockPiece.type].name} на ${cell}.`);
   }
-  currentPlayer = activePlayer === "light" ? "shadow" : "light";
-  turnCounter += 1;
+  gameState.currentPlayer = activePlayer === "light" ? "shadow" : "light";
+  gameState.turnCounter += 1;
   updateTurnIndicator();
   if (!laserResult.hit) {
-    setStatus(`${PLAYERS[currentPlayer].name} готовит ход.`);
+    setStatus(`${PLAYERS[gameState.currentPlayer].name} готовит ход.`);
   }
 }
 
@@ -1984,7 +1356,7 @@ function fireLaser(player) {
   }
 
   let { x, y } = emitterPos;
-  let direction = board[y][x].orientation % 4;
+  let direction = gameState.board[y][x].orientation % 4;
   const path = [];
   let previous = { x, y };
 
@@ -2006,14 +1378,14 @@ function fireLaser(player) {
     x = nextX;
     y = nextY;
     path.push({ x, y });
-    const target = board[y][x];
+    const target = gameState.board[y][x];
     if (!target) {
       previous = { x, y };
       continue;
     }
     const interaction = resolveLaserInteraction(target, direction);
     if (interaction.destroy) {
-      board[y][x] = null;
+      gameState.board[y][x] = null;
       return {
         path,
         hit: { piece: target, x, y },
@@ -2186,7 +1558,7 @@ function rotateFaceMap(map, orientation) {
 function findEmitter(player) {
   for (let y = 0; y < BOARD_HEIGHT; y++) {
     for (let x = 0; x < BOARD_WIDTH; x++) {
-      const piece = board[y][x];
+      const piece = gameState.board[y][x];
       if (piece && piece.player === player && piece.type === "laser") {
         return { x, y };
       }
@@ -2211,9 +1583,9 @@ function clearLaserPath({ preserveState = false } = {}) {
     elements.laserOverlay.replaceChildren();
   }
   if (!preserveState) {
-    lastLaserResult = null;
-    lastLaserEffectSignature = null;
-    lastLaserEffectTimestamp = 0;
+    gameState.lastLaserResult = null;
+    gameState.lastLaserEffectSignature = null;
+    gameState.lastLaserEffectTimestamp = 0;
     resetLaserOverlayTheme();
   }
 }
@@ -2485,12 +1857,12 @@ function handleLaserImpact(result) {
   }
   const signature = computeLaserSignature(result);
   const now = Date.now();
-  if (signature && signature === lastLaserEffectSignature && now - lastLaserEffectTimestamp < 250) {
+  if (signature && signature === gameState.lastLaserEffectSignature && now - gameState.lastLaserEffectTimestamp < 250) {
     return;
   }
   if (signature) {
-    lastLaserEffectSignature = signature;
-    lastLaserEffectTimestamp = now;
+    gameState.lastLaserEffectSignature = signature;
+    gameState.lastLaserEffectTimestamp = now;
   }
   const attacker = result.player || null;
   const attackerSelection = result.skin && result.skin.skin
@@ -2573,11 +1945,11 @@ function toNotation(x, y) {
 
 function updateTurnIndicator() {
   if (!elements.turn) return;
-  elements.turn.textContent = `${turnCounter}. ${PLAYERS[currentPlayer].name}`;
+  elements.turn.textContent = `${gameState.turnCounter}. ${PLAYERS[gameState.currentPlayer].name}`;
 }
 
 function setStatus(message) {
-  lastStatusMessage = message;
+  gameState.lastStatusMessage = message;
   if (elements.status) {
     elements.status.textContent = message;
   }
@@ -2814,27 +2186,28 @@ function cloneLastMove(move) {
 }
 
 function serialiseGameState() {
+  const snapshot = skinStore.getSnapshot();
   return {
-    board: cloneBoardState(board),
-    currentPlayer,
-    turnCounter,
-    status: lastStatusMessage,
+    board: cloneBoardState(gameState.board),
+    currentPlayer: gameState.currentPlayer,
+    turnCounter: gameState.turnCounter,
+    status: gameState.lastStatusMessage,
     endgame: {
       visible: elements.endgame ? elements.endgame.hidden === false : false,
       title: elements.endgameTitle ? elements.endgameTitle.textContent : "",
       subtitle: elements.endgameSubtitle ? elements.endgameSubtitle.textContent : ""
     },
-    laser: lastLaserResult ? normaliseLaserResult(lastLaserResult) : null,
-    skins: cloneSkinSelection(skinSelection),
-    lastMove: cloneLastMove(lastMove),
-    layout: normaliseLayoutKey(currentLayoutKey)
+    laser: gameState.lastLaserResult ? normaliseLaserResult(gameState.lastLaserResult) : null,
+    skins: snapshot.actual,
+    lastMove: cloneLastMove(gameState.lastMove),
+    layout: normaliseLayoutKey(gameState.layoutKey)
   };
 }
 
 function applyRemoteState(state, options = {}) {
   if (!state) return;
-  const previousBoard = cloneBoardState(board);
-  const previousLaserResult = lastLaserResult;
+  const previousBoard = cloneBoardState(gameState.board);
+  const previousLaserResult = gameState.lastLaserResult;
   const preserveRole = options.preservePendingFor
     ? options.preservePendingFor
     : typeof multiplayer.getRole === "function"
@@ -2850,8 +2223,8 @@ function applyRemoteState(state, options = {}) {
 
   multiplayer.suppress(() => {
     setCurrentLayout(state.layout, { silent: true });
-    lastMove = normaliseLastMove(state.lastMove);
-    board = cloneBoardState(state.board);
+    gameState.lastMove = normaliseLastMove(state.lastMove);
+    gameState.board = cloneBoardState(state.board);
     clearEffectsOverlay();
     if (state.skins) {
       const skinOptions = { broadcast: false };
@@ -2860,11 +2233,10 @@ function applyRemoteState(state, options = {}) {
       }
       applySkinSelection(state.skins, skinOptions);
     }
-    currentPlayer = state.currentPlayer === "shadow" ? "shadow" : "light";
+    gameState.currentPlayer = state.currentPlayer === "shadow" ? "shadow" : "light";
     if (typeof state.turnCounter === "number" && Number.isFinite(state.turnCounter)) {
-      turnCounter = state.turnCounter;
+      gameState.turnCounter = state.turnCounter;
     }
-    applyRemoteSkins(state.skins);
     clearSelection({ silent: true });
     updateTurnIndicator();
     if (state.endgame && state.endgame.visible) {
@@ -2883,31 +2255,31 @@ function applyRemoteState(state, options = {}) {
     if (typeof state.status === "string") {
       setStatus(state.status);
     } else if (multiplayer.canAct()) {
-      setStatus(`${PLAYERS[currentPlayer].name}: выберите фигуру.`);
+      setStatus(`${PLAYERS[gameState.currentPlayer].name}: выберите фигуру.`);
     }
     const lastMover = state.currentPlayer === "shadow" ? "light" : "shadow";
-    const boardChanged = !boardsEqual(previousBoard, board);
+    const boardChanged = !boardsEqual(previousBoard, gameState.board);
     let nextLaserResult = null;
     if (incomingLaser) {
       nextLaserResult = normaliseLaserResult(incomingLaser);
     } else if (boardChanged) {
-      const reconstructed = reconstructLaserSimulation(previousBoard, board, lastMover);
-      const simulated = reconstructed || simulateLaserTrace(board, lastMover);
+      const reconstructed = reconstructLaserSimulation(previousBoard, gameState.board, lastMover);
+      const simulated = reconstructed || simulateLaserTrace(gameState.board, lastMover);
       if (simulated) {
         nextLaserResult = normaliseLaserResult(simulated);
       }
     } else if (previousLaserResult) {
       nextLaserResult = normaliseLaserResult(previousLaserResult);
     }
-    lastLaserResult = nextLaserResult;
-    if (lastLaserResult) {
-      highlightLaserPath(lastLaserResult);
+    gameState.lastLaserResult = nextLaserResult;
+    if (gameState.lastLaserResult) {
+      highlightLaserPath(gameState.lastLaserResult);
     } else {
       clearLaserPath();
     }
   });
-  if (lastLaserResult && lastLaserResult.hit) {
-    handleLaserImpact(lastLaserResult);
+  if (gameState.lastLaserResult && gameState.lastLaserResult.hit) {
+    handleLaserImpact(gameState.lastLaserResult);
   }
 }
 
@@ -2962,7 +2334,7 @@ function createMultiplayerController() {
       setOverlayStatus("Выберите сторону для игры.");
       return;
     }
-    const pending = pendingSkins[role];
+    const pending = getPendingSkin(role);
     if (!pending || !pending.skin || !pending.type) {
       updateOnlineWarning();
       return;
@@ -3052,15 +2424,15 @@ function createMultiplayerController() {
           applyRemoteState(payload.state, { laser: payload.laser, preservePendingFor: state.role });
           reconcileLocalSkinSelection();
         } else if (Object.prototype.hasOwnProperty.call(payload, "laser")) {
-          lastLaserResult = payload.laser ? normaliseLaserResult(payload.laser) : null;
-          if (!lastLaserResult && payload.author) {
-            const simulated = simulateLaserTrace(board, payload.author);
+          gameState.lastLaserResult = payload.laser ? normaliseLaserResult(payload.laser) : null;
+          if (!gameState.lastLaserResult && payload.author) {
+            const simulated = simulateLaserTrace(gameState.board, payload.author);
             if (simulated) {
-              lastLaserResult = normaliseLaserResult(simulated);
+              gameState.lastLaserResult = normaliseLaserResult(simulated);
             }
           }
-          if (lastLaserResult) {
-            highlightLaserPath(lastLaserResult);
+          if (gameState.lastLaserResult) {
+            highlightLaserPath(gameState.lastLaserResult);
           } else {
             clearLaserPath();
           }
@@ -3108,11 +2480,11 @@ function createMultiplayerController() {
       return;
     }
     const role = state.role;
-    const desired = pendingSkins[role];
+    const desired = getPendingSkin(role);
     if (!desired) {
       return;
     }
-    const actual = skinSelection[role] || DEFAULT_SKIN_SELECTION[role];
+    const actual = getPlayerSkin(role);
     if (actual.skin === desired.skin && actual.type === desired.type) {
       return;
     }
@@ -3228,8 +2600,8 @@ function createMultiplayerController() {
     sendState(reason, statePayload) {
       const laserSnapshot = statePayload && Object.prototype.hasOwnProperty.call(statePayload, "laser")
         ? statePayload.laser
-        : lastLaserResult
-          ? normaliseLaserResult(lastLaserResult)
+        : gameState.lastLaserResult
+          ? normaliseLaserResult(gameState.lastLaserResult)
           : null;
       send({
         type: "state",
@@ -3252,7 +2624,7 @@ function createMultiplayerController() {
       }
     },
     canAct() {
-      return !state.connected || state.role === currentPlayer;
+      return !state.connected || state.role === gameState.currentPlayer;
     },
     isActive() {
       return state.connected;
