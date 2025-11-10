@@ -2,22 +2,143 @@ const http = require("http");
 const { WebSocketServer } = require("ws");
 const fs = require("fs");
 const path = require("path");
+const admin = require("firebase-admin");
 
 const PORT = Number(process.env.PORT || 8787);
 
-const DATA_DIR = path.join(__dirname, "data");
-const MATCHES_PATH = path.join(DATA_DIR, "match-history.json");
-const RATINGS_PATH = path.join(DATA_DIR, "ratings.json");
 const DEFAULT_RATING = 1200;
 const HISTORY_THRESHOLD = 6;
 const MAX_HISTORY_LENGTH = 256;
 const K_FACTOR = 32;
+const MATCH_HISTORY_CACHE_LIMIT = 500;
+const MATCH_HISTORY_COLLECTION = process.env.FIREBASE_MATCHES_COLLECTION || "matchHistory";
+const RATINGS_COLLECTION = process.env.FIREBASE_RATINGS_COLLECTION || "ratings";
 
 const rooms = new Map();
-ensureDataStorage();
+let matchHistory = [];
+let globalRatings = {};
+let firestore = null;
+const firestoreReady = initialiseFirestore();
 
-let matchHistory = loadJson(MATCHES_PATH, []);
-let globalRatings = loadJson(RATINGS_PATH, {});
+async function initialiseFirestore() {
+  try {
+    const credential = buildFirebaseCredential();
+    if (!credential) {
+      console.warn(
+        "Firestore persistence is disabled: configure Firebase credentials to enable match history and rating storage."
+      );
+      return null;
+    }
+    if (!admin.apps.length) {
+      admin.initializeApp({ credential });
+    }
+    firestore = admin.firestore();
+    await loadInitialFirestoreState();
+    console.log("Connected to Firestore for persistent history and ratings.");
+    return firestore;
+  } catch (err) {
+    console.error("Failed to initialise Firestore", err);
+    firestore = null;
+    return null;
+  }
+}
+
+async function loadInitialFirestoreState() {
+  if (!firestore) {
+    return;
+  }
+  try {
+    const ratingsSnapshot = await firestore.collection(RATINGS_COLLECTION).get();
+    const loadedRatings = {};
+    ratingsSnapshot.forEach((doc) => {
+      const data = doc.data();
+      if (!data) return;
+      const rating = Number(data.rating);
+      if (!Number.isFinite(rating)) return;
+      loadedRatings[doc.id] = {
+        rating: Math.round(rating),
+        games: Number.isFinite(Number(data.games)) ? Number(data.games) : 0
+      };
+    });
+    globalRatings = loadedRatings;
+  } catch (err) {
+    console.error("Failed to load ratings from Firestore", err);
+  }
+
+  try {
+    const matchesSnapshot = await firestore
+      .collection(MATCH_HISTORY_COLLECTION)
+      .orderBy("updatedAt", "desc")
+      .limit(MATCH_HISTORY_CACHE_LIMIT)
+      .get();
+    const records = [];
+    matchesSnapshot.forEach((doc) => {
+      const data = doc.data();
+      if (!data) return;
+      const record = buildMatchRecordFromFirestore(doc.id, data);
+      if (record) {
+        records.push(record);
+      }
+    });
+    matchHistory = records
+      .sort((a, b) => {
+        const aTime = Date.parse(a.updatedAt || a.createdAt || 0) || 0;
+        const bTime = Date.parse(b.updatedAt || b.createdAt || 0) || 0;
+        return aTime - bTime;
+      })
+      .slice(-MATCH_HISTORY_CACHE_LIMIT);
+  } catch (err) {
+    console.error("Failed to load match history from Firestore", err);
+  }
+}
+
+function buildFirebaseCredential() {
+  const serviceAccount = loadServiceAccountFromEnv();
+  if (serviceAccount) {
+    return admin.credential.cert(serviceAccount);
+  }
+  try {
+    return admin.credential.applicationDefault();
+  } catch (err) {
+    return null;
+  }
+}
+
+function loadServiceAccountFromEnv() {
+  if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
+    try {
+      return JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
+    } catch (err) {
+      console.error("Invalid FIREBASE_SERVICE_ACCOUNT_JSON", err);
+    }
+  }
+
+  const filePath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH;
+  if (filePath) {
+    try {
+      const resolved = path.isAbsolute(filePath)
+        ? filePath
+        : path.join(process.cwd(), filePath);
+      const raw = fs.readFileSync(resolved, "utf8");
+      return JSON.parse(raw);
+    } catch (err) {
+      console.error("Failed to read Firebase service account file", err);
+    }
+  }
+
+  const projectId = process.env.FIREBASE_PROJECT_ID;
+  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+  const privateKey = process.env.FIREBASE_PRIVATE_KEY;
+  if (projectId && clientEmail && privateKey) {
+    return {
+      projectId,
+      clientEmail,
+      privateKey: privateKey.replace(/\\n/g, "\n")
+    };
+  }
+
+  return null;
+}
 
 const server = http.createServer(handleHttpRequest);
 const wss = new WebSocketServer({ server });
@@ -219,13 +340,20 @@ wss.on("connection", (socket) => {
       skins: sanitiseSkins(payload.skins)
     };
 
+    let ratingUpdates = [];
     if (metadata.final && winnerRole && destroyedHero) {
-      applyMatchResultRatings(room, winnerRole);
-      saveRatings();
+      ratingUpdates = applyMatchResultRatings(room, winnerRole);
+      if (ratingUpdates.length) {
+        saveRatings(ratingUpdates).catch((err) => {
+          console.error("Failed to persist rating updates", err);
+        });
+      }
     }
 
     if (metadata.final || sanitisedMoves.length > HISTORY_THRESHOLD) {
-      persistMatchRecord(member.roomId, matchId, room, sanitisedMoves, metadata);
+      persistMatchRecord(member.roomId, matchId, room, sanitisedMoves, metadata).catch((err) => {
+        console.error("Failed to persist match record", err);
+      });
     }
 
     const ackRatings = buildRatingsPayload(room, room.playerIds[member.role]);
@@ -380,35 +508,119 @@ function sanitiseSkins(value) {
   return result;
 }
 
-function persistMatchRecord(roomId, matchId, room, moves, metadata = {}) {
-  if (!matchId) return;
-  const timestamp = new Date().toISOString();
-  let record = matchHistory.find((item) => item.matchId === matchId);
-  if (!record) {
-    record = { matchId, createdAt: timestamp };
-    matchHistory.push(record);
-  }
-  record.roomId = roomId;
-  record.updatedAt = timestamp;
-  record.status = metadata.final ? "completed" : "in-progress";
-  record.moves = moves;
-  record.layout = metadata.layout || null;
-  record.skins = metadata.skins || { light: null, shadow: null };
-  record.players = {
-    light: room.playerIds && room.playerIds.light ? { id: room.playerIds.light, rating: getRating(room.playerIds.light) } : null,
-    shadow: room.playerIds && room.playerIds.shadow ? { id: room.playerIds.shadow, rating: getRating(room.playerIds.shadow) } : null
+function buildMatchRecordFromFirestore(docId, data) {
+  const matchId = sanitiseMatchId(data.matchId) || sanitiseMatchId(docId) || docId;
+  const moves = Array.isArray(data.moves)
+    ? data.moves.map(sanitiseHistoryEntry).filter(Boolean).slice(-MAX_HISTORY_LENGTH)
+    : [];
+  return {
+    matchId,
+    roomId: normaliseRoomId(data.roomId),
+    createdAt: sanitiseIsoString(data.createdAt),
+    updatedAt: sanitiseIsoString(data.updatedAt),
+    completedAt: sanitiseIsoString(data.completedAt),
+    status: data.status === "completed" ? "completed" : "in-progress",
+    moves,
+    layout: sanitiseLayoutKey(data.layout),
+    skins: sanitiseSkins(data.skins),
+    players: {
+      light: sanitisePersistedPlayer(data.players ? data.players.light : null),
+      shadow: sanitisePersistedPlayer(data.players ? data.players.shadow : null)
+    },
+    outcome:
+      data.outcome && typeof data.outcome === "object"
+        ? {
+            winner: sanitiseRole(data.outcome.winner),
+            destroyedHero: sanitiseRole(data.outcome.destroyedHero)
+          }
+        : null
   };
-  if (metadata.final) {
-    record.outcome = {
-      winner: metadata.winner,
-      destroyedHero: metadata.destroyedHero
+}
+
+function sanitisePersistedPlayer(entry) {
+  if (!entry || typeof entry !== "object") {
+    return null;
+  }
+  const id = sanitisePlayerId(entry.id);
+  if (!id) {
+    return null;
+  }
+  const rating = Number(entry.rating);
+  return {
+    id,
+    rating: Number.isFinite(rating) ? Math.round(rating) : DEFAULT_RATING
+  };
+}
+
+function sanitiseIsoString(value) {
+  if (typeof value !== "string") {
+    return null;
+  }
+  const parsed = Date.parse(value);
+  if (Number.isNaN(parsed)) {
+    return null;
+  }
+  return new Date(parsed).toISOString();
+}
+
+async function persistMatchRecord(roomId, matchId, room, moves, metadata = {}) {
+  if (!matchId) return;
+  await firestoreReady;
+  const timestamp = new Date().toISOString();
+  const existingIndex = matchHistory.findIndex((item) => item.matchId === matchId);
+  const existing = existingIndex !== -1 ? matchHistory[existingIndex] : null;
+  const createdAt = existing && existing.createdAt ? existing.createdAt : timestamp;
+  const completedAt = metadata.final
+    ? (existing && existing.completedAt ? existing.completedAt : timestamp)
+    : existing && existing.completedAt
+    ? existing.completedAt
+    : null;
+
+  const record = {
+    matchId,
+    roomId,
+    createdAt,
+    updatedAt: timestamp,
+    completedAt,
+    status: metadata.final ? "completed" : "in-progress",
+    moves,
+    layout: metadata.layout || null,
+    skins: metadata.skins || { light: null, shadow: null },
+    players: {
+      light:
+        room.playerIds && room.playerIds.light
+          ? { id: room.playerIds.light, rating: getRating(room.playerIds.light) }
+          : null,
+      shadow:
+        room.playerIds && room.playerIds.shadow
+          ? { id: room.playerIds.shadow, rating: getRating(room.playerIds.shadow) }
+          : null
+    },
+    outcome: metadata.final
+      ? { winner: metadata.winner || null, destroyedHero: metadata.destroyedHero || null }
+      : existing && existing.outcome
+      ? existing.outcome
+      : null
+  };
+
+  if (existingIndex !== -1) {
+    matchHistory.splice(existingIndex, 1);
+  }
+  matchHistory.push(record);
+  if (matchHistory.length > MATCH_HISTORY_CACHE_LIMIT) {
+    matchHistory = matchHistory.slice(matchHistory.length - MATCH_HISTORY_CACHE_LIMIT);
+  }
+
+  if (firestore) {
+    const payload = {
+      ...record,
+      players: {
+        light: record.players.light ? { id: record.players.light.id, rating: record.players.light.rating } : null,
+        shadow: record.players.shadow ? { id: record.players.shadow.id, rating: record.players.shadow.rating } : null
+      }
     };
-    record.completedAt = record.completedAt || timestamp;
+    await firestore.collection(MATCH_HISTORY_COLLECTION).doc(matchId).set(payload, { merge: true });
   }
-  if (matchHistory.length > 500) {
-    matchHistory = matchHistory.slice(matchHistory.length - 500);
-  }
-  saveMatchHistory();
 }
 
 function applyMatchResultRatings(room, winnerRole) {
@@ -416,7 +628,7 @@ function applyMatchResultRatings(room, winnerRole) {
   const loserRole = winnerRole === "light" ? "shadow" : "light";
   const loserId = room.playerIds ? room.playerIds[loserRole] : null;
   if (!winnerId || !loserId) {
-    return;
+    return [];
   }
   const winnerEntry = getRatingEntry(winnerId);
   const loserEntry = getRatingEntry(loserId);
@@ -428,6 +640,7 @@ function applyMatchResultRatings(room, winnerRole) {
   loserEntry.games += 1;
   globalRatings[winnerId] = winnerEntry;
   globalRatings[loserId] = loserEntry;
+  return [winnerId, loserId];
 }
 
 function getRatingEntry(id) {
@@ -469,49 +682,40 @@ function buildRatingsPayload(room, playerId) {
   return payload;
 }
 
-function saveRatings() {
-  saveJson(RATINGS_PATH, globalRatings);
-}
-
-function saveMatchHistory() {
-  saveJson(MATCHES_PATH, matchHistory);
-}
-
-function ensureDataStorage() {
-  try {
-    if (!fs.existsSync(DATA_DIR)) {
-      fs.mkdirSync(DATA_DIR, { recursive: true });
-    }
-    if (!fs.existsSync(MATCHES_PATH)) {
-      fs.writeFileSync(MATCHES_PATH, "[]", "utf8");
-    }
-    if (!fs.existsSync(RATINGS_PATH)) {
-      fs.writeFileSync(RATINGS_PATH, "{}", "utf8");
-    }
-  } catch (err) {
-    console.error("Failed to initialise data storage", err);
+async function saveRatings(playerIds = []) {
+  await firestoreReady;
+  if (!firestore) {
+    return;
   }
-}
-
-function loadJson(filePath, fallback) {
-  try {
-    const raw = fs.readFileSync(filePath, "utf8");
-    return JSON.parse(raw);
-  } catch (err) {
-    return fallback;
+  const ids = playerIds.length ? Array.from(new Set(playerIds.filter(Boolean))) : Object.keys(globalRatings);
+  if (!ids.length) {
+    return;
   }
-}
-
-function saveJson(filePath, value) {
-  try {
-    fs.writeFileSync(filePath, JSON.stringify(value, null, 2), "utf8");
-  } catch (err) {
-    console.error("Failed to write", filePath, err);
+  const batch = firestore.batch();
+  let hasOps = false;
+  ids.forEach((id) => {
+    const entry = globalRatings[id];
+    if (!entry) return;
+    const docRef = firestore.collection(RATINGS_COLLECTION).doc(id);
+    batch.set(
+      docRef,
+      {
+        rating: entry.rating,
+        games: entry.games
+      },
+      { merge: true }
+    );
+    hasOps = true;
+  });
+  if (!hasOps) {
+    return;
   }
+  await batch.commit();
 }
 
-function handleHttpRequest(req, res) {
+async function handleHttpRequest(req, res) {
   try {
+    await firestoreReady;
     if (req.method === "OPTIONS") {
       setCorsHeaders(res);
       res.writeHead(204).end();
