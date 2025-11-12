@@ -1,0 +1,420 @@
+/* Arnuvo skin pastel bloom */
+
+.board[data-skin="Arnuvo"] {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, rgba(252, 237, 246, 0.85), rgba(244, 219, 238, 0.65));
+}
+
+.board[data-skin="Arnuvo"]::before {
+  content: "";
+  position: absolute;
+  inset: -12%;
+  background:
+    radial-gradient(580px circle at 30% 24%, rgba(255, 180, 214, 0.45), transparent 68%),
+    radial-gradient(560px circle at 72% 76%, rgba(208, 142, 204, 0.4), transparent 70%),
+    linear-gradient(45deg, rgba(255, 255, 255, 0.2) 0 2px, transparent 2px 6px);
+  opacity: 0;
+  filter: blur(18px) saturate(0.85);
+  animation: arnuvo-board-fade 2s ease forwards;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.board-wrapper.arnuvo-board-bloom {
+  animation: arnuvo-board-bloom 0.8s ease-out;
+}
+
+.board[data-skin="Arnuvo"] .cell--recent {
+  background-image: linear-gradient(140deg, rgba(255, 206, 226, 0.25), transparent 65%);
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 188, 214, 0.65),
+    inset 0 0 20px rgba(255, 206, 226, 0.35);
+}
+
+.board .cell[data-option-skin="Arnuvo"]::after {
+  inset: 14%;
+  border-radius: 14px;
+  border: 2px solid rgba(200, 120, 188, 0.4);
+  background:
+    radial-gradient(circle, rgba(255, 228, 244, 0.65) 0%, rgba(255, 210, 236, 0.08) 70%),
+    repeating-conic-gradient(from 45deg, rgba(224, 140, 194, 0.28) 0deg 20deg, transparent 20deg 40deg);
+  animation: arnuvo-option-glow 2s ease-in-out infinite;
+  opacity: 0.85;
+}
+
+.board .cell[data-option-skin="Arnuvo"]::before {
+  content: "";
+  position: absolute;
+  inset: 6%;
+  border-radius: 18px;
+  border: 1px dashed rgba(210, 130, 190, 0.55);
+  animation: arnuvo-option-outline 2.4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.arnuvo-piece {
+  position: relative;
+  isolation: isolate;
+  --arnuvo-piece-scale: 1.12;
+  --arnuvo-piece-enter-scale: 1.04;
+}
+
+.arnuvo-piece .piece__image {
+  transition: transform 0.28s ease, filter 0.28s ease;
+}
+
+.board .cell:hover .arnuvo-piece .piece__image,
+.board .cell.cell--selected .arnuvo-piece .piece__image {
+  transform: scale(1.04);
+  filter: saturate(1.08) brightness(1.05);
+}
+
+.arnuvo-piece .piece__image.arnuvo-piece__image--enter {
+  animation: arnuvo-piece-enter 0.5s cubic-bezier(0.25, 1, 0.35, 1) forwards;
+}
+
+.arnuvo-piece-trail {
+  position: absolute;
+  inset: 18%;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(255, 210, 236, 0.45) 0%, transparent 70%);
+  opacity: 0;
+  transform: scale(0.8);
+  pointer-events: none;
+  z-index: -1;
+}
+
+.arnuvo-piece-trail.arnuvo-piece-trail--active {
+  animation: arnuvo-piece-trail 0.6s ease-out;
+}
+
+.arnuvo-piece .piece__image.arnuvo-piece__image--rotate {
+  animation: arnuvo-piece-rotate 0.45s ease-out;
+}
+
+.arnuvo-piece .piece__image[data-arnuvo-rotation-direction="ccw"] {
+  animation-name: arnuvo-piece-rotate-ccw;
+}
+
+.arnuvo-cell--invalid {
+  animation: arnuvo-cell-invalid 0.42s ease-in-out;
+}
+
+.arnuvo-cell--invalid::after {
+  content: "";
+  position: absolute;
+  inset: 12%;
+  border-radius: 12px;
+  border: 2px solid rgba(220, 96, 132, 0.75);
+  box-shadow:
+    0 0 14px rgba(255, 120, 170, 0.45),
+    inset 0 0 10px rgba(255, 162, 198, 0.42);
+  pointer-events: none;
+}
+
+.arnuvo-cell--emitter::before {
+  content: "";
+  position: absolute;
+  inset: 16%;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(255, 224, 200, 0.72) 0%, rgba(255, 188, 214, 0.3) 55%, transparent 80%);
+  box-shadow:
+    0 0 26px rgba(255, 196, 224, 0.45),
+    0 0 52px rgba(220, 136, 186, 0.3);
+  animation: arnuvo-emitter 0.5s ease-out;
+  pointer-events: none;
+  mix-blend-mode: screen;
+}
+
+.arnuvo-piece--volhv::before {
+  content: "";
+  position: absolute;
+  inset: 14%;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(255, 200, 224, 0.45) 0%, transparent 70%);
+  box-shadow:
+    0 0 32px rgba(255, 192, 230, 0.4),
+    inset 0 0 18px rgba(214, 128, 178, 0.35);
+  opacity: 0.8;
+  animation: arnuvo-orb 6s ease-in-out infinite;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.arnuvo-piece--volhv::after {
+  content: "";
+  position: absolute;
+  inset: 28%;
+  border-radius: 999px;
+  background: conic-gradient(from 120deg, rgba(255, 255, 255, 0.75) 0deg 40deg, transparent 40deg 120deg);
+  opacity: 0.1;
+  animation: arnuvo-rune-spin 8s linear infinite;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.board .cell.cell--selected .arnuvo-piece--volhv::after,
+.board .cell:hover .arnuvo-piece--volhv::after {
+  opacity: 0.6;
+}
+
+.arnuvo-piece--volhv.arnuvo-piece--victory::after {
+  opacity: 0.85;
+  background:
+    radial-gradient(circle, rgba(255, 242, 234, 0.85) 0%, rgba(255, 210, 236, 0.55) 45%, transparent 70%),
+    linear-gradient(0deg, rgba(255, 230, 240, 0.95), transparent 68%);
+  animation: arnuvo-victory 1.2s ease-out forwards;
+}
+
+.arnuvo-piece--shield::after {
+  content: "";
+  position: absolute;
+  width: 58%;
+  height: 14%;
+  top: 12%;
+  left: 21%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 224, 242, 0.9) 50%, rgba(255, 255, 255, 0) 100%);
+  opacity: 0.8;
+  transform: rotate(var(--arnuvo-orientation-angle, 0deg)) translateY(-110%);
+  transform-origin: 50% 420%;
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+
+.arnuvo-piece--shield::before {
+  content: "";
+  position: absolute;
+  inset: 20%;
+  border-radius: 999px;
+  border: 2px solid rgba(200, 140, 110, 0.45);
+  box-shadow: inset 0 0 16px rgba(255, 210, 180, 0.35);
+  pointer-events: none;
+}
+
+.arnuvo-piece--mirror::after {
+  content: "";
+  position: absolute;
+  inset: 22%;
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.85), rgba(214, 160, 214, 0.35));
+  mix-blend-mode: screen;
+  opacity: 0.7;
+}
+
+.arnuvo-piece--mirror::before {
+  content: "";
+  position: absolute;
+  inset: 14%;
+  border-radius: 999px;
+  border: 1px solid rgba(214, 160, 214, 0.45);
+  box-shadow: inset 0 0 18px rgba(255, 224, 242, 0.35);
+  pointer-events: none;
+}
+
+.arnuvo-piece--totem::before {
+  content: "";
+  position: absolute;
+  inset: 16%;
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgba(232, 164, 196, 0.6), rgba(255, 210, 236, 0.2));
+  opacity: 0.75;
+  animation: arnuvo-totem-scroll 8s linear infinite;
+  pointer-events: none;
+}
+
+.arnuvo-piece--totem::after {
+  content: "";
+  position: absolute;
+  inset: 24%;
+  border-radius: 18px;
+  border: 1px solid rgba(214, 128, 178, 0.4);
+  box-shadow: inset 0 0 14px rgba(255, 210, 236, 0.35);
+  pointer-events: none;
+}
+
+@keyframes arnuvo-board-fade {
+  0% {
+    opacity: 0;
+    transform: scale(1.05);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes arnuvo-board-bloom {
+  0% {
+    transform: scale(1.02);
+    filter: saturate(1.1);
+  }
+  100% {
+    transform: scale(1);
+    filter: saturate(1);
+  }
+}
+
+@keyframes arnuvo-option-glow {
+  0%, 100% {
+    box-shadow: 0 0 12px rgba(232, 140, 194, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 24px rgba(232, 140, 194, 0.55);
+  }
+}
+
+@keyframes arnuvo-option-outline {
+  0%, 100% {
+    opacity: 0.35;
+    transform: scale(0.96);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.02);
+  }
+}
+
+@keyframes arnuvo-piece-enter {
+  0% {
+    transform:
+      translate(calc(var(--arnuvo-move-dx, 0) * 100%), calc(var(--arnuvo-move-dy, 0) * 100%))
+      scale(var(--arnuvo-piece-enter-scale, 1.04))
+      rotate(var(--arnuvo-orientation-angle, 0deg));
+    filter: brightness(1.12);
+  }
+  65% {
+    transform:
+      translate(0, 0)
+      scale(var(--arnuvo-piece-scale, 1.12))
+      rotate(var(--arnuvo-orientation-angle, 0deg));
+    filter: brightness(1.05);
+  }
+  100% {
+    transform:
+      translate(0, 0)
+      scale(var(--arnuvo-piece-scale, 1.12))
+      rotate(var(--arnuvo-orientation-angle, 0deg));
+    filter: brightness(1);
+  }
+}
+
+@keyframes arnuvo-piece-trail {
+  0% {
+    opacity: 0.45;
+    transform: scale(0.75);
+  }
+  80% {
+    opacity: 0.15;
+    transform: scale(1.08);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.2);
+  }
+}
+
+@keyframes arnuvo-piece-rotate {
+  0% {
+    transform: rotate(0deg) scale(1.04);
+  }
+  70% {
+    transform: rotate(96deg) scale(1.08);
+  }
+  100% {
+    transform: rotate(90deg) scale(1.02);
+  }
+}
+
+@keyframes arnuvo-piece-rotate-ccw {
+  0% {
+    transform: rotate(0deg) scale(1.04);
+  }
+  70% {
+    transform: rotate(-96deg) scale(1.08);
+  }
+  100% {
+    transform: rotate(-90deg) scale(1.02);
+  }
+}
+
+@keyframes arnuvo-cell-invalid {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(4%);
+  }
+  50% {
+    transform: translateX(-4%);
+  }
+  75% {
+    transform: translateX(2%);
+  }
+}
+
+@keyframes arnuvo-emitter {
+  0% {
+    opacity: 0.2;
+    transform: scale(0.8);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.2);
+  }
+}
+
+@keyframes arnuvo-orb {
+  0%, 100% {
+    opacity: 0.6;
+    transform: scale(0.94);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scale(1.05);
+  }
+}
+
+@keyframes arnuvo-rune-spin {
+  0% {
+    transform: rotate(0deg) scale(0.9);
+    opacity: 0.2;
+  }
+  40% {
+    opacity: 0.75;
+  }
+  100% {
+    transform: rotate(360deg) scale(1.05);
+    opacity: 0.2;
+  }
+}
+
+@keyframes arnuvo-totem-scroll {
+  0% {
+    background-position: 0 0;
+  }
+  100% {
+    background-position: 0 120px;
+  }
+}
+
+@keyframes arnuvo-victory {
+  0% {
+    opacity: 0.3;
+    transform: scale(0.9);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+  100% {
+    opacity: 0.8;
+    transform: scale(1);
+  }
+}

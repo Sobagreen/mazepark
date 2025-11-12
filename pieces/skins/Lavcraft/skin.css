@@ -1,0 +1,423 @@
+/* Lavcraft skin abyssal glow */
+
+.board[data-skin="Lavcraft"] {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, rgba(26, 32, 44, 0.95), rgba(14, 18, 26, 0.9));
+}
+
+.board[data-skin="Lavcraft"]::before {
+  content: "";
+  position: absolute;
+  inset: -14%;
+  background:
+    radial-gradient(520px circle at 28% 26%, rgba(60, 126, 140, 0.35), transparent 70%),
+    radial-gradient(520px circle at 72% 72%, rgba(116, 72, 160, 0.38), transparent 72%),
+    linear-gradient(150deg, rgba(0, 0, 0, 0.45) 0 22%, transparent 22% 100%);
+  opacity: 0;
+  filter: blur(22px) saturate(0.85);
+  animation: lavcraft-board-fade 2s ease forwards;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.board-wrapper.lavcraft-board-pulse {
+  animation: lavcraft-board-pulse 0.9s ease-out;
+}
+
+.board[data-skin="Lavcraft"] .cell--recent {
+  background-image: linear-gradient(135deg, rgba(116, 72, 160, 0.2), transparent 60%);
+  box-shadow:
+    inset 0 0 0 2px rgba(116, 72, 160, 0.55),
+    inset 0 0 18px rgba(60, 126, 140, 0.35);
+}
+
+.board .cell[data-option-skin="Lavcraft"]::after {
+  inset: 14%;
+  border-radius: 16px;
+  border: 2px solid rgba(60, 126, 140, 0.45);
+  background:
+    radial-gradient(circle, rgba(40, 84, 96, 0.65) 0%, rgba(18, 28, 36, 0.4) 70%),
+    linear-gradient(135deg, rgba(116, 72, 160, 0.5) 0 12%, transparent 12% 100%);
+  animation: lavcraft-option-glow 2.1s ease-in-out infinite;
+  opacity: 0.78;
+}
+
+.board .cell[data-option-skin="Lavcraft"]::before {
+  content: "";
+  position: absolute;
+  inset: 6%;
+  border-radius: 20px;
+  border: 1px solid rgba(116, 72, 160, 0.45);
+  box-shadow: inset 0 0 16px rgba(116, 72, 160, 0.35);
+  animation: lavcraft-option-outline 2.8s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.lavcraft-piece {
+  position: relative;
+  isolation: isolate;
+  --lavcraft-piece-scale: 1.12;
+  --lavcraft-piece-enter-scale: 1.05;
+}
+
+.lavcraft-piece .piece__image {
+  transition: transform 0.28s ease, filter 0.28s ease;
+}
+
+.board .cell:hover .lavcraft-piece .piece__image,
+.board .cell.cell--selected .lavcraft-piece .piece__image {
+  transform: scale(1.05);
+  filter: saturate(1.08) brightness(1.02);
+}
+
+.lavcraft-piece .piece__image.lavcraft-piece__image--enter {
+  animation: lavcraft-piece-enter 0.5s cubic-bezier(0.28, 1, 0.42, 1) forwards;
+}
+
+.lavcraft-piece-trail {
+  position: absolute;
+  inset: 18%;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(116, 72, 160, 0.4) 0%, transparent 70%);
+  opacity: 0;
+  transform: scale(0.8);
+  pointer-events: none;
+  z-index: -1;
+}
+
+.lavcraft-piece-trail.lavcraft-piece-trail--active {
+  animation: lavcraft-piece-trail 0.65s ease-out;
+}
+
+.lavcraft-piece .piece__image.lavcraft-piece__image--rotate {
+  animation: lavcraft-piece-rotate 0.48s ease-out;
+}
+
+.lavcraft-piece .piece__image[data-lavcraft-rotation-direction="ccw"] {
+  animation-name: lavcraft-piece-rotate-ccw;
+}
+
+.lavcraft-cell--invalid {
+  animation: lavcraft-cell-invalid 0.46s ease-in-out;
+}
+
+.lavcraft-cell--invalid::after {
+  content: "";
+  position: absolute;
+  inset: 10%;
+  border-radius: 12px;
+  border: 2px solid rgba(180, 64, 96, 0.7);
+  box-shadow:
+    0 0 16px rgba(180, 64, 96, 0.45),
+    inset 0 0 12px rgba(180, 64, 96, 0.38);
+  pointer-events: none;
+}
+
+.lavcraft-cell--emitter::before {
+  content: "";
+  position: absolute;
+  inset: 14%;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(116, 72, 160, 0.65) 0%, rgba(40, 84, 96, 0.35) 52%, transparent 78%);
+  box-shadow:
+    0 0 28px rgba(116, 72, 160, 0.45),
+    0 0 54px rgba(60, 126, 140, 0.32);
+  animation: lavcraft-emitter 0.55s ease-out;
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+
+.lavcraft-piece--volhv::before {
+  content: "";
+  position: absolute;
+  inset: 14%;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(60, 126, 140, 0.4) 0%, transparent 70%);
+  box-shadow:
+    0 0 34px rgba(60, 126, 140, 0.38),
+    inset 0 0 18px rgba(20, 54, 64, 0.35);
+  opacity: 0.8;
+  animation: lavcraft-orb 6.8s ease-in-out infinite;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.lavcraft-piece--volhv::after {
+  content: "";
+  position: absolute;
+  inset: 28%;
+  border-radius: 999px;
+  background: conic-gradient(from 100deg, rgba(180, 120, 220, 0.7) 0deg 42deg, transparent 42deg 120deg);
+  opacity: 0.15;
+  animation: lavcraft-rune-spin 7.8s linear infinite;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.board .cell.cell--selected .lavcraft-piece--volhv::after,
+.board .cell:hover .lavcraft-piece--volhv::after {
+  opacity: 0.62;
+}
+
+.lavcraft-piece--volhv.lavcraft-piece--victory::after {
+  opacity: 0.95;
+  background:
+    radial-gradient(circle, rgba(120, 200, 214, 0.75) 0%, rgba(180, 120, 220, 0.55) 45%, transparent 70%),
+    linear-gradient(0deg, rgba(116, 72, 160, 0.8), transparent 65%);
+  animation: lavcraft-victory 1.3s ease-out forwards;
+}
+
+.lavcraft-piece--shield::after {
+  content: "";
+  position: absolute;
+  width: 58%;
+  height: 14%;
+  top: 12%;
+  left: 21%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(116, 72, 160, 0) 0%, rgba(120, 200, 214, 0.85) 50%, rgba(116, 72, 160, 0) 100%);
+  opacity: 0.8;
+  transform: rotate(var(--lavcraft-orientation-angle, 0deg)) translateY(-108%);
+  transform-origin: 50% 420%;
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+
+.lavcraft-piece--shield::before {
+  content: "";
+  position: absolute;
+  inset: 20%;
+  border-radius: 999px;
+  border: 2px solid rgba(120, 200, 214, 0.28);
+  box-shadow: inset 0 0 16px rgba(60, 126, 140, 0.28);
+  pointer-events: none;
+}
+
+.lavcraft-piece--mirror::after {
+  content: "";
+  position: absolute;
+  inset: 22%;
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(180, 120, 220, 0.6), rgba(120, 200, 214, 0.35));
+  mix-blend-mode: screen;
+  opacity: 0.7;
+}
+
+.lavcraft-piece--mirror::before {
+  content: "";
+  position: absolute;
+  inset: 14%;
+  border-radius: 999px;
+  border: 1px solid rgba(120, 200, 214, 0.35);
+  box-shadow: inset 0 0 16px rgba(120, 200, 214, 0.3);
+  pointer-events: none;
+}
+
+.lavcraft-piece--totem::before {
+  content: "";
+  position: absolute;
+  inset: 16%;
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(60, 126, 140, 0.65), rgba(20, 54, 64, 0.55));
+  opacity: 0.9;
+  animation: lavcraft-totem-scroll 8s linear infinite;
+  pointer-events: none;
+}
+
+.lavcraft-piece--totem::after {
+  content: "";
+  position: absolute;
+  inset: 24%;
+  border-radius: 18px;
+  border: 1px solid rgba(116, 72, 160, 0.45);
+  box-shadow: inset 0 0 16px rgba(116, 72, 160, 0.35);
+  pointer-events: none;
+}
+
+@keyframes lavcraft-board-fade {
+  0% {
+    opacity: 0;
+    transform: scale(1.05);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes lavcraft-board-pulse {
+  0% {
+    transform: scale(1.03);
+    filter: saturate(1.1);
+  }
+  100% {
+    transform: scale(1);
+    filter: saturate(1);
+  }
+}
+
+@keyframes lavcraft-option-glow {
+  0%, 100% {
+    box-shadow: 0 0 14px rgba(120, 200, 214, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 26px rgba(120, 200, 214, 0.5);
+  }
+}
+
+@keyframes lavcraft-option-outline {
+  0%, 100% {
+    opacity: 0.35;
+    transform: scale(0.96);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.04);
+  }
+}
+
+@keyframes lavcraft-piece-enter {
+  0% {
+    transform:
+      translate(calc(var(--lavcraft-move-dx, 0) * 100%), calc(var(--lavcraft-move-dy, 0) * 100%))
+      scale(var(--lavcraft-piece-enter-scale, 1.05))
+      rotate(var(--lavcraft-orientation-angle, 0deg));
+    filter: brightness(1.12);
+  }
+  65% {
+    transform:
+      translate(0, 0)
+      scale(var(--lavcraft-piece-scale, 1.12))
+      rotate(var(--lavcraft-orientation-angle, 0deg));
+    filter: brightness(1.04);
+  }
+  100% {
+    transform:
+      translate(0, 0)
+      scale(var(--lavcraft-piece-scale, 1.12))
+      rotate(var(--lavcraft-orientation-angle, 0deg));
+    filter: brightness(1);
+  }
+}
+
+@keyframes lavcraft-piece-trail {
+  0% {
+    opacity: 0.48;
+    transform: scale(0.75);
+  }
+  80% {
+    opacity: 0.2;
+    transform: scale(1.08);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.24);
+  }
+}
+
+@keyframes lavcraft-piece-rotate {
+  0% {
+    transform: rotate(0deg) scale(1.04);
+  }
+  70% {
+    transform: rotate(96deg) scale(1.08);
+  }
+  100% {
+    transform: rotate(90deg) scale(1.02);
+  }
+}
+
+@keyframes lavcraft-piece-rotate-ccw {
+  0% {
+    transform: rotate(0deg) scale(1.04);
+  }
+  70% {
+    transform: rotate(-96deg) scale(1.08);
+  }
+  100% {
+    transform: rotate(-90deg) scale(1.02);
+  }
+}
+
+@keyframes lavcraft-cell-invalid {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(4%);
+  }
+  40% {
+    transform: translateX(-4%);
+  }
+  60% {
+    transform: translateX(3%);
+  }
+  80% {
+    transform: translateX(-2%);
+  }
+}
+
+@keyframes lavcraft-emitter {
+  0% {
+    opacity: 0.25;
+    transform: scale(0.78);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.2);
+  }
+}
+
+@keyframes lavcraft-orb {
+  0%, 100% {
+    opacity: 0.6;
+    transform: scale(0.94);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scale(1.05);
+  }
+}
+
+@keyframes lavcraft-rune-spin {
+  0% {
+    transform: rotate(0deg) scale(0.88);
+    opacity: 0.2;
+  }
+  40% {
+    opacity: 0.7;
+  }
+  100% {
+    transform: rotate(360deg) scale(1.05);
+    opacity: 0.2;
+  }
+}
+
+@keyframes lavcraft-totem-scroll {
+  0% {
+    background-position: 0 0;
+  }
+  100% {
+    background-position: 0 160px;
+  }
+}
+
+@keyframes lavcraft-victory {
+  0% {
+    opacity: 0.28;
+    transform: scale(0.9);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.06);
+  }
+  100% {
+    opacity: 0.86;
+    transform: scale(1);
+  }
+}
