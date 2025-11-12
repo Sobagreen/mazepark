@@ -1,0 +1,442 @@
+/* Egypt skin sunlit dunes */
+
+.board[data-skin="Egypt"] {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, rgba(240, 222, 188, 0.92), rgba(214, 188, 140, 0.65));
+}
+
+.board[data-skin="Egypt"]::before {
+  content: "";
+  position: absolute;
+  inset: -10%;
+  background:
+    radial-gradient(620px circle at 28% 26%, rgba(250, 206, 128, 0.4), transparent 70%),
+    radial-gradient(600px circle at 74% 72%, rgba(116, 180, 176, 0.35), transparent 68%),
+    linear-gradient(120deg, rgba(255, 255, 255, 0.18) 0 18%, transparent 18% 100%);
+  opacity: 0;
+  filter: blur(16px) saturate(0.9);
+  animation: egypt-board-fade 1.8s ease forwards;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.board-wrapper.egypt-board-pulse {
+  animation: egypt-board-pulse 0.85s ease-out;
+}
+
+.board[data-skin="Egypt"] .cell--recent {
+  background-image: linear-gradient(135deg, rgba(244, 214, 150, 0.25), transparent 60%);
+  box-shadow:
+    inset 0 0 0 2px rgba(244, 196, 118, 0.65),
+    inset 0 0 16px rgba(244, 214, 150, 0.32);
+}
+
+.board .cell[data-option-skin="Egypt"]::after {
+  inset: 12%;
+  border-radius: 14px;
+  border: 2px solid rgba(116, 180, 176, 0.5);
+  background:
+    repeating-linear-gradient(0deg, rgba(116, 180, 176, 0.3) 0 4px, transparent 4px 10px),
+    radial-gradient(circle, rgba(248, 232, 188, 0.65) 0%, rgba(240, 222, 188, 0.1) 70%);
+  animation: egypt-option-glow 1.8s ease-in-out infinite;
+  opacity: 0.8;
+}
+
+.board .cell[data-option-skin="Egypt"]::before {
+  content: "";
+  position: absolute;
+  inset: 6%;
+  border-radius: 18px;
+  border: 1px solid rgba(92, 142, 138, 0.5);
+  box-shadow: inset 0 0 12px rgba(116, 180, 176, 0.25);
+  animation: egypt-option-outline 2.4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.egypt-piece {
+  position: relative;
+  isolation: isolate;
+  --egypt-piece-scale: 1.1;
+  --egypt-piece-enter-scale: 1.03;
+}
+
+.egypt-piece .piece__image {
+  transition: transform 0.28s ease, filter 0.28s ease;
+}
+
+.board .cell:hover .egypt-piece .piece__image,
+.board .cell.cell--selected .egypt-piece .piece__image {
+  transform: scale(1.05);
+  filter: saturate(1.1) brightness(1.04);
+}
+
+.egypt-piece .piece__image.egypt-piece__image--enter {
+  animation: egypt-piece-enter 0.48s cubic-bezier(0.26, 1, 0.38, 1) forwards;
+}
+
+.egypt-piece-trail {
+  position: absolute;
+  inset: 18%;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(250, 226, 168, 0.45) 0%, transparent 70%);
+  opacity: 0;
+  transform: scale(0.8);
+  pointer-events: none;
+  z-index: -1;
+}
+
+.egypt-piece-trail.egypt-piece-trail--active {
+  animation: egypt-piece-trail 0.6s ease-out;
+}
+
+.egypt-piece .piece__image.egypt-piece__image--rotate {
+  animation: egypt-piece-rotate 0.46s ease-out;
+}
+
+.egypt-piece .piece__image[data-egypt-rotation-direction="ccw"] {
+  animation-name: egypt-piece-rotate-ccw;
+}
+
+.egypt-cell--invalid {
+  animation: egypt-cell-invalid 0.44s ease-in-out;
+}
+
+.egypt-cell--invalid::after {
+  content: "";
+  position: absolute;
+  inset: 10%;
+  border-radius: 12px;
+  border: 2px solid rgba(200, 80, 56, 0.75);
+  box-shadow:
+    0 0 14px rgba(228, 100, 68, 0.45),
+    inset 0 0 10px rgba(228, 100, 68, 0.35);
+  pointer-events: none;
+}
+
+.egypt-cell--emitter::before {
+  content: "";
+  position: absolute;
+  inset: 14%;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(255, 222, 168, 0.7) 0%, rgba(240, 214, 150, 0.25) 52%, transparent 78%);
+  box-shadow:
+    0 0 24px rgba(250, 210, 136, 0.45),
+    0 0 48px rgba(116, 180, 176, 0.25);
+  animation: egypt-emitter 0.5s ease-out;
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+
+.egypt-piece--volhv::before {
+  content: "";
+  position: absolute;
+  inset: 14%;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(116, 180, 176, 0.35) 0%, transparent 70%);
+  box-shadow:
+    0 0 32px rgba(116, 180, 176, 0.38),
+    inset 0 0 18px rgba(78, 134, 132, 0.32);
+  opacity: 0.75;
+  animation: egypt-orb 6.5s ease-in-out infinite;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.egypt-piece--volhv::after {
+  content: "";
+  position: absolute;
+  inset: 28%;
+  border-radius: 999px;
+  background: conic-gradient(from 110deg, rgba(255, 255, 255, 0.7) 0deg 40deg, transparent 40deg 110deg);
+  opacity: 0.12;
+  animation: egypt-rune-spin 7.5s linear infinite;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.board .cell.cell--selected .egypt-piece--volhv::after,
+.board .cell:hover .egypt-piece--volhv::after {
+  opacity: 0.6;
+}
+
+.egypt-piece--volhv.egypt-piece--victory::after {
+  opacity: 0.9;
+  background:
+    radial-gradient(circle, rgba(255, 236, 210, 0.85) 0%, rgba(250, 214, 148, 0.55) 46%, transparent 70%),
+    linear-gradient(0deg, rgba(252, 228, 174, 0.9), transparent 65%);
+  animation: egypt-victory 1.25s ease-out forwards;
+}
+
+.egypt-piece--shield {
+  --shield-front-width: 0.58;
+  --shield-front-height: 0.18;
+  --shield-front-distance: -108%;
+  --shield-front-scale-x: 1;
+  --shield-front-scale-y: 1;
+  --shield-front-opacity: 0.85;
+  --shield-front-blur: 1.2px;
+  --shield-front-gradient: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(252, 228, 174, 0.85) 50%, rgba(255, 255, 255, 0) 100%);
+  --shield-front-shadow: none;
+}
+
+.egypt-piece--shield::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: calc(var(--shield-front-width, 0.58) * 100%);
+  height: calc(var(--shield-front-height, 0.18) * 100%);
+  border-radius: 999px;
+  background: var(
+    --shield-front-gradient,
+    linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(252, 228, 174, 0.85) 50%, rgba(255, 255, 255, 0) 100%)
+  );
+  opacity: var(--shield-front-opacity, 0.85);
+  filter: blur(var(--shield-front-blur, 1.2px));
+  transform-origin: 50% 50%;
+  transform:
+    translate(-50%, -50%)
+    rotate(var(--egypt-orientation-angle, 0deg))
+    translateY(var(--shield-front-distance, -108%))
+    scaleX(var(--shield-front-scale-x, 1))
+    scaleY(var(--shield-front-scale-y, 1));
+  mix-blend-mode: screen;
+  pointer-events: none;
+  box-shadow: var(--shield-front-shadow, none);
+}
+
+.egypt-piece--shield::before {
+  content: "";
+  position: absolute;
+  inset: 20%;
+  border-radius: 999px;
+  border: 2px solid rgba(156, 120, 60, 0.45);
+  box-shadow: inset 0 0 14px rgba(244, 206, 140, 0.32);
+  pointer-events: none;
+}
+
+.egypt-piece--mirror::after {
+  content: "";
+  position: absolute;
+  inset: 22%;
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.82), rgba(166, 208, 204, 0.35));
+  mix-blend-mode: screen;
+  opacity: 0.7;
+}
+
+.egypt-piece--mirror::before {
+  content: "";
+  position: absolute;
+  inset: 14%;
+  border-radius: 999px;
+  border: 1px solid rgba(166, 208, 204, 0.45);
+  box-shadow: inset 0 0 16px rgba(180, 214, 208, 0.35);
+  pointer-events: none;
+}
+
+.egypt-piece--totem::before {
+  content: "";
+  position: absolute;
+  inset: 16%;
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgba(210, 174, 108, 0.75), rgba(240, 206, 148, 0.25));
+  opacity: 0.8;
+  animation: egypt-totem-scroll 7s linear infinite;
+  pointer-events: none;
+}
+
+.egypt-piece--totem::after {
+  content: "";
+  position: absolute;
+  inset: 24%;
+  border-radius: 18px;
+  border: 1px solid rgba(214, 168, 102, 0.45);
+  box-shadow: inset 0 0 16px rgba(250, 214, 148, 0.28);
+  pointer-events: none;
+}
+
+@keyframes egypt-board-fade {
+  0% {
+    opacity: 0;
+    transform: scale(1.04);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes egypt-board-pulse {
+  0% {
+    transform: scale(1.02);
+    filter: saturate(1.1);
+  }
+  100% {
+    transform: scale(1);
+    filter: saturate(1);
+  }
+}
+
+@keyframes egypt-option-glow {
+  0%, 100% {
+    box-shadow: 0 0 12px rgba(116, 180, 176, 0.28);
+  }
+  50% {
+    box-shadow: 0 0 22px rgba(116, 180, 176, 0.48);
+  }
+}
+
+@keyframes egypt-option-outline {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(0.95);
+  }
+  50% {
+    opacity: 0.65;
+    transform: scale(1.03);
+  }
+}
+
+@keyframes egypt-piece-enter {
+  0% {
+    transform:
+      translate(calc(var(--egypt-move-dx, 0) * 100%), calc(var(--egypt-move-dy, 0) * 100%))
+      scale(var(--egypt-piece-enter-scale, 1.03))
+      rotate(var(--egypt-orientation-angle, 0deg));
+    filter: brightness(1.12);
+  }
+  65% {
+    transform:
+      translate(0, 0)
+      scale(var(--egypt-piece-scale, 1.1))
+      rotate(var(--egypt-orientation-angle, 0deg));
+    filter: brightness(1.05);
+  }
+  100% {
+    transform:
+      translate(0, 0)
+      scale(var(--egypt-piece-scale, 1.1))
+      rotate(var(--egypt-orientation-angle, 0deg));
+    filter: brightness(1);
+  }
+}
+
+@keyframes egypt-piece-trail {
+  0% {
+    opacity: 0.45;
+    transform: scale(0.76);
+  }
+  80% {
+    opacity: 0.18;
+    transform: scale(1.08);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.22);
+  }
+}
+
+@keyframes egypt-piece-rotate {
+  0%,
+  100% {
+    filter: brightness(1) saturate(1);
+  }
+  55% {
+    filter: brightness(1.1) saturate(1.04);
+  }
+}
+
+@keyframes egypt-piece-rotate-ccw {
+  0%,
+  100% {
+    filter: brightness(1) saturate(1);
+  }
+  55% {
+    filter: brightness(1.1) saturate(1.04);
+  }
+}
+
+@keyframes egypt-cell-invalid {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(4%);
+  }
+  40% {
+    transform: translateX(-4%);
+  }
+  60% {
+    transform: translateX(3%);
+  }
+  80% {
+    transform: translateX(-2%);
+  }
+}
+
+@keyframes egypt-emitter {
+  0% {
+    opacity: 0.2;
+    transform: scale(0.78);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.18);
+  }
+}
+
+@keyframes egypt-orb {
+  0%, 100% {
+    opacity: 0.55;
+    transform: scale(0.94);
+  }
+  50% {
+    opacity: 0.85;
+    transform: scale(1.05);
+  }
+}
+
+@keyframes egypt-rune-spin {
+  0% {
+    transform: rotate(0deg) scale(0.88);
+    opacity: 0.2;
+  }
+  40% {
+    opacity: 0.7;
+  }
+  100% {
+    transform: rotate(360deg) scale(1.05);
+    opacity: 0.2;
+  }
+}
+
+@keyframes egypt-totem-scroll {
+  0% {
+    background-position: 0 0;
+  }
+  100% {
+    background-position: 0 140px;
+  }
+}
+
+@keyframes egypt-victory {
+  0% {
+    opacity: 0.25;
+    transform: scale(0.92);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+  100% {
+    opacity: 0.85;
+    transform: scale(1);
+  }
+}

@@ -14,7 +14,10 @@
           "piece-effect--impact",
           "piece-effect--japan-own"
         ],
-        "offset": { "x": 0, "y": 0 },
+        "offset": {
+          "x": 0,
+          "y": 0
+        },
         "scale": 1.15
       },
       "enemyDestructionClass": {
@@ -22,21 +25,67 @@
           "piece-effect--impact",
           "piece-effect--japan-enemy"
         ],
-        "offset": { "x": 0, "y": 0 },
+        "offset": {
+          "x": 0,
+          "y": 0
+        },
         "scale": 1.6
       },
       "rotation": {
         "duration": 260,
-        "easing": "cubic-bezier(0.22, 1, 0.36, 1)"
+        "easing": "cubic-bezier(0.22, 1, 0.36, 1)",
+        "overshoot": 8,
+        "scaleBoost": 0.08
       }
     },
     "hero": {
       "highlight": {
         "color": "rgba(168, 231, 161, 0.72)",
-        "idleOpacity": 0.42,
-        "activeOpacity": 0.68,
-        "blur": 22,
-        "scale": 1.03
+        "idleOpacity": 0.3,
+        "activeOpacity": 0.58,
+        "blur": 16,
+        "scale": 1.08,
+        "inset": 0.08,
+        "glowRadius": 64,
+        "glowSpread": -6
+      }
+    },
+    "board": {
+      "background": "linear-gradient(135deg, rgba(244, 236, 232, 0.95) 0%, rgba(228, 200, 198, 0.78) 100%)",
+      "wrapper": {
+        "background": "radial-gradient(600px circle at 26% 24%, rgba(214, 74, 74, 0.28) 0%, transparent 68%), radial-gradient(580px circle at 70% 74%, rgba(245, 193, 108, 0.28) 0%, transparent 72%)",
+        "shadow": "0 38px 74px rgba(138, 38, 46, 0.2)"
+      },
+      "cell": {
+        "dark": "rgba(234, 214, 206, 0.94)",
+        "light": "rgba(255, 246, 236, 0.95)",
+        "border": "rgba(214, 74, 74, 0.32)",
+        "innerGlow": "rgba(245, 193, 108, 0.22)"
+      },
+      "overlay": {
+        "primary": "rgba(214, 74, 74, 0.28)",
+        "secondary": "rgba(245, 193, 108, 0.24)",
+        "opacity": 0.42,
+        "blendMode": "screen"
+      },
+      "frame": {
+        "border": "1px solid rgba(214, 74, 74, 0.45)",
+        "shadow": "0 32px 62px rgba(128, 28, 36, 0.24)"
+      }
+    },
+    "pieces": {
+      "shield": {
+        "frontGlow": {
+          "width": 0.62,
+          "height": 0.2,
+          "distance": -118,
+          "scaleX": 1.04,
+          "scaleY": 0.84,
+          "opacity": 0.78,
+          "blur": 1.6,
+          "gradient": "linear-gradient(90deg, rgba(214, 74, 74, 0) 0%, rgba(245, 193, 108, 0.85) 45%, rgba(168, 231, 161, 0.7) 55%, rgba(214, 74, 74, 0) 100%)",
+          "shadow": "0 0 20px rgba(245, 193, 108, 0.35)"
+        }
       }
     }
   },
@@ -55,7 +104,10 @@
           "piece-effect--impact",
           "piece-effect--japan-own"
         ],
-        "offset": { "x": 0, "y": 0 },
+        "offset": {
+          "x": 0,
+          "y": 0
+        },
         "scale": 1.15
       },
       "enemyDestructionClass": {
@@ -63,21 +115,67 @@
           "piece-effect--impact",
           "piece-effect--japan-enemy"
         ],
-        "offset": { "x": 0, "y": 0 },
+        "offset": {
+          "x": 0,
+          "y": 0
+        },
         "scale": 1.6
       },
       "rotation": {
         "duration": 260,
-        "easing": "cubic-bezier(0.22, 1, 0.36, 1)"
+        "easing": "cubic-bezier(0.22, 1, 0.36, 1)",
+        "overshoot": 8,
+        "scaleBoost": 0.08
       }
     },
     "hero": {
       "highlight": {
         "color": "rgba(154, 220, 144, 0.76)",
-        "idleOpacity": 0.42,
-        "activeOpacity": 0.68,
-        "blur": 22,
-        "scale": 1.03
+        "idleOpacity": 0.3,
+        "activeOpacity": 0.58,
+        "blur": 16,
+        "scale": 1.08,
+        "inset": 0.08,
+        "glowRadius": 64,
+        "glowSpread": -6
+      }
+    },
+    "board": {
+      "background": "linear-gradient(135deg, rgba(244, 236, 232, 0.95) 0%, rgba(228, 200, 198, 0.78) 100%)",
+      "wrapper": {
+        "background": "radial-gradient(600px circle at 26% 24%, rgba(214, 74, 74, 0.28) 0%, transparent 68%), radial-gradient(580px circle at 70% 74%, rgba(245, 193, 108, 0.28) 0%, transparent 72%)",
+        "shadow": "0 38px 74px rgba(138, 38, 46, 0.2)"
+      },
+      "cell": {
+        "dark": "rgba(234, 214, 206, 0.94)",
+        "light": "rgba(255, 246, 236, 0.95)",
+        "border": "rgba(214, 74, 74, 0.32)",
+        "innerGlow": "rgba(245, 193, 108, 0.22)"
+      },
+      "overlay": {
+        "primary": "rgba(214, 74, 74, 0.28)",
+        "secondary": "rgba(245, 193, 108, 0.24)",
+        "opacity": 0.42,
+        "blendMode": "screen"
+      },
+      "frame": {
+        "border": "1px solid rgba(214, 74, 74, 0.45)",
+        "shadow": "0 32px 62px rgba(128, 28, 36, 0.24)"
+      }
+    },
+    "pieces": {
+      "shield": {
+        "frontGlow": {
+          "width": 0.64,
+          "height": 0.2,
+          "distance": -118,
+          "scaleX": 1.05,
+          "scaleY": 0.82,
+          "opacity": 0.8,
+          "blur": 1.7,
+          "gradient": "linear-gradient(90deg, rgba(214, 74, 74, 0) 0%, rgba(214, 74, 74, 0.78) 46%, rgba(154, 220, 144, 0.74) 54%, rgba(214, 74, 74, 0) 100%)",
+          "shadow": "0 0 22px rgba(214, 74, 74, 0.32)"
+        }
       }
     }
   }

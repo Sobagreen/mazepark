@@ -14,7 +14,10 @@
           "piece-effect--impact",
           "piece-effect--slavic-type1-own"
         ],
-        "offset": { "x": 0, "y": 0 },
+        "offset": {
+          "x": 0,
+          "y": 0
+        },
         "scale": 1.25
       },
       "enemyDestructionClass": {
@@ -22,21 +25,67 @@
           "piece-effect--impact",
           "piece-effect--slavic-type1-enemy"
         ],
-        "offset": { "x": 0, "y": 0 },
+        "offset": {
+          "x": 0,
+          "y": 0
+        },
         "scale": 1.9
       },
       "rotation": {
         "duration": 290,
-        "easing": "cubic-bezier(0.22, 1, 0.36, 1)"
+        "easing": "cubic-bezier(0.22, 1, 0.36, 1)",
+        "overshoot": 8,
+        "scaleBoost": 0.08
       }
     },
     "hero": {
       "highlight": {
         "color": "rgba(255, 152, 92, 0.78)",
-        "idleOpacity": 0.45,
-        "activeOpacity": 0.73,
-        "blur": 27,
-        "scale": 1.06
+        "idleOpacity": 0.3,
+        "activeOpacity": 0.58,
+        "blur": 16,
+        "scale": 1.08,
+        "inset": 0.08,
+        "glowRadius": 64,
+        "glowSpread": -6
+      }
+    },
+    "board": {
+      "background": "linear-gradient(135deg, rgba(30, 42, 52, 0.96) 0%, rgba(18, 28, 36, 0.9) 100%)",
+      "wrapper": {
+        "background": "radial-gradient(600px circle at 30% 24%, rgba(218, 144, 52, 0.26) 0%, transparent 70%), radial-gradient(580px circle at 72% 76%, rgba(76, 136, 192, 0.26) 0%, transparent 74%)",
+        "shadow": "0 42px 80px rgba(10, 12, 20, 0.42)"
+      },
+      "cell": {
+        "dark": "rgba(26, 36, 46, 0.95)",
+        "light": "rgba(38, 48, 60, 0.92)",
+        "border": "rgba(218, 144, 52, 0.42)",
+        "innerGlow": "rgba(76, 136, 192, 0.24)"
+      },
+      "overlay": {
+        "primary": "rgba(218, 144, 52, 0.32)",
+        "secondary": "rgba(76, 136, 192, 0.28)",
+        "opacity": 0.48,
+        "blendMode": "screen"
+      },
+      "frame": {
+        "border": "1px solid rgba(218, 144, 52, 0.45)",
+        "shadow": "0 34px 70px rgba(8, 10, 18, 0.5)"
+      }
+    },
+    "pieces": {
+      "shield": {
+        "frontGlow": {
+          "width": 0.64,
+          "height": 0.22,
+          "distance": -118,
+          "scaleX": 1.06,
+          "scaleY": 0.82,
+          "opacity": 0.8,
+          "blur": 1.8,
+          "gradient": "linear-gradient(90deg, rgba(218, 144, 52, 0) 0%, rgba(218, 144, 52, 0.92) 46%, rgba(76, 136, 192, 0.7) 54%, rgba(218, 144, 52, 0) 100%)",
+          "shadow": "0 0 24px rgba(218, 144, 52, 0.32)"
+        }
       }
     },
     "sounds": {
@@ -60,7 +109,10 @@
           "piece-effect--impact",
           "piece-effect--slavic-type2-own"
         ],
-        "offset": { "x": 0, "y": 0 },
+        "offset": {
+          "x": 0,
+          "y": 0
+        },
         "scale": 1.2
       },
       "enemyDestructionClass": {
@@ -68,21 +120,67 @@
           "piece-effect--impact",
           "piece-effect--slavic-type2-enemy"
         ],
-        "offset": { "x": 0, "y": 0 },
+        "offset": {
+          "x": 0,
+          "y": 0
+        },
         "scale": 1.8
       },
       "rotation": {
         "duration": 290,
-        "easing": "cubic-bezier(0.22, 1, 0.36, 1)"
+        "easing": "cubic-bezier(0.22, 1, 0.36, 1)",
+        "overshoot": 8,
+        "scaleBoost": 0.08
       }
     },
     "hero": {
       "highlight": {
         "color": "rgba(136, 210, 255, 0.78)",
-        "idleOpacity": 0.45,
-        "activeOpacity": 0.73,
-        "blur": 27,
-        "scale": 1.06
+        "idleOpacity": 0.3,
+        "activeOpacity": 0.58,
+        "blur": 16,
+        "scale": 1.08,
+        "inset": 0.08,
+        "glowRadius": 64,
+        "glowSpread": -6
+      }
+    },
+    "board": {
+      "background": "linear-gradient(135deg, rgba(30, 42, 52, 0.96) 0%, rgba(18, 28, 36, 0.9) 100%)",
+      "wrapper": {
+        "background": "radial-gradient(600px circle at 30% 24%, rgba(218, 144, 52, 0.26) 0%, transparent 70%), radial-gradient(580px circle at 72% 76%, rgba(76, 136, 192, 0.26) 0%, transparent 74%)",
+        "shadow": "0 42px 80px rgba(10, 12, 20, 0.42)"
+      },
+      "cell": {
+        "dark": "rgba(26, 36, 46, 0.95)",
+        "light": "rgba(38, 48, 60, 0.92)",
+        "border": "rgba(218, 144, 52, 0.42)",
+        "innerGlow": "rgba(76, 136, 192, 0.24)"
+      },
+      "overlay": {
+        "primary": "rgba(218, 144, 52, 0.32)",
+        "secondary": "rgba(76, 136, 192, 0.28)",
+        "opacity": 0.48,
+        "blendMode": "screen"
+      },
+      "frame": {
+        "border": "1px solid rgba(218, 144, 52, 0.45)",
+        "shadow": "0 34px 70px rgba(8, 10, 18, 0.5)"
+      }
+    },
+    "pieces": {
+      "shield": {
+        "frontGlow": {
+          "width": 0.64,
+          "height": 0.22,
+          "distance": -118,
+          "scaleX": 1.06,
+          "scaleY": 0.82,
+          "opacity": 0.82,
+          "blur": 1.9,
+          "gradient": "linear-gradient(90deg, rgba(76, 136, 192, 0) 0%, rgba(76, 136, 192, 0.85) 48%, rgba(218, 144, 52, 0.65) 54%, rgba(76, 136, 192, 0) 100%)",
+          "shadow": "0 0 24px rgba(136, 210, 255, 0.3)"
+        }
       }
     },
     "sounds": {

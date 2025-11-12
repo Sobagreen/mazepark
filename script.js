@@ -199,6 +199,35 @@ const PIECE_BASE_SCALE = 1.15;
 const DEFAULT_ROTATION_DURATION = 420;
 const MIN_ROTATION_DURATION = 380;
 
+window.__skinEffectsRegistry = window.__skinEffectsRegistry || {};
+
+function forEachSkinEffect(callback) {
+  if (typeof callback !== "function") {
+    return;
+  }
+  const registry = window.__skinEffectsRegistry;
+  if (!registry) {
+    return;
+  }
+  Object.values(registry).forEach((handlers) => {
+    if (handlers) {
+      callback(handlers);
+    }
+  });
+}
+
+function notifySkinEffects(method, payload) {
+  forEachSkinEffect((handlers) => {
+    if (typeof handlers[method] === "function") {
+      handlers[method](payload);
+    }
+  });
+}
+
+function initSkinEffects(options) {
+  notifySkinEffects("init", options);
+}
+
 const PLAYERS = {
   light: {
     name: "Первый игрок",
@@ -405,6 +434,7 @@ let board = createEmptyBoard();
 let currentPlayer = "light";
 let selectedCell = null;
 let currentOptions = [];
+let currentOptionSelection = null;
 let turnCounter = 1;
 let currentTheme = "dark";
 let lastStatusMessage = "";
@@ -498,6 +528,17 @@ const cells = [];
 const multiplayer = createMultiplayerController();
 
 initialiseBoardGrid();
+initSkinEffects({
+  boardElement: elements.board,
+  boardWrapper: elements.boardWrapper,
+  laserOverlay: elements.laserOverlay,
+  effectsOverlay: elements.effectsOverlay,
+  boardSize: { width: BOARD_WIDTH, height: BOARD_HEIGHT },
+  getCellElement(x, y) {
+    return cells[y] && cells[y][x] ? cells[y][x] : null;
+  }
+});
+setupStartParallax();
 setupSkinSelectionUI();
 initialiseLayoutControls();
 attachEventListeners();
@@ -518,6 +559,7 @@ function startNewGame() {
   clearEffectsOverlay();
   updateTurnIndicator();
   clearSelection({ silent: true });
+  triggerBoardIntroAnimation();
   setStatus("Первый игрок начинает ход. Переместите фигуру или поверните лазер.");
   elements.endgame.hidden = true;
   elements.endgame.setAttribute("aria-hidden", "true");
@@ -531,6 +573,17 @@ function startNewGame() {
     }
   }
   broadcastGameState("new-game");
+}
+
+function triggerBoardIntroAnimation() {
+  const wrapper = elements.boardWrapper;
+  if (!wrapper) {
+    return;
+  }
+  const className = "board-wrapper--intro";
+  wrapper.classList.remove(className);
+  void wrapper.offsetWidth; // force reflow
+  wrapper.classList.add(className);
 }
 
 function createEmptyBoard() {
@@ -1748,6 +1801,59 @@ function closeTraining() {
   hideOverlayElement(elements.trainingOverlay);
 }
 
+function setupStartParallax() {
+  const overlay = elements.startScreen;
+  if (!overlay || typeof window.requestAnimationFrame !== "function") {
+    return;
+  }
+
+  const state = {
+    currentX: 0,
+    currentY: 0,
+    targetX: 0,
+    targetY: 0,
+    frame: null
+  };
+
+  const step = () => {
+    state.frame = null;
+    state.currentX += (state.targetX - state.currentX) * 0.12;
+    state.currentY += (state.targetY - state.currentY) * 0.12;
+    overlay.style.setProperty("--start-parallax-x", state.currentX.toFixed(4));
+    overlay.style.setProperty("--start-parallax-y", state.currentY.toFixed(4));
+    if (Math.abs(state.targetX - state.currentX) > 0.001 || Math.abs(state.targetY - state.currentY) > 0.001) {
+      schedule();
+    }
+  };
+
+  const schedule = () => {
+    if (state.frame !== null) {
+      return;
+    }
+    state.frame = window.requestAnimationFrame(step);
+  };
+
+  const updateTarget = (x, y) => {
+    state.targetX = clamp(x, -1, 1);
+    state.targetY = clamp(y, -1, 1);
+    schedule();
+  };
+
+  const handleMove = (event) => {
+    const rect = overlay.getBoundingClientRect();
+    if (!rect.width || !rect.height) {
+      return;
+    }
+    const relX = (event.clientX - rect.left) / rect.width;
+    const relY = (event.clientY - rect.top) / rect.height;
+    updateTarget(relX * 2 - 1, relY * 2 - 1);
+  };
+
+  overlay.addEventListener("pointermove", handleMove);
+  overlay.addEventListener("pointerleave", () => updateTarget(0, 0));
+  overlay.addEventListener("pointerdown", handleMove);
+}
+
 function isElementVisible(element) {
   return Boolean(element) && element.hidden === false;
 }
@@ -1969,6 +2075,24 @@ function applyBoardTheme(settings) {
   }
 }
 
+function setBoardSkinSelection(selection) {
+  const boardEl = elements.board;
+  if (!boardEl) {
+    return;
+  }
+  if (selection && selection.skin) {
+    boardEl.dataset.skin = selection.skin;
+    if (selection.type) {
+      boardEl.dataset.skinType = selection.type;
+    } else {
+      delete boardEl.dataset.skinType;
+    }
+  } else {
+    delete boardEl.dataset.skin;
+    delete boardEl.dataset.skinType;
+  }
+}
+
 function updateBoardTheme() {
   const candidate = determineBoardThemeCandidate();
   const signature = candidate ? `${candidate.selection.skin}:${candidate.selection.type}` : "";
@@ -1977,6 +2101,8 @@ function updateBoardTheme() {
   }
   lastBoardThemeSignature = signature;
   applyBoardTheme(candidate ? candidate.settings : null);
+  setBoardSkinSelection(candidate ? candidate.selection : null);
+  notifySkinEffects("onBoardTheme", { selection: candidate ? candidate.selection : null });
 }
 
 function renderBoard() {
@@ -1997,6 +2123,8 @@ function renderBoard() {
       );
       cell.classList.toggle("cell--recent", isRecent);
       cell.classList.remove("cell--option", "cell--swap");
+      delete cell.dataset.optionSkin;
+      delete cell.dataset.optionSkinType;
       if (piece) {
         const def = PIECE_DEFS[piece.type];
         const wrapper = document.createElement("div");
@@ -2028,10 +2156,26 @@ function renderBoard() {
         const signature = `${piece.player}:${piece.type}`;
         const previousOrientation = cached && cached.signature === signature ? cached.orientation : null;
         const currentOrientation = mod4(piece.orientation || 0);
-        applyPieceRotation(image, previousOrientation, currentOrientation, config && config.animations ? config.animations.rotation : null);
+        applyPieceRotation(
+          image,
+          previousOrientation,
+          currentOrientation,
+          config && config.animations ? config.animations.rotation : null,
+          selection
+        );
         pieceOrientationCache.set(cacheKey, { orientation: currentOrientation, signature });
 
+        applyPieceCustomisations(wrapper, piece, config);
+
         wrapper.appendChild(image);
+        notifySkinEffects("decoratePiece", {
+          wrapper,
+          image,
+          piece,
+          position: { x, y },
+          selection,
+          lastMove
+        });
         wrapper.setAttribute("aria-label", `${def.name} (${PLAYERS[piece.player].name})`);
         cell.replaceChildren(wrapper);
       } else {
@@ -2045,6 +2189,14 @@ function renderBoard() {
     cell.classList.add("cell--option");
     if (option.swap) {
       cell.classList.add("cell--swap");
+    }
+    if (currentOptionSelection && currentOptionSelection.skin) {
+      cell.dataset.optionSkin = currentOptionSelection.skin;
+      if (currentOptionSelection.type) {
+        cell.dataset.optionSkinType = currentOptionSelection.type;
+      } else {
+        delete cell.dataset.optionSkinType;
+      }
     }
   }
 }
@@ -2067,6 +2219,65 @@ function applyHeroHighlight(wrapper, config) {
   wrapper.style.setProperty("--hero-highlight-glow-spread", `${highlight.glowSpread}px`);
 }
 
+function applyPieceCustomisations(wrapper, piece, config) {
+  if (!wrapper || !piece || !config) {
+    return;
+  }
+  if (piece.type === "shield") {
+    applyShieldFrontGlow(wrapper, config);
+  }
+}
+
+function applyShieldFrontGlow(wrapper, config) {
+  const shieldConfig = config.pieces && config.pieces.shield ? config.pieces.shield : null;
+  const frontGlow = shieldConfig && shieldConfig.frontGlow ? shieldConfig.frontGlow : null;
+  if (!frontGlow) {
+    return;
+  }
+  const style = wrapper.style;
+
+  const setNumeric = (name, value, { min = Number.NEGATIVE_INFINITY, max = Number.POSITIVE_INFINITY } = {}) => {
+    if (!Number.isFinite(value)) {
+      return;
+    }
+    const clamped = clamp(value, min, max);
+    style.setProperty(name, String(clamped));
+  };
+
+  const setPercent = (name, value, { min = -400, max = 400 } = {}) => {
+    if (!Number.isFinite(value)) {
+      return;
+    }
+    const clamped = clamp(value, min, max);
+    style.setProperty(name, `${clamped}%`);
+  };
+
+  const setPixels = (name, value, { min = 0, max = 120 } = {}) => {
+    if (!Number.isFinite(value)) {
+      return;
+    }
+    const clamped = clamp(value, min, max);
+    style.setProperty(name, `${clamped}px`);
+  };
+
+  const setString = (name, value) => {
+    if (!value && value !== 0) {
+      return;
+    }
+    style.setProperty(name, String(value));
+  };
+
+  setNumeric("--shield-front-width", frontGlow.width, { min: 0.2, max: 1 });
+  setNumeric("--shield-front-height", frontGlow.height, { min: 0.08, max: 0.6 });
+  setPercent("--shield-front-distance", frontGlow.distance, { min: -220, max: 220 });
+  setNumeric("--shield-front-scale-x", frontGlow.scaleX, { min: 0.5, max: 2 });
+  setNumeric("--shield-front-scale-y", frontGlow.scaleY, { min: 0.4, max: 2 });
+  setNumeric("--shield-front-opacity", frontGlow.opacity, { min: 0, max: 1 });
+  setPixels("--shield-front-blur", frontGlow.blur, { min: 0, max: 18 });
+  setString("--shield-front-gradient", frontGlow.gradient);
+  setString("--shield-front-shadow", frontGlow.shadow);
+}
+
 function getHeroHighlightSettings(config) {
   if (!config || typeof config !== "object") {
     return null;
@@ -2078,31 +2289,31 @@ function getHeroHighlightSettings(config) {
     return null;
   }
   const baseIdle = Number.isFinite(data?.idleOpacity) ? data.idleOpacity : 0.6;
-  const idleOpacity = clamp(baseIdle, 0.48, 0.92);
+  const idleOpacity = clamp(baseIdle, 0.18, 0.92);
   const baseActive = Number.isFinite(data?.activeOpacity)
     ? data.activeOpacity
     : Math.min(idleOpacity + 0.2, 0.88);
   const activeOpacity = clamp(Math.max(baseActive, idleOpacity + 0.05), idleOpacity, 0.96);
-  const blur = Number.isFinite(data?.blur) ? Math.max(12, data.blur) : 26;
+  const blur = Number.isFinite(data?.blur) ? Math.max(8, data.blur) : 26;
   const scale = Number.isFinite(data?.scale) ? Math.max(0.9, data.scale) : 1.02;
   const insetValue = Number.isFinite(data?.inset) ? clamp(data.inset, 0, 0.35) : 0.12;
   const glowRadius = Number.isFinite(data?.glowRadius) ? Math.max(0, data.glowRadius) : 46;
   const glowSpread = Number.isFinite(data?.glowSpread)
-    ? clamp(data.glowSpread, -8, 28)
+    ? clamp(data.glowSpread, -16, 36)
     : 12;
   const insetPercent = Number((insetValue * 100).toFixed(1));
   const inset = `${insetPercent}%`;
   return { color, idleOpacity, activeOpacity, blur, scale, inset, glowRadius, glowSpread };
 }
 
-function applyPieceRotation(image, previousOrientation, currentOrientation, rotationSettings) {
+function applyPieceRotation(image, previousOrientation, currentOrientation, rotationSettings, selection = null) {
   if (!image) {
     return;
   }
   const next = mod4(currentOrientation || 0);
   const previous = Number.isFinite(previousOrientation) ? mod4(previousOrientation) : null;
   const finalAngle = next * 90;
-  const baseTransform = (angle) => `scale(${PIECE_BASE_SCALE}) rotate(${angle}deg)`;
+  const baseTransform = (angle, scaleFactor = 1) => `scale(${PIECE_BASE_SCALE * scaleFactor}) rotate(${angle}deg)`;
   image.style.willChange = "transform";
 
   if (typeof image.getAnimations === "function") {
@@ -2122,9 +2333,23 @@ function applyPieceRotation(image, previousOrientation, currentOrientation, rota
     ? Math.max(0, rotationSettings.delay)
     : 0;
 
-  if (previous === null || previous === next) {
+  const rotationWillChange = previous !== null && previous !== next;
+  const delta = rotationWillChange ? ((next - previous + 4) % 4) : 0;
+  const rotationDirection = delta === 3 ? -1 : 1;
+
+  if (rotationWillChange) {
+    notifySkinEffects("handleRotation", {
+      image,
+      previousOrientation,
+      currentOrientation,
+      selection
+    });
+  }
+
+  if (!rotationWillChange) {
     image.style.transition = "";
     image.style.transform = baseTransform(finalAngle);
+    image.style.filter = "";
     return;
   }
 
@@ -2132,32 +2357,46 @@ function applyPieceRotation(image, previousOrientation, currentOrientation, rota
   const canAnimate = typeof requestAnimationFrame === "function";
   const useWebAnimations = canAnimate && typeof image.animate === "function";
 
+  const overshootDegrees = Number.isFinite(rotationSettings?.overshoot)
+    ? clamp(rotationSettings.overshoot, 0, 28)
+    : 6;
+  const scaleBoost = Number.isFinite(rotationSettings?.scaleBoost)
+    ? clamp(rotationSettings.scaleBoost, 0, 0.35)
+    : 0.06;
+
   if (useWebAnimations) {
     image.style.transition = "";
     image.style.transform = baseTransform(startAngle);
     requestAnimationFrame(() => {
-      const animation = image.animate(
-        [
-          { transform: baseTransform(startAngle) },
-          { transform: baseTransform(finalAngle) }
-        ],
-        {
-          duration,
-          easing,
-          delay,
-          fill: "forwards"
-        }
-      );
+      const keyframes = rotationSettings && Array.isArray(rotationSettings.keyframes)
+        ? rotationSettings.keyframes
+        : [
+            { transform: baseTransform(startAngle), filter: "brightness(1)" },
+            {
+              transform: baseTransform(startAngle + rotationDirection * (90 + overshootDegrees), 1 + scaleBoost),
+              filter: "brightness(1.08)"
+            },
+            { transform: baseTransform(finalAngle), filter: "brightness(1)" }
+          ];
+      const animation = image.animate(keyframes, {
+        duration,
+        easing,
+        delay,
+        fill: "forwards"
+      });
       if (animation && animation.finished && typeof animation.finished.then === "function") {
         animation.finished
           .then(() => {
             image.style.transform = baseTransform(finalAngle);
+            image.style.filter = "";
           })
           .catch(() => {
             image.style.transform = baseTransform(finalAngle);
+            image.style.filter = "";
           });
       } else {
         image.style.transform = baseTransform(finalAngle);
+        image.style.filter = "";
       }
     });
     return;
@@ -2166,6 +2405,7 @@ function applyPieceRotation(image, previousOrientation, currentOrientation, rota
   if (!canAnimate) {
     image.style.transition = "";
     image.style.transform = baseTransform(finalAngle);
+    image.style.filter = "";
     return;
   }
 
@@ -2175,12 +2415,14 @@ function applyPieceRotation(image, previousOrientation, currentOrientation, rota
     if (event.propertyName === "transform") {
       image.style.transition = "";
       image.removeEventListener("transitionend", handleTransitionEnd);
+      image.style.filter = "";
     }
   };
   image.addEventListener("transitionend", handleTransitionEnd);
   requestAnimationFrame(() => {
     const applyFinal = () => {
       image.style.transform = baseTransform(finalAngle);
+      image.style.filter = "";
     };
     if (delay > 0) {
       setTimeout(applyFinal, delay);
@@ -2224,6 +2466,7 @@ function selectCell(x, y) {
   const piece = board[y][x];
   const def = PIECE_DEFS[piece.type];
   currentOptions = def.movement(board, x, y, piece);
+  currentOptionSelection = getPlayerSkin(piece.player);
   renderBoard();
   updateRotateControls(def.canRotate);
   const movesText = currentOptions.length
@@ -2240,6 +2483,7 @@ function selectCell(x, y) {
 function clearSelection({ silent = false } = {}) {
   selectedCell = null;
   currentOptions = [];
+  currentOptionSelection = null;
   renderBoard();
   updateRotateControls(false);
   updatePiecePanel();
@@ -2282,6 +2526,13 @@ function executeMove(option, piece, from) {
   if (targetPiece) {
     setStatus(`${PLAYERS[currentPlayer].name}: клетка ${toNotation(option.x, option.y)} уже занята.`);
     renderBoard();
+    const cell = cells[option.y] && cells[option.y][option.x] ? cells[option.y][option.x] : null;
+    if (cell) {
+      notifySkinEffects("invalidMove", {
+        cell,
+        selection: getPlayerSkin(currentPlayer)
+      });
+    }
     return;
   }
 
@@ -2323,6 +2574,10 @@ function endTurn() {
   const activePlayer = currentPlayer;
   playSkinSound(activePlayer, "move");
   const laserResult = normaliseLaserResult(fireLaser(activePlayer));
+  notifySkinEffects("onLaserFired", {
+    result: laserResult,
+    selection: getPlayerSkin(activePlayer)
+  });
   lastLaserResult = laserResult;
   renderBoard();
   highlightLaserPath(laserResult);
@@ -2360,6 +2615,7 @@ function finishGame(winner) {
   elements.endgameSubtitle.textContent = `Поздравляем! ${PLAYERS[loser].name} уничтожен лучом.`;
   setStatus(`${PLAYERS[winner].name} добились победы.`);
   updateRotateControls(false);
+  notifySkinEffects("handleVictory", { winner, selection: getPlayerSkin(winner) });
 }
 
 function fireLaser(player) {
@@ -2592,17 +2848,25 @@ function highlightLaserPath(result) {
   clearLaserPath({ preserveState: true });
   if (!result || !result.origin) {
     resetLaserOverlayTheme();
+    notifySkinEffects("handleLaserPath", null);
     return;
   }
 
   applyLaserVisualTheme(result);
   drawLaserBeam(result);
+  const selection = result.skin && result.skin.skin
+    ? { skin: result.skin.skin, type: result.skin.type }
+    : result.player
+      ? getPlayerSkin(result.player)
+      : null;
+  notifySkinEffects("handleLaserPath", { result, selection });
 }
 
 function clearLaserPath({ preserveState = false } = {}) {
   if (elements.laserOverlay) {
     elements.laserOverlay.replaceChildren();
   }
+  notifySkinEffects("handleLaserPath", null);
   if (!preserveState) {
     lastLaserResult = null;
     lastLaserEffectSignature = null;
@@ -2898,6 +3162,12 @@ function handleLaserImpact(result) {
   if (attacker && victimPiece && attacker !== victimPiece.player) {
     playSkinSound(attacker, "destroyEnemy");
   }
+  const selection = result.skin && result.skin.skin
+    ? { skin: result.skin.skin, type: result.skin.type }
+    : result.player
+      ? getPlayerSkin(result.player)
+      : null;
+  notifySkinEffects("handleLaserImpact", { result, selection });
 }
 
 function clearEffectsOverlay() {
