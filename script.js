@@ -498,6 +498,18 @@ const cells = [];
 const multiplayer = createMultiplayerController();
 
 initialiseBoardGrid();
+if (window.GreeceSkinEffects && typeof window.GreeceSkinEffects.init === "function") {
+  window.GreeceSkinEffects.init({
+    boardElement: elements.board,
+    boardWrapper: elements.boardWrapper,
+    laserOverlay: elements.laserOverlay,
+    effectsOverlay: elements.effectsOverlay,
+    boardSize: { width: BOARD_WIDTH, height: BOARD_HEIGHT },
+    getCellElement(x, y) {
+      return cells[y] && cells[y][x] ? cells[y][x] : null;
+    }
+  });
+}
 setupSkinSelectionUI();
 initialiseLayoutControls();
 attachEventListeners();
@@ -1977,6 +1989,9 @@ function updateBoardTheme() {
   }
   lastBoardThemeSignature = signature;
   applyBoardTheme(candidate ? candidate.settings : null);
+  if (window.GreeceSkinEffects && typeof window.GreeceSkinEffects.onBoardTheme === "function") {
+    window.GreeceSkinEffects.onBoardTheme({ selection: candidate ? candidate.selection : null });
+  }
 }
 
 function renderBoard() {
@@ -2028,10 +2043,26 @@ function renderBoard() {
         const signature = `${piece.player}:${piece.type}`;
         const previousOrientation = cached && cached.signature === signature ? cached.orientation : null;
         const currentOrientation = mod4(piece.orientation || 0);
-        applyPieceRotation(image, previousOrientation, currentOrientation, config && config.animations ? config.animations.rotation : null);
+        applyPieceRotation(
+          image,
+          previousOrientation,
+          currentOrientation,
+          config && config.animations ? config.animations.rotation : null,
+          selection
+        );
         pieceOrientationCache.set(cacheKey, { orientation: currentOrientation, signature });
 
         wrapper.appendChild(image);
+        if (window.GreeceSkinEffects && typeof window.GreeceSkinEffects.decoratePiece === "function") {
+          window.GreeceSkinEffects.decoratePiece({
+            wrapper,
+            image,
+            piece,
+            position: { x, y },
+            selection,
+            lastMove
+          });
+        }
         wrapper.setAttribute("aria-label", `${def.name} (${PLAYERS[piece.player].name})`);
         cell.replaceChildren(wrapper);
       } else {
@@ -2095,7 +2126,7 @@ function getHeroHighlightSettings(config) {
   return { color, idleOpacity, activeOpacity, blur, scale, inset, glowRadius, glowSpread };
 }
 
-function applyPieceRotation(image, previousOrientation, currentOrientation, rotationSettings) {
+function applyPieceRotation(image, previousOrientation, currentOrientation, rotationSettings, selection = null) {
   if (!image) {
     return;
   }
@@ -2122,7 +2153,17 @@ function applyPieceRotation(image, previousOrientation, currentOrientation, rota
     ? Math.max(0, rotationSettings.delay)
     : 0;
 
-  if (previous === null || previous === next) {
+  const rotationWillChange = previous !== null && previous !== next;
+  if (rotationWillChange && window.GreeceSkinEffects && typeof window.GreeceSkinEffects.handleRotation === "function") {
+    window.GreeceSkinEffects.handleRotation({
+      image,
+      previousOrientation,
+      currentOrientation,
+      selection
+    });
+  }
+
+  if (!rotationWillChange) {
     image.style.transition = "";
     image.style.transform = baseTransform(finalAngle);
     return;
@@ -2282,6 +2323,15 @@ function executeMove(option, piece, from) {
   if (targetPiece) {
     setStatus(`${PLAYERS[currentPlayer].name}: клетка ${toNotation(option.x, option.y)} уже занята.`);
     renderBoard();
+    if (window.GreeceSkinEffects && typeof window.GreeceSkinEffects.invalidMove === "function") {
+      const cell = cells[option.y] && cells[option.y][option.x] ? cells[option.y][option.x] : null;
+      if (cell) {
+        window.GreeceSkinEffects.invalidMove({
+          cell,
+          selection: getPlayerSkin(currentPlayer)
+        });
+      }
+    }
     return;
   }
 
@@ -2323,6 +2373,12 @@ function endTurn() {
   const activePlayer = currentPlayer;
   playSkinSound(activePlayer, "move");
   const laserResult = normaliseLaserResult(fireLaser(activePlayer));
+  if (window.GreeceSkinEffects && typeof window.GreeceSkinEffects.onLaserFired === "function") {
+    window.GreeceSkinEffects.onLaserFired({
+      result: laserResult,
+      selection: getPlayerSkin(activePlayer)
+    });
+  }
   lastLaserResult = laserResult;
   renderBoard();
   highlightLaserPath(laserResult);
@@ -2360,6 +2416,9 @@ function finishGame(winner) {
   elements.endgameSubtitle.textContent = `Поздравляем! ${PLAYERS[loser].name} уничтожен лучом.`;
   setStatus(`${PLAYERS[winner].name} добились победы.`);
   updateRotateControls(false);
+  if (window.GreeceSkinEffects && typeof window.GreeceSkinEffects.handleVictory === "function") {
+    window.GreeceSkinEffects.handleVictory({ winner, selection: getPlayerSkin(winner) });
+  }
 }
 
 function fireLaser(player) {
@@ -2592,16 +2651,30 @@ function highlightLaserPath(result) {
   clearLaserPath({ preserveState: true });
   if (!result || !result.origin) {
     resetLaserOverlayTheme();
+    if (window.GreeceSkinEffects && typeof window.GreeceSkinEffects.handleLaserPath === "function") {
+      window.GreeceSkinEffects.handleLaserPath(null);
+    }
     return;
   }
 
   applyLaserVisualTheme(result);
   drawLaserBeam(result);
+  if (window.GreeceSkinEffects && typeof window.GreeceSkinEffects.handleLaserPath === "function") {
+    const selection = result.skin && result.skin.skin
+      ? { skin: result.skin.skin, type: result.skin.type }
+      : result.player
+        ? getPlayerSkin(result.player)
+        : null;
+    window.GreeceSkinEffects.handleLaserPath({ result, selection });
+  }
 }
 
 function clearLaserPath({ preserveState = false } = {}) {
   if (elements.laserOverlay) {
     elements.laserOverlay.replaceChildren();
+  }
+  if (window.GreeceSkinEffects && typeof window.GreeceSkinEffects.handleLaserPath === "function") {
+    window.GreeceSkinEffects.handleLaserPath(null);
   }
   if (!preserveState) {
     lastLaserResult = null;
@@ -2897,6 +2970,14 @@ function handleLaserImpact(result) {
   triggerPieceDestructionEffects({ attackerSelection, victimSelection, center });
   if (attacker && victimPiece && attacker !== victimPiece.player) {
     playSkinSound(attacker, "destroyEnemy");
+  }
+  if (window.GreeceSkinEffects && typeof window.GreeceSkinEffects.handleLaserImpact === "function") {
+    const selection = result.skin && result.skin.skin
+      ? { skin: result.skin.skin, type: result.skin.type }
+      : result.player
+        ? getPlayerSkin(result.player)
+        : null;
+    window.GreeceSkinEffects.handleLaserImpact({ result, selection });
   }
 }
 
