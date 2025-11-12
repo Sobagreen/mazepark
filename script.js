@@ -919,7 +919,7 @@ function createAmbientAudioManager() {
 
   const tracks = {
     intro: new Audio("audio/intro.wav"),
-    game: new Audio("audio/game.wav")
+    game: new Audio("audio/game.mp3")
   };
 
   let currentTrack = null;
