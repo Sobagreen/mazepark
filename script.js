@@ -195,6 +195,27 @@ const FILES = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".slice(0, BOARD_WIDTH);
 const THEME_STORAGE_KEY = "laser-theme";
 const DEFAULT_SERVER_URL = "wss://mazepark-1.onrender.com";
 const BASE_EFFECT_CLASS = "piece-effect--impact";
+const PIECE_BASE_SCALE = 1.15;
+const DEFAULT_ROTATION_DURATION = 820;
+const MIN_ROTATION_DURATION = 760;
+const HERO_FALLBACK_HIGHLIGHTS = {
+  light: {
+    color: "rgba(255, 214, 142, 0.7)",
+    idleOpacity: 0.58,
+    activeOpacity: 0.82,
+    blur: 28,
+    scale: 1.04,
+    pulse: 4.8
+  },
+  shadow: {
+    color: "rgba(132, 184, 255, 0.7)",
+    idleOpacity: 0.56,
+    activeOpacity: 0.8,
+    blur: 28,
+    scale: 1.04,
+    pulse: 4.8
+  }
+};
 
 const PLAYERS = {
   light: {
@@ -378,6 +399,8 @@ let playerSkins = cloneSkinSelection(DEFAULT_SKIN_SELECTION);
 const skinConfigCache = {};
 const skinConfigPromises = {};
 const skinAudioCache = new Map();
+const pieceOrientationCache = new Map();
+const ambientAudio = createAmbientAudioManager();
 
 const DIRECTIONS = [
   { dx: 0, dy: -1 }, // вверх
@@ -410,11 +433,19 @@ let lastMove = null;
 let skinSelection = cloneSkinSelection(DEFAULT_SKIN_SELECTION);
 let pendingSkins = cloneSkinSelection(DEFAULT_SKIN_SELECTION);
 let onlineSelectedRole = null;
+let lastBoardThemeSignature = null;
+let boardIntroTimeout = null;
+let lastBoardAtmosphereSignature = "";
+let lastBoardAtmosphereSettings = null;
+let pendingLaserImpactFrame = null;
+let pendingLaserImpactCancel = null;
 
 preloadSkinConfigs(DEFAULT_SKIN_SELECTION);
 
 const elements = {
   board: document.getElementById("board"),
+  boardWrapper: document.querySelector(".board-wrapper"),
+  boardAtmosphere: document.getElementById("board-atmosphere"),
   status: document.getElementById("status"),
   turn: document.getElementById("turn-indicator"),
   rotateLeft: document.getElementById("rotate-left"),
@@ -503,6 +534,7 @@ function startNewGame() {
   applySelectedLayoutFromControls();
   lastMove = null;
   board = createEmptyBoard();
+  pieceOrientationCache.clear();
   placeInitialPieces();
   currentPlayer = "light";
   turnCounter = 1;
@@ -514,7 +546,36 @@ function startNewGame() {
   elements.endgame.hidden = true;
   elements.endgame.setAttribute("aria-hidden", "true");
   updateLayoutSelectors();
+  if (ambientAudio) {
+    if (isElementVisible(elements.startScreen)) {
+      ambientAudio.stop("game");
+    } else {
+      ambientAudio.stop("intro");
+      ambientAudio.switchTo("game");
+    }
+  }
+  triggerBoardIntroAnimation({ refreshAtmosphere: true });
   broadcastGameState("new-game");
+}
+
+function triggerBoardIntroAnimation({ refreshAtmosphere = false } = {}) {
+  const wrapper = elements.boardWrapper;
+  if (!wrapper) {
+    return;
+  }
+  if (refreshAtmosphere && lastBoardAtmosphereSettings) {
+    applyBoardAtmosphere(lastBoardAtmosphereSettings, { force: true });
+  }
+  wrapper.classList.remove("board-wrapper--intro");
+  // Force reflow to restart animation
+  void wrapper.offsetWidth; // eslint-disable-line no-unused-expressions
+  wrapper.classList.add("board-wrapper--intro");
+  if (boardIntroTimeout) {
+    clearTimeout(boardIntroTimeout);
+  }
+  boardIntroTimeout = window.setTimeout(() => {
+    wrapper.classList.remove("board-wrapper--intro");
+  }, 900);
 }
 
 function createEmptyBoard() {
@@ -546,6 +607,138 @@ function placeInitialPieces() {
       }
     }
   }
+}
+
+function applyBoardAtmosphere(settings, { force = false } = {}) {
+  const container = elements.boardAtmosphere;
+  const serialised = settings ? JSON.stringify(settings) : "";
+  lastBoardAtmosphereSettings = serialised ? JSON.parse(serialised) : null;
+  if (!container) {
+    return;
+  }
+  if (!force && serialised === lastBoardAtmosphereSignature) {
+    return;
+  }
+  lastBoardAtmosphereSignature = serialised;
+  container.replaceChildren();
+  container.classList.remove("board-atmosphere--visible");
+  if (!settings || !settings.particles) {
+    return;
+  }
+
+  const particles = settings.particles;
+  const countRaw = Number(particles.count ?? particles.density ?? particles.total ?? particles.amount);
+  const targetCount = Number.isFinite(countRaw) ? Math.round(countRaw) : 28;
+  const count = clamp(targetCount, 4, 96);
+  if (count <= 0) {
+    return;
+  }
+
+  const colors = Array.isArray(particles.colors) && particles.colors.length
+    ? particles.colors
+    : particles.color
+      ? [particles.color]
+      : ["rgba(255, 214, 132, 0.42)"];
+
+  const sizeRange = normaliseParticleRange(particles.size ?? particles.sizeRange, 0.65, 1.65);
+  const opacityRange = normaliseParticleRange(particles.opacity ?? particles.opacityRange, 0.18, 0.42);
+  const durationRange = normaliseParticleRange(particles.duration ?? particles.durationRange, 12, 24);
+  const delayRange = normaliseParticleRange(particles.delay ?? particles.delayRange, 0, durationRange[1]);
+  const verticalRange = normaliseParticleRange(particles.verticalDrift ?? particles.driftY, 18, 44);
+  const horizontalRange = normaliseParticleRange(particles.horizontalDrift ?? particles.driftX, -6, 6);
+  const blurRange = normaliseParticleRange(particles.blur ?? particles.blurRange, 0, 8);
+  const scaleStartRange = normaliseParticleRange(particles.scaleStart ?? particles.scale ?? particles.scaleRange, 0.6, 0.95);
+  const scaleEndRange = normaliseParticleRange(particles.scaleEnd ?? particles.scaleEndRange ?? particles.scaleRangeEnd, 1.05, 1.25);
+  const startXRange = normaliseParticleRange(particles.startX ?? particles.spawnX, -8, 108);
+  const startYRange = normaliseParticleRange(particles.startY ?? particles.spawnY, -6, 106);
+
+  for (let i = 0; i < count; i += 1) {
+    const particle = document.createElement("span");
+    particle.className = "board-atmosphere__particle";
+
+    const color = pickParticleColor(colors);
+    const size = randomBetween(sizeRange[0], sizeRange[1]);
+    const opacity = randomBetween(opacityRange[0], opacityRange[1]);
+    const duration = randomBetween(durationRange[0], durationRange[1]);
+    const delay = randomBetween(delayRange[0], delayRange[1]);
+    const driftX = randomBetween(horizontalRange[0], horizontalRange[1]);
+    const driftY = randomBetween(verticalRange[0], verticalRange[1]);
+    const blur = randomBetween(blurRange[0], blurRange[1]);
+    const scaleStart = randomBetween(scaleStartRange[0], scaleStartRange[1]);
+    const scaleEnd = randomBetween(scaleEndRange[0], scaleEndRange[1]);
+    const startX = randomBetween(startXRange[0], startXRange[1]);
+    const startY = randomBetween(startYRange[0], startYRange[1]);
+
+    particle.style.setProperty("--particle-color", color);
+    particle.style.setProperty("--particle-size", size.toFixed(3));
+    particle.style.setProperty("--particle-opacity", clamp(opacity, 0.05, 0.9).toFixed(3));
+    particle.style.setProperty("--particle-duration", `${Math.max(duration, 4).toFixed(2)}s`);
+    particle.style.setProperty("--particle-delay", `${Math.max(delay, 0).toFixed(2)}s`);
+    particle.style.setProperty("--particle-drift-x", `${driftX.toFixed(2)}%`);
+    particle.style.setProperty("--particle-drift-y", `${driftY.toFixed(2)}%`);
+    particle.style.setProperty("--particle-blur", `${Math.max(0, blur).toFixed(2)}px`);
+    particle.style.setProperty("--particle-scale-start", clamp(scaleStart, 0.4, 1.2).toFixed(3));
+    particle.style.setProperty("--particle-scale-end", clamp(scaleEnd, 0.8, 1.6).toFixed(3));
+    particle.style.setProperty("--particle-start-x", `${startX.toFixed(2)}%`);
+    particle.style.setProperty("--particle-start-y", `${startY.toFixed(2)}%`);
+
+    container.appendChild(particle);
+  }
+
+  if (container.childElementCount > 0) {
+    container.classList.add("board-atmosphere--visible");
+  }
+}
+
+function normaliseParticleRange(value, fallbackMin, fallbackMax) {
+  let min = fallbackMin;
+  let max = fallbackMax;
+  if (Array.isArray(value) && value.length) {
+    min = Number(value[0]);
+    max = Number(value[Math.min(1, value.length - 1)]);
+  } else if (value && typeof value === "object") {
+    const maybeMin = Number(value.min ?? value.start ?? value.from ?? value.low);
+    const maybeMax = Number(value.max ?? value.end ?? value.to ?? value.high);
+    if (Number.isFinite(maybeMin)) {
+      min = maybeMin;
+    }
+    if (Number.isFinite(maybeMax)) {
+      max = maybeMax;
+    }
+  } else if (Number.isFinite(Number(value))) {
+    const numeric = Number(value);
+    min = numeric;
+    max = numeric;
+  }
+  if (!Number.isFinite(min)) {
+    min = fallbackMin;
+  }
+  if (!Number.isFinite(max)) {
+    max = fallbackMax;
+  }
+  if (min > max) {
+    return [max, min];
+  }
+  return [min, max];
+}
+
+function randomBetween(min, max) {
+  const a = Number.isFinite(min) ? min : 0;
+  const b = Number.isFinite(max) ? max : a;
+  if (a === b) {
+    return a;
+  }
+  const low = Math.min(a, b);
+  const high = Math.max(a, b);
+  return low + Math.random() * (high - low);
+}
+
+function pickParticleColor(colors) {
+  if (!Array.isArray(colors) || colors.length === 0) {
+    return "rgba(255, 214, 132, 0.42)";
+  }
+  const index = Math.floor(Math.random() * colors.length);
+  return String(colors[index]);
 }
 
 function initialiseSkinControls() {
@@ -723,10 +916,16 @@ function ensureSkinConfig(skinKey) {
       .then((response) => (response.ok ? response.json() : null))
       .then((json) => {
         skinConfigCache[skinKey] = json && typeof json === "object" ? json : {};
+        if (typeof refreshPieceArt === "function") {
+          refreshPieceArt({ silent: true });
+        }
         return skinConfigCache[skinKey];
       })
       .catch(() => {
         skinConfigCache[skinKey] = {};
+        if (typeof refreshPieceArt === "function") {
+          refreshPieceArt({ silent: true });
+        }
         return skinConfigCache[skinKey];
       });
   }
@@ -835,6 +1034,104 @@ function playSkinSound(playerOrSelection, cue) {
   }
   const instance = base.cloneNode(true);
   instance.play().catch(() => {});
+}
+
+function createAmbientAudioManager() {
+  if (typeof Audio !== "function") {
+    return null;
+  }
+
+  const tracks = {
+    intro: new Audio("audio/intro.wav"),
+    game: new Audio("audio/game.wav")
+  };
+
+  let currentTrack = null;
+  let pendingTrack = null;
+
+  Object.values(tracks).forEach((track) => {
+    if (!track) return;
+    track.loop = true;
+    track.preload = "auto";
+    track.volume = 0.6;
+  });
+
+  const stopTrack = (track) => {
+    if (!track) return;
+    track.pause();
+    try {
+      track.currentTime = 0;
+    } catch (err) {
+      /* ignore */
+    }
+  };
+
+  const attemptPlay = (name) => {
+    const track = tracks[name];
+    if (!track) return;
+    if (currentTrack && currentTrack !== track) {
+      stopTrack(currentTrack);
+    }
+    currentTrack = track;
+    pendingTrack = null;
+    const promise = track.play();
+    if (promise && typeof promise.catch === "function") {
+      promise.catch(() => {
+        pendingTrack = name;
+      });
+    }
+  };
+
+  const requestPlay = (name) => {
+    if (!tracks[name]) {
+      return;
+    }
+    pendingTrack = name;
+    attemptPlay(name);
+  };
+
+  const resumePending = () => {
+    if (!pendingTrack) {
+      return;
+    }
+    const target = pendingTrack;
+    pendingTrack = null;
+    attemptPlay(target);
+  };
+
+  if (typeof window !== "undefined") {
+    window.addEventListener("pointerdown", resumePending, { passive: true });
+    window.addEventListener("keydown", resumePending, { passive: true });
+  }
+
+  return {
+    switchTo(name) {
+      if (!name) {
+        if (currentTrack) {
+          stopTrack(currentTrack);
+          currentTrack = null;
+        }
+        pendingTrack = null;
+        return;
+      }
+      requestPlay(name);
+    },
+    stop(name) {
+      if (name && tracks[name]) {
+        if (currentTrack === tracks[name]) {
+          currentTrack = null;
+        }
+        stopTrack(tracks[name]);
+        if (pendingTrack === name) {
+          pendingTrack = null;
+        }
+      } else if (!name) {
+        Object.values(tracks).forEach(stopTrack);
+        currentTrack = null;
+        pendingTrack = null;
+      }
+    }
+  };
 }
 
 function getCheckedRole() {
@@ -1628,12 +1925,23 @@ function closeTraining() {
   hideOverlayElement(elements.trainingOverlay);
 }
 
+function isElementVisible(element) {
+  return Boolean(element) && element.hidden === false;
+}
+
 function showStartScreen() {
   showOverlayElement(elements.startScreen);
+  if (ambientAudio) {
+    ambientAudio.stop("game");
+    ambientAudio.switchTo("intro");
+  }
 }
 
 function hideStartScreen() {
   hideOverlayElement(elements.startScreen);
+  if (ambientAudio) {
+    ambientAudio.stop("intro");
+  }
 }
 
 function showOverlayElement(element) {
@@ -1676,6 +1984,7 @@ function applySkinSelection(selection, { broadcast = true, preservePendingFor = 
   pendingSkins = nextPending;
   preloadSkinConfigs(playerSkins);
   updateLegendImages();
+  pieceOrientationCache.clear();
   renderBoard();
   updateSkinPreviews();
   updateOnlineWarning();
@@ -1757,11 +2066,109 @@ function cloneSkinSelection(selection) {
   return result;
 }
 
+function determineBoardThemeCandidate() {
+  const priorities = ["light", "shadow"];
+  for (const player of priorities) {
+    const selection = getPlayerSkin(player);
+    if (!selection || !selection.skin) {
+      continue;
+    }
+    const config = getSkinConfig(selection);
+    if (config && (config.board || config.atmosphere || config.environment)) {
+      return { selection, config };
+    }
+  }
+  return null;
+}
+
+function applyBoardTheme(settings) {
+  const boardEl = elements.board;
+  if (!boardEl) {
+    return;
+  }
+  const wrapper = elements.boardWrapper;
+
+  const setCustomVar = (prop, value) => {
+    if (value === undefined || value === null || value === "") {
+      boardEl.style.removeProperty(prop);
+    } else {
+      boardEl.style.setProperty(prop, String(value));
+    }
+  };
+
+  const cell = settings && settings.cell ? settings.cell : null;
+  setCustomVar("--cell-dark", cell && cell.dark ? cell.dark : "");
+  setCustomVar("--cell-light", cell && cell.light ? cell.light : "");
+  setCustomVar("--cell-border", cell && cell.border ? cell.border : "");
+  setCustomVar("--cell-inner-glow", cell && cell.innerGlow ? cell.innerGlow : "");
+
+  const overlay = settings && settings.overlay ? settings.overlay : null;
+  setCustomVar("--board-overlay-primary", overlay && overlay.primary ? overlay.primary : "");
+  setCustomVar("--board-overlay-secondary", overlay && overlay.secondary ? overlay.secondary : "");
+  setCustomVar("--board-overlay-opacity", overlay && overlay.opacity !== undefined ? overlay.opacity : "");
+  setCustomVar("--board-overlay-blend", overlay && overlay.blendMode ? overlay.blendMode : "");
+
+  if (settings && settings.background) {
+    boardEl.style.background = settings.background;
+  } else {
+    boardEl.style.removeProperty("background");
+  }
+
+  const frame = settings && settings.frame ? settings.frame : null;
+  if (frame && frame.border) {
+    boardEl.style.border = frame.border;
+  } else {
+    boardEl.style.removeProperty("border");
+  }
+  if (frame && frame.shadow) {
+    boardEl.style.boxShadow = frame.shadow;
+  } else {
+    boardEl.style.removeProperty("box-shadow");
+  }
+
+  const wrapperSettings = settings && settings.wrapper ? settings.wrapper : null;
+  if (wrapper) {
+    if (wrapperSettings && wrapperSettings.background) {
+      wrapper.style.background = wrapperSettings.background;
+    } else {
+      wrapper.style.removeProperty("background");
+    }
+    if (wrapperSettings && wrapperSettings.shadow) {
+      wrapper.style.boxShadow = wrapperSettings.shadow;
+    } else {
+      wrapper.style.removeProperty("box-shadow");
+    }
+    if (wrapperSettings && wrapperSettings.filter) {
+      wrapper.style.filter = wrapperSettings.filter;
+    } else {
+      wrapper.style.removeProperty("filter");
+    }
+  }
+}
+
+function updateBoardTheme() {
+  const candidate = determineBoardThemeCandidate();
+  const signature = candidate ? `${candidate.selection.skin}:${candidate.selection.type}` : "";
+  if (signature !== lastBoardThemeSignature) {
+    lastBoardThemeSignature = signature;
+    const boardSettings = candidate && candidate.config ? candidate.config.board : null;
+    applyBoardTheme(boardSettings || null);
+  }
+  const atmosphereSettings = candidate && candidate.config
+    ? candidate.config.atmosphere || candidate.config.environment || null
+    : null;
+  applyBoardAtmosphere(atmosphereSettings || null);
+}
+
 function renderBoard() {
+  updateBoardTheme();
+  const playerSelectionCache = {};
+  const typeConfigCache = {};
   for (let y = 0; y < BOARD_HEIGHT; y++) {
     for (let x = 0; x < BOARD_WIDTH; x++) {
       const cell = cells[y][x];
       const piece = board[y][x];
+      const cacheKey = `${x},${y}`;
       cell.classList.toggle("cell--light", (x + y) % 2 === 0);
       cell.classList.toggle("cell--selected", selectedCell && selectedCell.x === x && selectedCell.y === y);
       const isRecent = Boolean(
@@ -1779,12 +2186,38 @@ function renderBoard() {
         image.src = getPieceImageUrl(piece);
         image.alt = "";
         image.className = "piece__image";
-        image.style.transform = `rotate(${piece.orientation * 90}deg)`;
+        image.dataset.orientation = String(mod4(piece.orientation || 0));
+
+        const selection = playerSelectionCache[piece.player] || getPlayerSkin(piece.player);
+        playerSelectionCache[piece.player] = selection;
+        let config = null;
+        if (selection && selection.skin && selection.type) {
+          const selectionKey = `${selection.skin}:${selection.type}`;
+          config = typeConfigCache[selectionKey];
+          if (!config) {
+            config = getSkinConfig(selection);
+            typeConfigCache[selectionKey] = config;
+          }
+        }
+
+        if (piece.type === "volhv") {
+          wrapper.classList.add("piece--hero");
+          applyHeroHighlight(wrapper, config, piece);
+        }
+
+        const cached = pieceOrientationCache.get(cacheKey);
+        const signature = `${piece.player}:${piece.type}`;
+        const previousOrientation = cached && cached.signature === signature ? cached.orientation : null;
+        const currentOrientation = mod4(piece.orientation || 0);
+        applyPieceRotation(image, previousOrientation, currentOrientation, config && config.animations ? config.animations.rotation : null);
+        pieceOrientationCache.set(cacheKey, { orientation: currentOrientation, signature });
+
         wrapper.appendChild(image);
         wrapper.setAttribute("aria-label", `${def.name} (${PLAYERS[piece.player].name})`);
         cell.replaceChildren(wrapper);
       } else {
         cell.replaceChildren();
+        pieceOrientationCache.delete(cacheKey);
       }
     }
   }
@@ -1795,6 +2228,166 @@ function renderBoard() {
       cell.classList.add("cell--swap");
     }
   }
+}
+
+function applyHeroHighlight(wrapper, config, piece) {
+  if (!wrapper) {
+    return;
+  }
+  const player = piece && piece.player ? piece.player : null;
+  const highlight = getHeroHighlightSettings(config, player);
+  const properties = [
+    "--hero-highlight-color",
+    "--hero-highlight-opacity",
+    "--hero-highlight-active-opacity",
+    "--hero-highlight-blur",
+    "--hero-highlight-scale",
+    "--hero-highlight-inset",
+    "--hero-highlight-glow-radius",
+    "--hero-highlight-glow-spread",
+    "--hero-highlight-pulse"
+  ];
+  if (!highlight) {
+    properties.forEach((prop) => wrapper.style.removeProperty(prop));
+    wrapper.classList.remove("piece--hero-glowing");
+    return;
+  }
+  wrapper.style.setProperty("--hero-highlight-color", highlight.color);
+  wrapper.style.setProperty("--hero-highlight-opacity", String(highlight.idleOpacity));
+  wrapper.style.setProperty("--hero-highlight-active-opacity", String(highlight.activeOpacity));
+  wrapper.style.setProperty("--hero-highlight-blur", `${highlight.blur}px`);
+  wrapper.style.setProperty("--hero-highlight-scale", String(highlight.scale));
+  wrapper.style.setProperty("--hero-highlight-inset", highlight.inset);
+  wrapper.style.setProperty("--hero-highlight-glow-radius", `${highlight.glowRadius}px`);
+  wrapper.style.setProperty("--hero-highlight-glow-spread", `${highlight.glowSpread}px`);
+  wrapper.style.setProperty("--hero-highlight-pulse", `${highlight.pulse}s`);
+  wrapper.classList.add("piece--hero-glowing");
+}
+
+function getHeroHighlightSettings(config, player) {
+  const fallback = (player && HERO_FALLBACK_HIGHLIGHTS[player]) || HERO_FALLBACK_HIGHLIGHTS.light;
+  const data = config && config.hero && config.hero.highlight ? config.hero.highlight : null;
+  const baseColor = config && config.laser && config.laser.glowColor ? config.laser.glowColor : null;
+  const color = data && data.color ? data.color : baseColor || fallback.color;
+  if (!color) {
+    return null;
+  }
+  const baseIdle = Number.isFinite(data?.idleOpacity)
+    ? data.idleOpacity
+    : fallback.idleOpacity ?? 0.62;
+  const idleOpacity = clamp(baseIdle, 0.58, 0.92);
+  const fallbackActive = fallback.activeOpacity ?? Math.min(idleOpacity + 0.22, 0.9);
+  const baseActive = Number.isFinite(data?.activeOpacity) ? data.activeOpacity : fallbackActive;
+  const activeOpacity = clamp(Math.max(baseActive, idleOpacity + 0.12), idleOpacity + 0.08, 0.97);
+  const blurBase = Number.isFinite(data?.blur) ? data.blur : fallback.blur ?? 30;
+  const blur = Math.max(18, blurBase);
+  const scaleBase = Number.isFinite(data?.scale) ? data.scale : fallback.scale ?? 1.02;
+  const scale = clamp(scaleBase, 0.9, 1.18);
+  const insetValue = Number.isFinite(data?.inset) ? clamp(data.inset, 0, 0.35) : 0.12;
+  const glowRadius = Number.isFinite(data?.glowRadius) ? Math.max(0, data.glowRadius) : 52;
+  const glowSpread = Number.isFinite(data?.glowSpread)
+    ? clamp(data.glowSpread, -6, 38)
+    : 16;
+  const pulseBase = Number.isFinite(data?.pulse) ? data.pulse : fallback.pulse ?? 4.6;
+  const pulse = clamp(pulseBase, 2.4, 8.5);
+  const insetPercent = Number((insetValue * 100).toFixed(1));
+  const inset = `${insetPercent}%`;
+  return { color, idleOpacity, activeOpacity, blur, scale, inset, glowRadius, glowSpread, pulse };
+}
+
+function applyPieceRotation(image, previousOrientation, currentOrientation, rotationSettings) {
+  if (!image) {
+    return;
+  }
+  const next = mod4(currentOrientation || 0);
+  const previous = Number.isFinite(previousOrientation) ? mod4(previousOrientation) : null;
+  const finalAngle = next * 90;
+  const baseTransform = (angle) => `scale(${PIECE_BASE_SCALE}) rotate(${angle}deg)`;
+  image.style.willChange = "transform";
+
+  if (typeof image.getAnimations === "function") {
+    image.getAnimations().forEach((animation) => animation.cancel());
+  }
+
+  const requestedDuration = rotationSettings && Number.isFinite(rotationSettings.duration)
+    ? Math.max(0, rotationSettings.duration)
+    : null;
+  const duration = requestedDuration === null
+    ? DEFAULT_ROTATION_DURATION
+    : Math.max(requestedDuration, MIN_ROTATION_DURATION);
+  const easing = rotationSettings && typeof rotationSettings.easing === "string"
+    ? rotationSettings.easing
+    : "cubic-bezier(0.25, 0.8, 0.4, 1)";
+  const delay = rotationSettings && Number.isFinite(rotationSettings.delay)
+    ? Math.max(0, rotationSettings.delay)
+    : 0;
+
+  if (previous === null || previous === next) {
+    image.style.transition = "";
+    image.style.transform = baseTransform(finalAngle);
+    return;
+  }
+
+  const startAngle = previous * 90;
+  const canAnimate = typeof requestAnimationFrame === "function";
+  const useWebAnimations = canAnimate && typeof image.animate === "function";
+
+  if (useWebAnimations) {
+    image.style.transition = "";
+    image.style.transform = baseTransform(startAngle);
+    requestAnimationFrame(() => {
+      const animation = image.animate(
+        [
+          { transform: baseTransform(startAngle) },
+          { transform: baseTransform(finalAngle) }
+        ],
+        {
+          duration,
+          easing,
+          delay,
+          fill: "forwards"
+        }
+      );
+      if (animation && animation.finished && typeof animation.finished.then === "function") {
+        animation.finished
+          .then(() => {
+            image.style.transform = baseTransform(finalAngle);
+          })
+          .catch(() => {
+            image.style.transform = baseTransform(finalAngle);
+          });
+      } else {
+        image.style.transform = baseTransform(finalAngle);
+      }
+    });
+    return;
+  }
+
+  if (!canAnimate) {
+    image.style.transition = "";
+    image.style.transform = baseTransform(finalAngle);
+    return;
+  }
+
+  image.style.transition = `transform ${duration}ms ${easing} ${delay}ms`;
+  image.style.transform = baseTransform(startAngle);
+  const handleTransitionEnd = (event) => {
+    if (event.propertyName === "transform") {
+      image.style.transition = "";
+      image.removeEventListener("transitionend", handleTransitionEnd);
+    }
+  };
+  image.addEventListener("transitionend", handleTransitionEnd);
+  requestAnimationFrame(() => {
+    const applyFinal = () => {
+      image.style.transform = baseTransform(finalAngle);
+    };
+    if (delay > 0) {
+      setTimeout(applyFinal, delay);
+    } else {
+      applyFinal();
+    }
+  });
 }
 
 function handleCellInteraction(x, y) {
@@ -1844,10 +2437,12 @@ function selectCell(x, y) {
   updatePiecePanel(piece, toNotation(x, y));
 }
 
-function clearSelection({ silent = false } = {}) {
+function clearSelection({ silent = false, skipRender = false } = {}) {
   selectedCell = null;
   currentOptions = [];
-  renderBoard();
+  if (!skipRender) {
+    renderBoard();
+  }
   updateRotateControls(false);
   updatePiecePanel();
   if (!silent) {
@@ -1918,15 +2513,13 @@ function rotateSelected(delta) {
 
   piece.orientation = mod4(piece.orientation + delta);
   lastMove = null;
-  renderBoard();
-  const dirSymbol = delta > 0 ? "↻" : "↺";
   setStatus(`${PLAYERS[currentPlayer].name}: ${def.name} на ${toNotation(selectedCell.x, selectedCell.y)} повёрнут ${delta > 0 ? "по" : "против"} часовой стрелки.`);
   endTurn();
   broadcastGameState(delta > 0 ? "rotate-cw" : "rotate-ccw");
 }
 
 function endTurn() {
-  clearSelection({ silent: true });
+  clearSelection({ silent: true, skipRender: true });
   const activePlayer = currentPlayer;
   playSkinSound(activePlayer, "move");
   const laserResult = normaliseLaserResult(fireLaser(activePlayer));
@@ -2199,11 +2792,13 @@ function highlightLaserPath(result) {
   clearLaserPath({ preserveState: true });
   if (!result || !result.origin) {
     resetLaserOverlayTheme();
+    updateLaserImpactCoordinates(null);
     return;
   }
 
   applyLaserVisualTheme(result);
   drawLaserBeam(result);
+  updateLaserImpactCoordinates(result);
 }
 
 function clearLaserPath({ preserveState = false } = {}) {
@@ -2215,6 +2810,16 @@ function clearLaserPath({ preserveState = false } = {}) {
     lastLaserEffectSignature = null;
     lastLaserEffectTimestamp = 0;
     resetLaserOverlayTheme();
+    if (pendingLaserImpactCancel) {
+      pendingLaserImpactCancel();
+      pendingLaserImpactCancel = null;
+    }
+    pendingLaserImpactFrame = null;
+    if (elements.laserOverlay) {
+      elements.laserOverlay.classList.remove("laser-overlay--armed", "laser-overlay--impact");
+      elements.laserOverlay.style.removeProperty("--laser-impact-x");
+      elements.laserOverlay.style.removeProperty("--laser-impact-y");
+    }
   }
 }
 
@@ -2262,6 +2867,67 @@ function drawLaserBeam(result) {
   }
 }
 
+function updateLaserImpactCoordinates(result) {
+  if (!elements.laserOverlay) {
+    return;
+  }
+  if (result && (result.hit || result.blocked)) {
+    const impact = result.hit || result.blocked;
+    const center = toCellCenter(impact.x, impact.y);
+    elements.laserOverlay.style.setProperty("--laser-impact-x", `${(center.x / BOARD_WIDTH) * 100}%`);
+    elements.laserOverlay.style.setProperty("--laser-impact-y", `${(center.y / BOARD_HEIGHT) * 100}%`);
+    elements.laserOverlay.classList.add("laser-overlay--armed");
+  } else {
+    elements.laserOverlay.classList.remove("laser-overlay--armed");
+    elements.laserOverlay.classList.remove("laser-overlay--impact");
+    elements.laserOverlay.style.removeProperty("--laser-impact-x");
+    elements.laserOverlay.style.removeProperty("--laser-impact-y");
+  }
+}
+
+function triggerLaserImpactPulse(result) {
+  if (!elements.laserOverlay) {
+    return;
+  }
+  if (pendingLaserImpactCancel) {
+    pendingLaserImpactCancel();
+    pendingLaserImpactCancel = null;
+  }
+  pendingLaserImpactFrame = null;
+  if (!result || !(result.hit || result.blocked)) {
+    elements.laserOverlay.classList.remove("laser-overlay--impact");
+    return;
+  }
+  if (typeof requestAnimationFrame === "function") {
+    pendingLaserImpactFrame = requestAnimationFrame(() => {
+      pendingLaserImpactFrame = null;
+      pendingLaserImpactCancel = null;
+      elements.laserOverlay.classList.remove("laser-overlay--impact");
+      void elements.laserOverlay.offsetWidth; // eslint-disable-line no-unused-expressions
+      elements.laserOverlay.classList.add("laser-overlay--impact");
+    });
+    pendingLaserImpactCancel = () => {
+      cancelAnimationFrame(pendingLaserImpactFrame);
+      pendingLaserImpactFrame = null;
+      pendingLaserImpactCancel = null;
+    };
+  } else if (typeof window !== "undefined" && typeof window.setTimeout === "function") {
+    const timeoutId = window.setTimeout(() => {
+      pendingLaserImpactFrame = null;
+      pendingLaserImpactCancel = null;
+      elements.laserOverlay.classList.remove("laser-overlay--impact");
+      void elements.laserOverlay.offsetWidth; // eslint-disable-line no-unused-expressions
+      elements.laserOverlay.classList.add("laser-overlay--impact");
+    }, 16);
+    pendingLaserImpactFrame = timeoutId;
+    pendingLaserImpactCancel = () => {
+      window.clearTimeout(timeoutId);
+      pendingLaserImpactFrame = null;
+      pendingLaserImpactCancel = null;
+    };
+  }
+}
+
 function toCellCenter(x, y) {
   return { x: x + 0.5, y: y + 0.5 };
 }
@@ -2296,6 +2962,7 @@ function applyLaserVisualTheme(result) {
   setLaserOverlayProperty("--laser-glow-color", laser.glowColor || null);
   setLaserOverlayProperty("--laser-impact-gradient", laser.impactGradient || null);
   setLaserOverlayProperty("--laser-impact-shadow", laser.impactShadow || null);
+  setLaserOverlayProperty("--laser-impact-glow", laser.glowColor || laser.impactShadow || null);
 }
 
 function setLaserOverlayProperty(property, value) {
@@ -2314,7 +2981,8 @@ function resetLaserOverlayTheme() {
     "--laser-beam-gradient",
     "--laser-glow-color",
     "--laser-impact-gradient",
-    "--laser-impact-shadow"
+    "--laser-impact-shadow",
+    "--laser-impact-glow"
   ].forEach((prop) => elements.laserOverlay.style.removeProperty(prop));
   if (elements.laserOverlay.dataset) {
     delete elements.laserOverlay.dataset.laserSkin;
@@ -2481,6 +3149,7 @@ function computeLaserSignature(result) {
 
 function handleLaserImpact(result) {
   if (!result || !result.hit) {
+    triggerLaserImpactPulse(null);
     return;
   }
   const signature = computeLaserSignature(result);
@@ -2502,6 +3171,7 @@ function handleLaserImpact(result) {
   const victimSelection = victimPiece ? getPlayerSkin(victimPiece.player) : null;
   const center = toCellCenter(result.hit.x, result.hit.y);
   triggerPieceDestructionEffects({ attackerSelection, victimSelection, center });
+  triggerLaserImpactPulse(result);
   if (attacker && victimPiece && attacker !== victimPiece.player) {
     playSkinSound(attacker, "destroyEnemy");
   }
@@ -2852,6 +3522,7 @@ function applyRemoteState(state, options = {}) {
     setCurrentLayout(state.layout, { silent: true });
     lastMove = normaliseLastMove(state.lastMove);
     board = cloneBoardState(state.board);
+    pieceOrientationCache.clear();
     clearEffectsOverlay();
     if (state.skins) {
       const skinOptions = { broadcast: false };

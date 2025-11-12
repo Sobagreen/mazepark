@@ -24,6 +24,39 @@
         ],
         "offset": { "x": 0, "y": 0 },
         "scale": 1.7
+      },
+      "rotation": {
+        "duration": 280,
+        "easing": "cubic-bezier(0.22, 1, 0.36, 1)"
+      }
+    },
+    "hero": {
+      "highlight": {
+        "color": "rgba(255, 214, 132, 0.76)",
+        "idleOpacity": 0.44,
+        "activeOpacity": 0.7,
+        "blur": 26,
+        "scale": 1.05
+      }
+    },
+    "environment": {
+      "particles": {
+        "count": 34,
+        "colors": [
+          "rgba(255, 214, 132, 0.42)",
+          "rgba(255, 198, 102, 0.28)",
+          "rgba(244, 236, 192, 0.22)"
+        ],
+        "size": { "min": 0.7, "max": 1.85 },
+        "opacity": { "min": 0.18, "max": 0.4 },
+        "duration": { "min": 13, "max": 26 },
+        "delay": { "min": 0, "max": 18 },
+        "verticalDrift": { "min": 18, "max": 46 },
+        "horizontalDrift": { "min": -6, "max": 6 },
+        "blur": { "min": 0, "max": 5.5 },
+        "scaleStart": { "min": 0.65, "max": 0.92 },
+        "scaleEnd": { "min": 1.05, "max": 1.28 },
+        "startY": { "min": -4, "max": 14 }
       }
     },
     "sounds": {
@@ -57,6 +90,39 @@
         ],
         "offset": { "x": 0, "y": 0 },
         "scale": 1.8
+      },
+      "rotation": {
+        "duration": 280,
+        "easing": "cubic-bezier(0.22, 1, 0.36, 1)"
+      }
+    },
+    "hero": {
+      "highlight": {
+        "color": "rgba(132, 220, 255, 0.76)",
+        "idleOpacity": 0.44,
+        "activeOpacity": 0.7,
+        "blur": 26,
+        "scale": 1.05
+      }
+    },
+    "environment": {
+      "particles": {
+        "count": 32,
+        "colors": [
+          "rgba(132, 220, 255, 0.38)",
+          "rgba(102, 186, 240, 0.26)",
+          "rgba(200, 244, 255, 0.24)"
+        ],
+        "size": { "min": 0.68, "max": 1.75 },
+        "opacity": { "min": 0.16, "max": 0.36 },
+        "duration": { "min": 12, "max": 24 },
+        "delay": { "min": 0, "max": 16 },
+        "verticalDrift": { "min": 16, "max": 42 },
+        "horizontalDrift": { "min": -7, "max": 7 },
+        "blur": { "min": 0, "max": 6 },
+        "scaleStart": { "min": 0.62, "max": 0.9 },
+        "scaleEnd": { "min": 1.04, "max": 1.24 },
+        "startY": { "min": -6, "max": 12 }
       }
     },
     "sounds": {
