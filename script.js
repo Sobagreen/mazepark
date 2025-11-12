@@ -196,8 +196,26 @@ const THEME_STORAGE_KEY = "laser-theme";
 const DEFAULT_SERVER_URL = "wss://mazepark-1.onrender.com";
 const BASE_EFFECT_CLASS = "piece-effect--impact";
 const PIECE_BASE_SCALE = 1.15;
-const DEFAULT_ROTATION_DURATION = 420;
-const MIN_ROTATION_DURATION = 380;
+const DEFAULT_ROTATION_DURATION = 820;
+const MIN_ROTATION_DURATION = 760;
+const HERO_FALLBACK_HIGHLIGHTS = {
+  light: {
+    color: "rgba(255, 214, 142, 0.7)",
+    idleOpacity: 0.58,
+    activeOpacity: 0.82,
+    blur: 28,
+    scale: 1.04,
+    pulse: 4.8
+  },
+  shadow: {
+    color: "rgba(132, 184, 255, 0.7)",
+    idleOpacity: 0.56,
+    activeOpacity: 0.8,
+    blur: 28,
+    scale: 1.04,
+    pulse: 4.8
+  }
+};
 
 const PLAYERS = {
   light: {
@@ -416,12 +434,18 @@ let skinSelection = cloneSkinSelection(DEFAULT_SKIN_SELECTION);
 let pendingSkins = cloneSkinSelection(DEFAULT_SKIN_SELECTION);
 let onlineSelectedRole = null;
 let lastBoardThemeSignature = null;
+let boardIntroTimeout = null;
+let lastBoardAtmosphereSignature = "";
+let lastBoardAtmosphereSettings = null;
+let pendingLaserImpactFrame = null;
+let pendingLaserImpactCancel = null;
 
 preloadSkinConfigs(DEFAULT_SKIN_SELECTION);
 
 const elements = {
   board: document.getElementById("board"),
   boardWrapper: document.querySelector(".board-wrapper"),
+  boardAtmosphere: document.getElementById("board-atmosphere"),
   status: document.getElementById("status"),
   turn: document.getElementById("turn-indicator"),
   rotateLeft: document.getElementById("rotate-left"),
@@ -530,7 +554,28 @@ function startNewGame() {
       ambientAudio.switchTo("game");
     }
   }
+  triggerBoardIntroAnimation({ refreshAtmosphere: true });
   broadcastGameState("new-game");
+}
+
+function triggerBoardIntroAnimation({ refreshAtmosphere = false } = {}) {
+  const wrapper = elements.boardWrapper;
+  if (!wrapper) {
+    return;
+  }
+  if (refreshAtmosphere && lastBoardAtmosphereSettings) {
+    applyBoardAtmosphere(lastBoardAtmosphereSettings, { force: true });
+  }
+  wrapper.classList.remove("board-wrapper--intro");
+  // Force reflow to restart animation
+  void wrapper.offsetWidth; // eslint-disable-line no-unused-expressions
+  wrapper.classList.add("board-wrapper--intro");
+  if (boardIntroTimeout) {
+    clearTimeout(boardIntroTimeout);
+  }
+  boardIntroTimeout = window.setTimeout(() => {
+    wrapper.classList.remove("board-wrapper--intro");
+  }, 900);
 }
 
 function createEmptyBoard() {
@@ -562,6 +607,138 @@ function placeInitialPieces() {
       }
     }
   }
+}
+
+function applyBoardAtmosphere(settings, { force = false } = {}) {
+  const container = elements.boardAtmosphere;
+  const serialised = settings ? JSON.stringify(settings) : "";
+  lastBoardAtmosphereSettings = serialised ? JSON.parse(serialised) : null;
+  if (!container) {
+    return;
+  }
+  if (!force && serialised === lastBoardAtmosphereSignature) {
+    return;
+  }
+  lastBoardAtmosphereSignature = serialised;
+  container.replaceChildren();
+  container.classList.remove("board-atmosphere--visible");
+  if (!settings || !settings.particles) {
+    return;
+  }
+
+  const particles = settings.particles;
+  const countRaw = Number(particles.count ?? particles.density ?? particles.total ?? particles.amount);
+  const targetCount = Number.isFinite(countRaw) ? Math.round(countRaw) : 28;
+  const count = clamp(targetCount, 4, 96);
+  if (count <= 0) {
+    return;
+  }
+
+  const colors = Array.isArray(particles.colors) && particles.colors.length
+    ? particles.colors
+    : particles.color
+      ? [particles.color]
+      : ["rgba(255, 214, 132, 0.42)"];
+
+  const sizeRange = normaliseParticleRange(particles.size ?? particles.sizeRange, 0.65, 1.65);
+  const opacityRange = normaliseParticleRange(particles.opacity ?? particles.opacityRange, 0.18, 0.42);
+  const durationRange = normaliseParticleRange(particles.duration ?? particles.durationRange, 12, 24);
+  const delayRange = normaliseParticleRange(particles.delay ?? particles.delayRange, 0, durationRange[1]);
+  const verticalRange = normaliseParticleRange(particles.verticalDrift ?? particles.driftY, 18, 44);
+  const horizontalRange = normaliseParticleRange(particles.horizontalDrift ?? particles.driftX, -6, 6);
+  const blurRange = normaliseParticleRange(particles.blur ?? particles.blurRange, 0, 8);
+  const scaleStartRange = normaliseParticleRange(particles.scaleStart ?? particles.scale ?? particles.scaleRange, 0.6, 0.95);
+  const scaleEndRange = normaliseParticleRange(particles.scaleEnd ?? particles.scaleEndRange ?? particles.scaleRangeEnd, 1.05, 1.25);
+  const startXRange = normaliseParticleRange(particles.startX ?? particles.spawnX, -8, 108);
+  const startYRange = normaliseParticleRange(particles.startY ?? particles.spawnY, -6, 106);
+
+  for (let i = 0; i < count; i += 1) {
+    const particle = document.createElement("span");
+    particle.className = "board-atmosphere__particle";
+
+    const color = pickParticleColor(colors);
+    const size = randomBetween(sizeRange[0], sizeRange[1]);
+    const opacity = randomBetween(opacityRange[0], opacityRange[1]);
+    const duration = randomBetween(durationRange[0], durationRange[1]);
+    const delay = randomBetween(delayRange[0], delayRange[1]);
+    const driftX = randomBetween(horizontalRange[0], horizontalRange[1]);
+    const driftY = randomBetween(verticalRange[0], verticalRange[1]);
+    const blur = randomBetween(blurRange[0], blurRange[1]);
+    const scaleStart = randomBetween(scaleStartRange[0], scaleStartRange[1]);
+    const scaleEnd = randomBetween(scaleEndRange[0], scaleEndRange[1]);
+    const startX = randomBetween(startXRange[0], startXRange[1]);
+    const startY = randomBetween(startYRange[0], startYRange[1]);
+
+    particle.style.setProperty("--particle-color", color);
+    particle.style.setProperty("--particle-size", size.toFixed(3));
+    particle.style.setProperty("--particle-opacity", clamp(opacity, 0.05, 0.9).toFixed(3));
+    particle.style.setProperty("--particle-duration", `${Math.max(duration, 4).toFixed(2)}s`);
+    particle.style.setProperty("--particle-delay", `${Math.max(delay, 0).toFixed(2)}s`);
+    particle.style.setProperty("--particle-drift-x", `${driftX.toFixed(2)}%`);
+    particle.style.setProperty("--particle-drift-y", `${driftY.toFixed(2)}%`);
+    particle.style.setProperty("--particle-blur", `${Math.max(0, blur).toFixed(2)}px`);
+    particle.style.setProperty("--particle-scale-start", clamp(scaleStart, 0.4, 1.2).toFixed(3));
+    particle.style.setProperty("--particle-scale-end", clamp(scaleEnd, 0.8, 1.6).toFixed(3));
+    particle.style.setProperty("--particle-start-x", `${startX.toFixed(2)}%`);
+    particle.style.setProperty("--particle-start-y", `${startY.toFixed(2)}%`);
+
+    container.appendChild(particle);
+  }
+
+  if (container.childElementCount > 0) {
+    container.classList.add("board-atmosphere--visible");
+  }
+}
+
+function normaliseParticleRange(value, fallbackMin, fallbackMax) {
+  let min = fallbackMin;
+  let max = fallbackMax;
+  if (Array.isArray(value) && value.length) {
+    min = Number(value[0]);
+    max = Number(value[Math.min(1, value.length - 1)]);
+  } else if (value && typeof value === "object") {
+    const maybeMin = Number(value.min ?? value.start ?? value.from ?? value.low);
+    const maybeMax = Number(value.max ?? value.end ?? value.to ?? value.high);
+    if (Number.isFinite(maybeMin)) {
+      min = maybeMin;
+    }
+    if (Number.isFinite(maybeMax)) {
+      max = maybeMax;
+    }
+  } else if (Number.isFinite(Number(value))) {
+    const numeric = Number(value);
+    min = numeric;
+    max = numeric;
+  }
+  if (!Number.isFinite(min)) {
+    min = fallbackMin;
+  }
+  if (!Number.isFinite(max)) {
+    max = fallbackMax;
+  }
+  if (min > max) {
+    return [max, min];
+  }
+  return [min, max];
+}
+
+function randomBetween(min, max) {
+  const a = Number.isFinite(min) ? min : 0;
+  const b = Number.isFinite(max) ? max : a;
+  if (a === b) {
+    return a;
+  }
+  const low = Math.min(a, b);
+  const high = Math.max(a, b);
+  return low + Math.random() * (high - low);
+}
+
+function pickParticleColor(colors) {
+  if (!Array.isArray(colors) || colors.length === 0) {
+    return "rgba(255, 214, 132, 0.42)";
+  }
+  const index = Math.floor(Math.random() * colors.length);
+  return String(colors[index]);
 }
 
 function initialiseSkinControls() {
@@ -1897,8 +2074,8 @@ function determineBoardThemeCandidate() {
       continue;
     }
     const config = getSkinConfig(selection);
-    if (config && config.board) {
-      return { selection, settings: config.board };
+    if (config && (config.board || config.atmosphere || config.environment)) {
+      return { selection, config };
     }
   }
   return null;
@@ -1972,11 +2149,15 @@ function applyBoardTheme(settings) {
 function updateBoardTheme() {
   const candidate = determineBoardThemeCandidate();
   const signature = candidate ? `${candidate.selection.skin}:${candidate.selection.type}` : "";
-  if (signature === lastBoardThemeSignature) {
-    return;
+  if (signature !== lastBoardThemeSignature) {
+    lastBoardThemeSignature = signature;
+    const boardSettings = candidate && candidate.config ? candidate.config.board : null;
+    applyBoardTheme(boardSettings || null);
   }
-  lastBoardThemeSignature = signature;
-  applyBoardTheme(candidate ? candidate.settings : null);
+  const atmosphereSettings = candidate && candidate.config
+    ? candidate.config.atmosphere || candidate.config.environment || null
+    : null;
+  applyBoardAtmosphere(atmosphereSettings || null);
 }
 
 function renderBoard() {
@@ -2021,7 +2202,7 @@ function renderBoard() {
 
         if (piece.type === "volhv") {
           wrapper.classList.add("piece--hero");
-          applyHeroHighlight(wrapper, config);
+          applyHeroHighlight(wrapper, config, piece);
         }
 
         const cached = pieceOrientationCache.get(cacheKey);
@@ -2049,12 +2230,26 @@ function renderBoard() {
   }
 }
 
-function applyHeroHighlight(wrapper, config) {
+function applyHeroHighlight(wrapper, config, piece) {
   if (!wrapper) {
     return;
   }
-  const highlight = getHeroHighlightSettings(config);
+  const player = piece && piece.player ? piece.player : null;
+  const highlight = getHeroHighlightSettings(config, player);
+  const properties = [
+    "--hero-highlight-color",
+    "--hero-highlight-opacity",
+    "--hero-highlight-active-opacity",
+    "--hero-highlight-blur",
+    "--hero-highlight-scale",
+    "--hero-highlight-inset",
+    "--hero-highlight-glow-radius",
+    "--hero-highlight-glow-spread",
+    "--hero-highlight-pulse"
+  ];
   if (!highlight) {
+    properties.forEach((prop) => wrapper.style.removeProperty(prop));
+    wrapper.classList.remove("piece--hero-glowing");
     return;
   }
   wrapper.style.setProperty("--hero-highlight-color", highlight.color);
@@ -2065,34 +2260,39 @@ function applyHeroHighlight(wrapper, config) {
   wrapper.style.setProperty("--hero-highlight-inset", highlight.inset);
   wrapper.style.setProperty("--hero-highlight-glow-radius", `${highlight.glowRadius}px`);
   wrapper.style.setProperty("--hero-highlight-glow-spread", `${highlight.glowSpread}px`);
+  wrapper.style.setProperty("--hero-highlight-pulse", `${highlight.pulse}s`);
+  wrapper.classList.add("piece--hero-glowing");
 }
 
-function getHeroHighlightSettings(config) {
-  if (!config || typeof config !== "object") {
-    return null;
-  }
-  const baseColor = config.laser && config.laser.glowColor ? config.laser.glowColor : null;
-  const data = config.hero && config.hero.highlight ? config.hero.highlight : null;
-  const color = data && data.color ? data.color : baseColor;
+function getHeroHighlightSettings(config, player) {
+  const fallback = (player && HERO_FALLBACK_HIGHLIGHTS[player]) || HERO_FALLBACK_HIGHLIGHTS.light;
+  const data = config && config.hero && config.hero.highlight ? config.hero.highlight : null;
+  const baseColor = config && config.laser && config.laser.glowColor ? config.laser.glowColor : null;
+  const color = data && data.color ? data.color : baseColor || fallback.color;
   if (!color) {
     return null;
   }
-  const baseIdle = Number.isFinite(data?.idleOpacity) ? data.idleOpacity : 0.6;
-  const idleOpacity = clamp(baseIdle, 0.48, 0.92);
-  const baseActive = Number.isFinite(data?.activeOpacity)
-    ? data.activeOpacity
-    : Math.min(idleOpacity + 0.2, 0.88);
-  const activeOpacity = clamp(Math.max(baseActive, idleOpacity + 0.05), idleOpacity, 0.96);
-  const blur = Number.isFinite(data?.blur) ? Math.max(12, data.blur) : 26;
-  const scale = Number.isFinite(data?.scale) ? Math.max(0.9, data.scale) : 1.02;
+  const baseIdle = Number.isFinite(data?.idleOpacity)
+    ? data.idleOpacity
+    : fallback.idleOpacity ?? 0.62;
+  const idleOpacity = clamp(baseIdle, 0.58, 0.92);
+  const fallbackActive = fallback.activeOpacity ?? Math.min(idleOpacity + 0.22, 0.9);
+  const baseActive = Number.isFinite(data?.activeOpacity) ? data.activeOpacity : fallbackActive;
+  const activeOpacity = clamp(Math.max(baseActive, idleOpacity + 0.12), idleOpacity + 0.08, 0.97);
+  const blurBase = Number.isFinite(data?.blur) ? data.blur : fallback.blur ?? 30;
+  const blur = Math.max(18, blurBase);
+  const scaleBase = Number.isFinite(data?.scale) ? data.scale : fallback.scale ?? 1.02;
+  const scale = clamp(scaleBase, 0.9, 1.18);
   const insetValue = Number.isFinite(data?.inset) ? clamp(data.inset, 0, 0.35) : 0.12;
-  const glowRadius = Number.isFinite(data?.glowRadius) ? Math.max(0, data.glowRadius) : 46;
+  const glowRadius = Number.isFinite(data?.glowRadius) ? Math.max(0, data.glowRadius) : 52;
   const glowSpread = Number.isFinite(data?.glowSpread)
-    ? clamp(data.glowSpread, -8, 28)
-    : 12;
+    ? clamp(data.glowSpread, -6, 38)
+    : 16;
+  const pulseBase = Number.isFinite(data?.pulse) ? data.pulse : fallback.pulse ?? 4.6;
+  const pulse = clamp(pulseBase, 2.4, 8.5);
   const insetPercent = Number((insetValue * 100).toFixed(1));
   const inset = `${insetPercent}%`;
-  return { color, idleOpacity, activeOpacity, blur, scale, inset, glowRadius, glowSpread };
+  return { color, idleOpacity, activeOpacity, blur, scale, inset, glowRadius, glowSpread, pulse };
 }
 
 function applyPieceRotation(image, previousOrientation, currentOrientation, rotationSettings) {
@@ -2237,10 +2437,12 @@ function selectCell(x, y) {
   updatePiecePanel(piece, toNotation(x, y));
 }
 
-function clearSelection({ silent = false } = {}) {
+function clearSelection({ silent = false, skipRender = false } = {}) {
   selectedCell = null;
   currentOptions = [];
-  renderBoard();
+  if (!skipRender) {
+    renderBoard();
+  }
   updateRotateControls(false);
   updatePiecePanel();
   if (!silent) {
@@ -2311,15 +2513,13 @@ function rotateSelected(delta) {
 
   piece.orientation = mod4(piece.orientation + delta);
   lastMove = null;
-  renderBoard();
-  const dirSymbol = delta > 0 ? "↻" : "↺";
   setStatus(`${PLAYERS[currentPlayer].name}: ${def.name} на ${toNotation(selectedCell.x, selectedCell.y)} повёрнут ${delta > 0 ? "по" : "против"} часовой стрелки.`);
   endTurn();
   broadcastGameState(delta > 0 ? "rotate-cw" : "rotate-ccw");
 }
 
 function endTurn() {
-  clearSelection({ silent: true });
+  clearSelection({ silent: true, skipRender: true });
   const activePlayer = currentPlayer;
   playSkinSound(activePlayer, "move");
   const laserResult = normaliseLaserResult(fireLaser(activePlayer));
@@ -2592,11 +2792,13 @@ function highlightLaserPath(result) {
   clearLaserPath({ preserveState: true });
   if (!result || !result.origin) {
     resetLaserOverlayTheme();
+    updateLaserImpactCoordinates(null);
     return;
   }
 
   applyLaserVisualTheme(result);
   drawLaserBeam(result);
+  updateLaserImpactCoordinates(result);
 }
 
 function clearLaserPath({ preserveState = false } = {}) {
@@ -2608,6 +2810,16 @@ function clearLaserPath({ preserveState = false } = {}) {
     lastLaserEffectSignature = null;
     lastLaserEffectTimestamp = 0;
     resetLaserOverlayTheme();
+    if (pendingLaserImpactCancel) {
+      pendingLaserImpactCancel();
+      pendingLaserImpactCancel = null;
+    }
+    pendingLaserImpactFrame = null;
+    if (elements.laserOverlay) {
+      elements.laserOverlay.classList.remove("laser-overlay--armed", "laser-overlay--impact");
+      elements.laserOverlay.style.removeProperty("--laser-impact-x");
+      elements.laserOverlay.style.removeProperty("--laser-impact-y");
+    }
   }
 }
 
@@ -2655,6 +2867,67 @@ function drawLaserBeam(result) {
   }
 }
 
+function updateLaserImpactCoordinates(result) {
+  if (!elements.laserOverlay) {
+    return;
+  }
+  if (result && (result.hit || result.blocked)) {
+    const impact = result.hit || result.blocked;
+    const center = toCellCenter(impact.x, impact.y);
+    elements.laserOverlay.style.setProperty("--laser-impact-x", `${(center.x / BOARD_WIDTH) * 100}%`);
+    elements.laserOverlay.style.setProperty("--laser-impact-y", `${(center.y / BOARD_HEIGHT) * 100}%`);
+    elements.laserOverlay.classList.add("laser-overlay--armed");
+  } else {
+    elements.laserOverlay.classList.remove("laser-overlay--armed");
+    elements.laserOverlay.classList.remove("laser-overlay--impact");
+    elements.laserOverlay.style.removeProperty("--laser-impact-x");
+    elements.laserOverlay.style.removeProperty("--laser-impact-y");
+  }
+}
+
+function triggerLaserImpactPulse(result) {
+  if (!elements.laserOverlay) {
+    return;
+  }
+  if (pendingLaserImpactCancel) {
+    pendingLaserImpactCancel();
+    pendingLaserImpactCancel = null;
+  }
+  pendingLaserImpactFrame = null;
+  if (!result || !(result.hit || result.blocked)) {
+    elements.laserOverlay.classList.remove("laser-overlay--impact");
+    return;
+  }
+  if (typeof requestAnimationFrame === "function") {
+    pendingLaserImpactFrame = requestAnimationFrame(() => {
+      pendingLaserImpactFrame = null;
+      pendingLaserImpactCancel = null;
+      elements.laserOverlay.classList.remove("laser-overlay--impact");
+      void elements.laserOverlay.offsetWidth; // eslint-disable-line no-unused-expressions
+      elements.laserOverlay.classList.add("laser-overlay--impact");
+    });
+    pendingLaserImpactCancel = () => {
+      cancelAnimationFrame(pendingLaserImpactFrame);
+      pendingLaserImpactFrame = null;
+      pendingLaserImpactCancel = null;
+    };
+  } else if (typeof window !== "undefined" && typeof window.setTimeout === "function") {
+    const timeoutId = window.setTimeout(() => {
+      pendingLaserImpactFrame = null;
+      pendingLaserImpactCancel = null;
+      elements.laserOverlay.classList.remove("laser-overlay--impact");
+      void elements.laserOverlay.offsetWidth; // eslint-disable-line no-unused-expressions
+      elements.laserOverlay.classList.add("laser-overlay--impact");
+    }, 16);
+    pendingLaserImpactFrame = timeoutId;
+    pendingLaserImpactCancel = () => {
+      window.clearTimeout(timeoutId);
+      pendingLaserImpactFrame = null;
+      pendingLaserImpactCancel = null;
+    };
+  }
+}
+
 function toCellCenter(x, y) {
   return { x: x + 0.5, y: y + 0.5 };
 }
@@ -2689,6 +2962,7 @@ function applyLaserVisualTheme(result) {
   setLaserOverlayProperty("--laser-glow-color", laser.glowColor || null);
   setLaserOverlayProperty("--laser-impact-gradient", laser.impactGradient || null);
   setLaserOverlayProperty("--laser-impact-shadow", laser.impactShadow || null);
+  setLaserOverlayProperty("--laser-impact-glow", laser.glowColor || laser.impactShadow || null);
 }
 
 function setLaserOverlayProperty(property, value) {
@@ -2707,7 +2981,8 @@ function resetLaserOverlayTheme() {
     "--laser-beam-gradient",
     "--laser-glow-color",
     "--laser-impact-gradient",
-    "--laser-impact-shadow"
+    "--laser-impact-shadow",
+    "--laser-impact-glow"
   ].forEach((prop) => elements.laserOverlay.style.removeProperty(prop));
   if (elements.laserOverlay.dataset) {
     delete elements.laserOverlay.dataset.laserSkin;
@@ -2874,6 +3149,7 @@ function computeLaserSignature(result) {
 
 function handleLaserImpact(result) {
   if (!result || !result.hit) {
+    triggerLaserImpactPulse(null);
     return;
   }
   const signature = computeLaserSignature(result);
@@ -2895,6 +3171,7 @@ function handleLaserImpact(result) {
   const victimSelection = victimPiece ? getPlayerSkin(victimPiece.player) : null;
   const center = toCellCenter(result.hit.x, result.hit.y);
   triggerPieceDestructionEffects({ attackerSelection, victimSelection, center });
+  triggerLaserImpactPulse(result);
   if (attacker && victimPiece && attacker !== victimPiece.player) {
     playSkinSound(attacker, "destroyEnemy");
   }
