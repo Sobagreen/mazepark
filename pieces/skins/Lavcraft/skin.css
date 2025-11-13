@@ -131,40 +131,64 @@
 .lavcraft-piece--volhv::before {
   content: "";
   position: absolute;
-  inset: 14%;
+  inset: 12%;
   border-radius: 999px;
-  background: radial-gradient(circle, rgba(60, 126, 140, 0.4) 0%, transparent 70%);
+  border: 2px solid rgba(82, 226, 198, 0.38);
   box-shadow:
-    0 0 34px rgba(60, 126, 140, 0.38),
-    inset 0 0 18px rgba(20, 54, 64, 0.35);
-  opacity: 0.8;
-  animation: lavcraft-orb 6.8s ease-in-out infinite;
+    0 0 22px rgba(82, 226, 198, 0.32),
+    0 0 38px rgba(154, 124, 250, 0.26);
+  opacity: 0.82;
   pointer-events: none;
+  mix-blend-mode: screen;
+  transition: opacity 0.35s ease, transform 0.35s ease;
   z-index: -1;
 }
 
 .lavcraft-piece--volhv::after {
   content: "";
   position: absolute;
-  inset: 28%;
+  inset: 18%;
   border-radius: 999px;
-  background: conic-gradient(from 100deg, rgba(180, 120, 220, 0.7) 0deg 42deg, transparent 42deg 120deg);
-  opacity: 0.15;
-  animation: lavcraft-rune-spin 7.8s linear infinite;
+  border: 1px solid rgba(154, 124, 250, 0.3);
+  opacity: 0.34;
+  filter: blur(6px);
   pointer-events: none;
-  z-index: -1;
+  transition: opacity 0.35s ease, transform 0.35s ease;
+  z-index: -2;
+}
+
+.lavcraft-piece--volhv .piece__image {
+  filter: drop-shadow(0 0 12px rgba(82, 226, 198, 0.55))
+    drop-shadow(0 0 28px rgba(154, 124, 250, 0.32));
+  transition: filter 0.3s ease;
+}
+
+.board .cell.cell--selected .lavcraft-piece--volhv::before,
+.board .cell:hover .lavcraft-piece--volhv::before {
+  opacity: 0.97;
+  transform: scale(1.05);
 }
 
 .board .cell.cell--selected .lavcraft-piece--volhv::after,
 .board .cell:hover .lavcraft-piece--volhv::after {
-  opacity: 0.62;
+  opacity: 0.58;
+  transform: scale(1.05);
+}
+
+.board .cell.cell--selected .lavcraft-piece--volhv .piece__image,
+.board .cell:hover .lavcraft-piece--volhv .piece__image {
+  filter: drop-shadow(0 0 18px rgba(102, 236, 210, 0.62))
+    drop-shadow(0 0 36px rgba(154, 124, 250, 0.4));
 }
 
 .lavcraft-piece--volhv.lavcraft-piece--victory::after {
-  opacity: 0.95;
+  border: none;
+  opacity: 0.9;
+  filter: none;
   background:
-    radial-gradient(circle, rgba(120, 200, 214, 0.75) 0%, rgba(180, 120, 220, 0.55) 45%, transparent 70%),
-    linear-gradient(0deg, rgba(116, 72, 160, 0.8), transparent 65%);
+    radial-gradient(circle, rgba(120, 200, 214, 0.78) 0%, rgba(180, 120, 220, 0.58) 46%, transparent 74%),
+    linear-gradient(0deg, rgba(116, 72, 160, 0.8), transparent 62%);
+  transform: scale(1.1);
   animation: lavcraft-victory 1.3s ease-out forwards;
 }
 
@@ -199,9 +223,10 @@
   position: absolute;
   inset: 22%;
   border-radius: 999px;
-  background: linear-gradient(135deg, rgba(180, 120, 220, 0.6), rgba(120, 200, 214, 0.35));
+  background: linear-gradient(135deg, rgba(180, 120, 220, 0.32), rgba(120, 200, 214, 0.2));
   mix-blend-mode: screen;
-  opacity: 0.7;
+  opacity: 0.3;
+  filter: blur(2px);
 }
 
 .lavcraft-piece--mirror::before {
@@ -209,8 +234,8 @@
   position: absolute;
   inset: 14%;
   border-radius: 999px;
-  border: 1px solid rgba(120, 200, 214, 0.35);
-  box-shadow: inset 0 0 16px rgba(120, 200, 214, 0.3);
+  border: 1px solid rgba(120, 200, 214, 0.28);
+  box-shadow: inset 0 0 10px rgba(120, 200, 214, 0.2);
   pointer-events: none;
 }
 
@@ -219,8 +244,8 @@
   position: absolute;
   inset: 16%;
   border-radius: 18px;
-  background: linear-gradient(180deg, rgba(60, 126, 140, 0.65), rgba(20, 54, 64, 0.55));
-  opacity: 0.9;
+  background: linear-gradient(180deg, rgba(60, 126, 140, 0.32), rgba(20, 54, 64, 0.2));
+  opacity: 0.5;
   animation: lavcraft-totem-scroll 8s linear infinite;
   pointer-events: none;
 }
@@ -230,8 +255,8 @@
   position: absolute;
   inset: 24%;
   border-radius: 18px;
-  border: 1px solid rgba(116, 72, 160, 0.45);
-  box-shadow: inset 0 0 16px rgba(116, 72, 160, 0.35);
+  border: 1px solid rgba(116, 72, 160, 0.3);
+  box-shadow: none;
   pointer-events: none;
 }
 

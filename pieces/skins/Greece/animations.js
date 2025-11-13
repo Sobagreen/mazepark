@@ -267,11 +267,13 @@
     if (!matches(selection)) {
       return;
     }
-    if (state.boardWrapper) {
+    const result = payload.result;
+    const hasDestruction = result && Boolean(result.hit);
+    if (state.boardWrapper && hasDestruction) {
       withReflow(state.boardWrapper, "greece-board-breathe");
     }
-    if (payload.result && payload.result.origin && typeof state.getCellElement === "function") {
-      const cell = state.getCellElement(payload.result.origin.x, payload.result.origin.y);
+    if (result && result.origin && typeof state.getCellElement === "function") {
+      const cell = state.getCellElement(result.origin.x, result.origin.y);
       if (cell) {
         cell.classList.add("greece-cell--emitter-charge");
         cell.addEventListener(

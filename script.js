@@ -2398,11 +2398,13 @@ function selectCell(x, y) {
   updatePiecePanel(piece, toNotation(x, y));
 }
 
-function clearSelection({ silent = false } = {}) {
+function clearSelection({ silent = false, skipRender = false } = {}) {
   selectedCell = null;
   currentOptions = [];
   currentOptionSelection = null;
-  renderBoard();
+  if (!skipRender) {
+    renderBoard();
+  }
   updateRotateControls(false);
   updatePiecePanel();
   if (!silent) {
@@ -2480,15 +2482,13 @@ function rotateSelected(delta) {
 
   piece.orientation = mod4(piece.orientation + delta);
   lastMove = null;
-  renderBoard();
-  const dirSymbol = delta > 0 ? "↻" : "↺";
   setStatus(`${PLAYERS[currentPlayer].name}: ${def.name} на ${toNotation(selectedCell.x, selectedCell.y)} повёрнут ${delta > 0 ? "по" : "против"} часовой стрелки.`);
   endTurn();
   broadcastGameState(delta > 0 ? "rotate-cw" : "rotate-ccw");
 }
 
 function endTurn() {
-  clearSelection({ silent: true });
+  clearSelection({ silent: true, skipRender: true });
   const activePlayer = currentPlayer;
   playSkinSound(activePlayer, "move");
   const laserResult = normaliseLaserResult(fireLaser(activePlayer));

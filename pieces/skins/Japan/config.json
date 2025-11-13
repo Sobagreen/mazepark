@@ -36,7 +36,33 @@
         "idleOpacity": 0.42,
         "activeOpacity": 0.68,
         "blur": 22,
-        "scale": 1.03
+        "scale": 1.03,
+        "inset": 0.1,
+        "glowRadius": 50,
+        "glowSpread": 8
+      }
+    },
+    "board": {
+      "background": "linear-gradient(135deg, rgba(244, 236, 232, 0.94) 0%, rgba(228, 200, 198, 0.65) 100%)",
+      "wrapper": {
+        "background": "radial-gradient(560px circle at 26% 24%, rgba(214, 74, 74, 0.28) 0%, transparent 66%), radial-gradient(540px circle at 70% 74%, rgba(245, 193, 108, 0.3) 0%, transparent 70%)",
+        "shadow": "0 32px 68px rgba(62, 18, 18, 0.3)"
+      },
+      "cell": {
+        "dark": "rgba(212, 188, 186, 0.95)",
+        "light": "rgba(248, 242, 236, 0.96)",
+        "border": "rgba(214, 74, 74, 0.45)",
+        "innerGlow": "rgba(214, 74, 74, 0.18)"
+      },
+      "overlay": {
+        "primary": "rgba(214, 74, 74, 0.28)",
+        "secondary": "rgba(245, 193, 108, 0.28)",
+        "opacity": 0.42,
+        "blendMode": "screen"
+      },
+      "frame": {
+        "border": "1px solid rgba(214, 74, 74, 0.38)",
+        "shadow": "0 32px 68px rgba(48, 12, 12, 0.3)"
       }
     }
   },
@@ -77,7 +103,33 @@
         "idleOpacity": 0.42,
         "activeOpacity": 0.68,
         "blur": 22,
-        "scale": 1.03
+        "scale": 1.03,
+        "inset": 0.1,
+        "glowRadius": 52,
+        "glowSpread": 9
+      }
+    },
+    "board": {
+      "background": "linear-gradient(135deg, rgba(248, 240, 232, 0.94) 0%, rgba(232, 210, 168, 0.68) 100%)",
+      "wrapper": {
+        "background": "radial-gradient(540px circle at 24% 26%, rgba(214, 74, 74, 0.24) 0%, transparent 64%), radial-gradient(540px circle at 72% 74%, rgba(245, 193, 108, 0.32) 0%, transparent 70%)",
+        "shadow": "0 32px 70px rgba(84, 32, 16, 0.32)"
+      },
+      "cell": {
+        "dark": "rgba(224, 198, 158, 0.95)",
+        "light": "rgba(250, 240, 216, 0.96)",
+        "border": "rgba(245, 193, 108, 0.48)",
+        "innerGlow": "rgba(245, 193, 108, 0.24)"
+      },
+      "overlay": {
+        "primary": "rgba(245, 193, 108, 0.32)",
+        "secondary": "rgba(214, 74, 74, 0.24)",
+        "opacity": 0.45,
+        "blendMode": "screen"
+      },
+      "frame": {
+        "border": "1px solid rgba(245, 193, 108, 0.44)",
+        "shadow": "0 32px 70px rgba(72, 28, 12, 0.3)"
       }
     }
   }

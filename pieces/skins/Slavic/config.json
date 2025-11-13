@@ -36,7 +36,33 @@
         "idleOpacity": 0.45,
         "activeOpacity": 0.73,
         "blur": 27,
-        "scale": 1.06
+        "scale": 1.06,
+        "inset": 0.1,
+        "glowRadius": 56,
+        "glowSpread": 11
+      }
+    },
+    "board": {
+      "background": "linear-gradient(135deg, rgba(30, 42, 52, 0.95) 0%, rgba(18, 28, 36, 0.9) 100%)",
+      "wrapper": {
+        "background": "radial-gradient(560px circle at 30% 26%, rgba(218, 144, 52, 0.3) 0%, transparent 68%), radial-gradient(560px circle at 72% 74%, rgba(76, 136, 192, 0.28) 0%, transparent 72%)",
+        "shadow": "0 34px 76px rgba(10, 14, 18, 0.56)"
+      },
+      "cell": {
+        "dark": "rgba(30, 42, 52, 0.95)",
+        "light": "rgba(44, 58, 68, 0.92)",
+        "border": "rgba(218, 144, 52, 0.55)",
+        "innerGlow": "rgba(218, 144, 52, 0.26)"
+      },
+      "overlay": {
+        "primary": "rgba(218, 144, 52, 0.32)",
+        "secondary": "rgba(76, 136, 192, 0.26)",
+        "opacity": 0.48,
+        "blendMode": "screen"
+      },
+      "frame": {
+        "border": "1px solid rgba(218, 144, 52, 0.42)",
+        "shadow": "0 34px 76px rgba(10, 14, 18, 0.56)"
       }
     },
     "sounds": {
@@ -82,7 +108,33 @@
         "idleOpacity": 0.45,
         "activeOpacity": 0.73,
         "blur": 27,
-        "scale": 1.06
+        "scale": 1.06,
+        "inset": 0.1,
+        "glowRadius": 58,
+        "glowSpread": 12
+      }
+    },
+    "board": {
+      "background": "linear-gradient(135deg, rgba(24, 34, 48, 0.96) 0%, rgba(12, 20, 30, 0.9) 100%)",
+      "wrapper": {
+        "background": "radial-gradient(560px circle at 30% 26%, rgba(76, 136, 192, 0.3) 0%, transparent 68%), radial-gradient(560px circle at 72% 74%, rgba(218, 144, 52, 0.24) 0%, transparent 72%)",
+        "shadow": "0 34px 78px rgba(8, 12, 18, 0.56)"
+      },
+      "cell": {
+        "dark": "rgba(20, 32, 46, 0.95)",
+        "light": "rgba(40, 54, 68, 0.92)",
+        "border": "rgba(136, 210, 255, 0.45)",
+        "innerGlow": "rgba(136, 210, 255, 0.24)"
+      },
+      "overlay": {
+        "primary": "rgba(136, 210, 255, 0.32)",
+        "secondary": "rgba(218, 144, 52, 0.22)",
+        "opacity": 0.46,
+        "blendMode": "screen"
+      },
+      "frame": {
+        "border": "1px solid rgba(136, 210, 255, 0.42)",
+        "shadow": "0 34px 78px rgba(8, 12, 18, 0.56)"
       }
     },
     "sounds": {
