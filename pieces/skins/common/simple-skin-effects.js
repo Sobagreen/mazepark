@@ -208,13 +208,15 @@
       if (!payload || !matches(payload.selection)) {
         return;
       }
-      if (classes.boardPulse && state.boardWrapper) {
+      const result = payload.result;
+      const hasDestruction = result && Boolean(result.hit);
+      if (classes.boardPulse && state.boardWrapper && hasDestruction) {
         withReflow(state.boardWrapper, classes.boardPulse);
       }
-      if (!classes.emitter || !payload.result || !payload.result.origin || typeof state.getCellElement !== "function") {
+      if (!classes.emitter || !result || !result.origin || typeof state.getCellElement !== "function") {
         return;
       }
-      const origin = payload.result.origin;
+      const origin = result.origin;
       const cell = state.getCellElement(origin.x, origin.y);
       if (!cell) {
         return;

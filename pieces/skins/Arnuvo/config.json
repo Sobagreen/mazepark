@@ -1,6 +1,6 @@
 {
   "Type1": {
-    "description": "Нежно-розовый лазер, чьё прикосновение оставляет после себя парящий лепестковый шлейф.",
+    "description": "Она — воплощённая грация цветка, чья красота скрывает силу, способную менять дыхание самой природы.",
     "laser": {
       "coreColor": "#f7b6d9",
       "beamGradient": "linear-gradient(90deg, rgba(46, 10, 34, 0.92) 0%, rgba(179, 62, 124, 0.75) 32%, rgba(255, 224, 242, 0.98) 52%, rgba(212, 96, 158, 0.82) 78%, rgba(34, 6, 26, 0.9) 100%)",
@@ -36,7 +36,33 @@
         "idleOpacity": 0.45,
         "activeOpacity": 0.72,
         "blur": 28,
-        "scale": 1.06
+        "scale": 1.06,
+        "inset": 0.1,
+        "glowRadius": 54,
+        "glowSpread": 10
+      }
+    },
+    "board": {
+      "background": "linear-gradient(135deg, rgba(252, 237, 246, 0.92) 0%, rgba(244, 219, 238, 0.68) 100%)",
+      "wrapper": {
+        "background": "radial-gradient(520px circle at 32% 22%, rgba(255, 196, 232, 0.28) 0%, transparent 60%), radial-gradient(600px circle at 74% 80%, rgba(208, 142, 204, 0.32) 0%, transparent 72%)",
+        "shadow": "0 32px 68px rgba(90, 40, 72, 0.32)"
+      },
+      "cell": {
+        "dark": "rgba(244, 218, 234, 0.96)",
+        "light": "rgba(255, 240, 248, 0.96)",
+        "border": "rgba(214, 128, 178, 0.45)",
+        "innerGlow": "rgba(255, 210, 236, 0.28)"
+      },
+      "overlay": {
+        "primary": "rgba(255, 210, 236, 0.34)",
+        "secondary": "rgba(214, 128, 178, 0.28)",
+        "opacity": 0.48,
+        "blendMode": "screen"
+      },
+      "frame": {
+        "border": "1px solid rgba(214, 128, 178, 0.45)",
+        "shadow": "0 32px 68px rgba(80, 32, 64, 0.28)"
       }
     },
     "sounds": {
@@ -46,7 +72,7 @@
     }
   },
   "Type2": {
-    "description": "Розовый луч с бархатной дымкой и разрушение фигур в виде распускающейся розы.",
+    "description": "Розовый луч и ненависть в сердце.",
     "laser": {
       "coreColor": "#f6c6eb",
       "beamGradient": "linear-gradient(90deg, rgba(40, 8, 28, 0.9) 0%, rgba(168, 58, 134, 0.72) 28%, rgba(255, 218, 240, 0.98) 52%, rgba(214, 112, 176, 0.82) 78%, rgba(34, 8, 26, 0.92) 100%)",
@@ -82,7 +108,33 @@
         "idleOpacity": 0.46,
         "activeOpacity": 0.74,
         "blur": 28,
-        "scale": 1.06
+        "scale": 1.06,
+        "inset": 0.1,
+        "glowRadius": 56,
+        "glowSpread": 12
+      }
+    },
+    "board": {
+      "background": "linear-gradient(135deg, rgba(252, 237, 246, 0.92) 0%, rgba(244, 219, 238, 0.68) 100%)",
+      "wrapper": {
+        "background": "radial-gradient(520px circle at 32% 22%, rgba(255, 196, 232, 0.28) 0%, transparent 60%), radial-gradient(600px circle at 74% 80%, rgba(208, 142, 204, 0.32) 0%, transparent 72%)",
+        "shadow": "0 32px 68px rgba(90, 40, 72, 0.32)"
+      },
+      "cell": {
+        "dark": "rgba(244, 218, 234, 0.96)",
+        "light": "rgba(255, 240, 248, 0.96)",
+        "border": "rgba(214, 128, 178, 0.45)",
+        "innerGlow": "rgba(255, 210, 236, 0.28)"
+      },
+      "overlay": {
+        "primary": "rgba(255, 210, 236, 0.34)",
+        "secondary": "rgba(214, 128, 178, 0.28)",
+        "opacity": 0.48,
+        "blendMode": "screen"
+      },
+      "frame": {
+        "border": "1px solid rgba(214, 128, 178, 0.45)",
+        "shadow": "0 32px 68px rgba(80, 32, 64, 0.28)"
       }
     },
     "sounds": {
