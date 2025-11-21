@@ -205,6 +205,20 @@
         <p id="piece-name" class="piece-panel__name">—</p>
         <p id="piece-details" class="piece-panel__details">Коснитесь своей фигуры, чтобы узнать её свойства.</p>
       </section>
+      <section class="panel panel--history" aria-live="polite">
+        <div class="history-header">
+          <div>
+            <h2>История ходов</h2>
+            <p class="history-subtitle">Краткие карточки каждого хода и выстрела.</p>
+          </div>
+          <div class="history-actions">
+            <button type="button" id="history-export" class="history-icon" title="Экспортировать историю" aria-label="Экспортировать историю">⤓</button>
+            <button type="button" id="history-clear" class="history-icon" title="Очистить историю" aria-label="Очистить историю">✕</button>
+          </div>
+        </div>
+        <div id="history-list" class="history-list" role="list"></div>
+        <p id="history-empty" class="history-empty">Ходы появятся после первого действия.</p>
+      </section>
     </aside>
   </main>
 
