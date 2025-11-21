@@ -1,7 +1,7 @@
 const http = require("http");
 const { WebSocketServer } = require("ws");
 
-const PORT = Number(process.env.PORT || 10000);
+const PORT = Number(process.env.PORT || 8787);
 
 const rooms = new Map();
 
