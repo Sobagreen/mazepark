@@ -2905,12 +2905,13 @@ function drawLaserBeam(result) {
     const end = points[i + 1];
     const dx = end.x - start.x;
     const dy = end.y - start.y;
+    const angle = Math.atan2(dy, dx);
     const segment = document.createElement("div");
     segment.className = "laser-overlay__beam";
     segment.style.left = `${(start.x / BOARD_WIDTH) * 100}%`;
     segment.style.top = `${(start.y / BOARD_HEIGHT) * 100}%`;
     segment.style.width = `${(Math.hypot(dx, dy) / BOARD_WIDTH) * 100}%`;
-    segment.style.transform = `translate(0, -50%) rotate(${Math.atan2(dy, dx)}rad)`;
+    segment.style.setProperty("--laser-rotation", `${angle}rad`);
     elements.laserOverlay.appendChild(segment);
   }
 
