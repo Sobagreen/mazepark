@@ -198,6 +198,16 @@ const BASE_EFFECT_CLASS = "piece-effect--impact";
 const PIECE_BASE_SCALE = 1.15;
 const DEFAULT_ROTATION_DURATION = 420;
 const MIN_ROTATION_DURATION = 380;
+const EFFECT_SCALE_MIN = 0.7;
+const EFFECT_SCALE_MAX = 1.3;
+const PLAYER_COLORS = {
+  light: "rgba(255, 209, 102, 0.75)",
+  shadow: "rgba(107, 154, 255, 0.78)"
+};
+const SHIELD_GLOW_COLORS = {
+  light: "rgba(255, 209, 102, 0.8)",
+  shadow: "rgba(107, 154, 255, 0.85)"
+};
 
 window.__skinEffectsRegistry = window.__skinEffectsRegistry || {};
 
@@ -384,13 +394,13 @@ const SKINS = {
     types: {
       Type1: {
         label: "Эфридика",
-        preview: "data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%20120%20120%27%3E%0A%20%20%3Crect%20width%3D%27120%27%20height%3D%27120%27%20rx%3D%2722%27%20fill%3D%27%23fde4f8%27/%3E%0A%20%20%3Ccircle%20cx%3D%2760%27%20cy%3D%2746%27%20r%3D%2730%27%20fill%3D%27%23f8bbd0%27/%3E%0A%20%20%3Cpath%20d%3D%27M60%2028c16%2010%2028%2022%2028%2034%200%2016-13%2030-28%2030s-28-14-28-30c0-12%2012-24%2028-34z%27%20fill%3D%27%23f06292%27/%3E%0A%20%20%3Ctext%20x%3D%2760%27%20y%3D%2792%27%20text-anchor%3D%27middle%27%20font-family%3D%27Montserrat%2CArial%27%20font-size%3D%2720%27%20fill%3D%27%237b1fa2%27%3E%D0%AD%D1%84%3C/text%3E%0A%3C/svg%3E",
+        preview: "pieces/skins/Arnuvo/Type1/volhv.png",
         description: "Она — воплощённая грация цветка, чья красота скрывает силу, способную менять дыхание самой природы.",
         assetBase: "Arnuvo/Type1"
       },
       Type2: {
         label: "Серсея",
-        preview: "data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%20120%20120%27%3E%0A%20%20%3Crect%20width%3D%27120%27%20height%3D%27120%27%20rx%3D%2722%27%20fill%3D%27%23fbe9f2%27/%3E%0A%20%20%3Ccircle%20cx%3D%2760%27%20cy%3D%2746%27%20r%3D%2730%27%20fill%3D%27%23f3d1ff%27/%3E%0A%20%20%3Cpath%20d%3D%27M34%2074c10%2012%2026%2018%2026%2018s16-6%2026-18c6-8%206-18%200-28-6-10-18-16-26-16s-20%206-26%2016c-6%2010-6%2020%200%2028z%27%20fill%3D%27%23ce93d8%27/%3E%0A%20%20%3Ctext%20x%3D%2760%27%20y%3D%2792%27%20text-anchor%3D%27middle%27%20font-family%3D%27Montserrat%2CArial%27%20font-size%3D%2720%27%20fill%3D%27%236a1b9a%27%3E%D0%A1%D0%B5%3C/text%3E%0A%3C/svg%3E",
+        preview: "pieces/skins/Arnuvo/Type2/volhv.png",
         description: "Она — холодная и величественная хранительница тайны, чьё присутствие заставляет мир склоняться перед её безмолвной мощью.",
         assetBase: "Arnuvo/Type2"
       }
@@ -442,6 +452,8 @@ let lastLaserResult = null;
 let lastLaserEffectSignature = null;
 let lastLaserEffectTimestamp = 0;
 let lastMove = null;
+let pendingAction = null;
+let moveHistory = [];
 let skinSelection = cloneSkinSelection(DEFAULT_SKIN_SELECTION);
 let pendingSkins = cloneSkinSelection(DEFAULT_SKIN_SELECTION);
 let onlineSelectedRole = null;
@@ -521,6 +533,10 @@ const elements = {
       description: document.getElementById("offline-shadow-preview-description")
     }
   },
+  historyList: document.getElementById("history-list"),
+  historyEmpty: document.getElementById("history-empty"),
+  historyExport: document.getElementById("history-export"),
+  historyClear: document.getElementById("history-clear"),
   legendImages: Array.from(document.querySelectorAll("[data-piece-image]"))
 };
 
@@ -557,6 +573,9 @@ function startNewGame() {
   turnCounter = 1;
   clearLaserPath();
   clearEffectsOverlay();
+  moveHistory = [];
+  pendingAction = null;
+  renderMoveHistory();
   updateTurnIndicator();
   clearSelection({ silent: true });
   triggerBoardIntroAnimation();
@@ -939,8 +958,8 @@ function createAmbientAudioManager() {
       track.currentTime = 0;
     } catch (err) {
       /* ignore */
-    }
-  };
+  }
+};
 
   const attemptPlay = (name) => {
     const track = tracks[name];
@@ -1192,6 +1211,12 @@ function attachEventListeners() {
   elements.playAgain.addEventListener("click", startNewGame);
   if (elements.themeToggle) {
     elements.themeToggle.addEventListener("click", toggleTheme);
+  }
+  if (elements.historyExport) {
+    elements.historyExport.addEventListener("click", exportMoveHistory);
+  }
+  if (elements.historyClear) {
+    elements.historyClear.addEventListener("click", clearMoveHistory);
   }
   if (elements.startOnline) {
     elements.startOnline.addEventListener("click", () => {
@@ -2129,6 +2154,7 @@ function renderBoard() {
         const def = PIECE_DEFS[piece.type];
         const wrapper = document.createElement("div");
         wrapper.className = `piece piece--${piece.player}`;
+        wrapper.classList.add(`piece--${piece.type}`);
         const image = document.createElement("img");
         image.src = getPieceImageUrl(piece);
         image.alt = "";
@@ -2149,7 +2175,11 @@ function renderBoard() {
 
         if (piece.type === "volhv") {
           wrapper.classList.add("piece--hero");
-          applyHeroHighlight(wrapper, config);
+          applyHeroHighlight(wrapper, config, piece);
+        }
+
+        if (piece.type === "shield") {
+          applyShieldGlow(wrapper, config, piece);
         }
 
         const cached = pieceOrientationCache.get(cacheKey);
@@ -2199,11 +2229,11 @@ function renderBoard() {
   }
 }
 
-function applyHeroHighlight(wrapper, config) {
+function applyHeroHighlight(wrapper, config, piece) {
   if (!wrapper) {
     return;
   }
-  const highlight = getHeroHighlightSettings(config);
+  const highlight = getHeroHighlightSettings(config, piece);
   if (!highlight) {
     return;
   }
@@ -2217,32 +2247,62 @@ function applyHeroHighlight(wrapper, config) {
   wrapper.style.setProperty("--hero-highlight-glow-spread", `${highlight.glowSpread}px`);
 }
 
-function getHeroHighlightSettings(config) {
+function getHeroHighlightSettings(config, piece) {
   if (!config || typeof config !== "object") {
-    return null;
+    const fallbackColor = piece && piece.player ? PLAYER_COLORS[piece.player] : null;
+    if (!fallbackColor) {
+      return null;
+    }
+    return {
+      color: fallbackColor,
+      idleOpacity: 0.68,
+      activeOpacity: 0.82,
+      blur: 28,
+      scale: 1.04,
+      inset: "12%",
+      glowRadius: 52,
+      glowSpread: 14
+    };
   }
   const baseColor = config.laser && config.laser.glowColor ? config.laser.glowColor : null;
   const data = config.hero && config.hero.highlight ? config.hero.highlight : null;
-  const color = data && data.color ? data.color : baseColor;
+  const color = data && data.color ? data.color : baseColor || (piece && piece.player ? PLAYER_COLORS[piece.player] : null);
   if (!color) {
     return null;
   }
-  const baseIdle = Number.isFinite(data?.idleOpacity) ? data.idleOpacity : 0.6;
-  const idleOpacity = clamp(baseIdle, 0.48, 0.92);
+  const baseIdle = Number.isFinite(data?.idleOpacity) ? data.idleOpacity : 0.68;
+  const idleOpacity = clamp(baseIdle, 0.52, 0.94);
   const baseActive = Number.isFinite(data?.activeOpacity)
     ? data.activeOpacity
-    : Math.min(idleOpacity + 0.2, 0.88);
-  const activeOpacity = clamp(Math.max(baseActive, idleOpacity + 0.05), idleOpacity, 0.96);
-  const blur = Number.isFinite(data?.blur) ? Math.max(12, data.blur) : 26;
-  const scale = Number.isFinite(data?.scale) ? Math.max(0.9, data.scale) : 1.02;
+    : Math.min(idleOpacity + 0.2, 0.9);
+  const activeOpacity = clamp(Math.max(baseActive, idleOpacity + 0.08), idleOpacity, 0.97);
+  const blur = Number.isFinite(data?.blur) ? Math.max(12, data.blur) : 28;
+  const scale = Number.isFinite(data?.scale) ? Math.max(0.9, data.scale) : 1.04;
   const insetValue = Number.isFinite(data?.inset) ? clamp(data.inset, 0, 0.35) : 0.12;
-  const glowRadius = Number.isFinite(data?.glowRadius) ? Math.max(0, data.glowRadius) : 46;
+  const glowRadius = Number.isFinite(data?.glowRadius) ? Math.max(0, data.glowRadius) : 52;
   const glowSpread = Number.isFinite(data?.glowSpread)
-    ? clamp(data.glowSpread, -8, 28)
-    : 12;
+    ? clamp(data.glowSpread, -8, 32)
+    : 14;
   const insetPercent = Number((insetValue * 100).toFixed(1));
   const inset = `${insetPercent}%`;
   return { color, idleOpacity, activeOpacity, blur, scale, inset, glowRadius, glowSpread };
+}
+
+function applyShieldGlow(wrapper, config, piece) {
+  if (!wrapper || !piece) {
+    return;
+  }
+  const glowConfig = config && config.shield ? config.shield.glow || {} : {};
+  const color = glowConfig.color || (config && config.laser ? config.laser.glowColor : null) || SHIELD_GLOW_COLORS[piece.player];
+  if (!color) {
+    return;
+  }
+  const baseStrength = Number.isFinite(glowConfig.strength) ? glowConfig.strength : 1.1;
+  const strength = clamp(baseStrength, 0.6, 1.6);
+  const blur = Number.isFinite(glowConfig.blur) ? glowConfig.blur : 18;
+  wrapper.style.setProperty("--shield-glow-color", color);
+  wrapper.style.setProperty("--shield-glow-strength", String(strength));
+  wrapper.style.setProperty("--shield-glow-blur", `${Math.max(8, blur)}px`);
 }
 
 function applyPieceRotation(image, previousOrientation, currentOrientation, rotationSettings, selection = null) {
@@ -2433,6 +2493,16 @@ function executeMove(option, piece, from) {
     }
     board[from.y][from.x] = targetPiece;
     board[option.y][option.x] = piece;
+    pendingAction = {
+      type: "swap",
+      player: currentPlayer,
+      piece: clonePiece(piece),
+      target: clonePiece(targetPiece),
+      from: { x: from.x, y: from.y },
+      to: { x: option.x, y: option.y },
+      swap: true,
+      skin: getPlayerSkin(currentPlayer)
+    };
     lastMove = {
       from: { x: from.x, y: from.y },
       to: { x: option.x, y: option.y }
@@ -2458,6 +2528,15 @@ function executeMove(option, piece, from) {
 
   board[from.y][from.x] = null;
   board[option.y][option.x] = piece;
+  pendingAction = {
+    type: "move",
+    player: currentPlayer,
+    piece: clonePiece(piece),
+    from: { x: from.x, y: from.y },
+    to: { x: option.x, y: option.y },
+    swap: false,
+    skin: getPlayerSkin(currentPlayer)
+  };
   lastMove = {
     from: { x: from.x, y: from.y },
     to: { x: option.x, y: option.y }
@@ -2481,6 +2560,14 @@ function rotateSelected(delta) {
   }
 
   piece.orientation = mod4(piece.orientation + delta);
+  pendingAction = {
+    type: "rotate",
+    player: currentPlayer,
+    piece: clonePiece(piece),
+    from: { x: selectedCell.x, y: selectedCell.y },
+    rotation: delta,
+    skin: getPlayerSkin(currentPlayer)
+  };
   lastMove = null;
   setStatus(`${PLAYERS[currentPlayer].name}: ${def.name} на ${toNotation(selectedCell.x, selectedCell.y)} повёрнут ${delta > 0 ? "по" : "против"} часовой стрелки.`);
   endTurn();
@@ -2497,6 +2584,7 @@ function endTurn() {
     selection: getPlayerSkin(activePlayer)
   });
   lastLaserResult = laserResult;
+  recordTurnHistory(activePlayer, laserResult);
   renderBoard();
   highlightLaserPath(laserResult);
   handleLaserImpact(laserResult);
@@ -2817,12 +2905,13 @@ function drawLaserBeam(result) {
     const end = points[i + 1];
     const dx = end.x - start.x;
     const dy = end.y - start.y;
+    const angle = Math.atan2(dy, dx);
     const segment = document.createElement("div");
     segment.className = "laser-overlay__beam";
     segment.style.left = `${(start.x / BOARD_WIDTH) * 100}%`;
     segment.style.top = `${(start.y / BOARD_HEIGHT) * 100}%`;
     segment.style.width = `${(Math.hypot(dx, dy) / BOARD_WIDTH) * 100}%`;
-    segment.style.transform = `translate(0, -50%) rotate(${Math.atan2(dy, dx)}rad)`;
+    segment.style.setProperty("--laser-rotation", `${angle}rad`);
     elements.laserOverlay.appendChild(segment);
   }
 
@@ -2940,8 +3029,9 @@ function spawnEffectFromConfig(selection, classKey, center) {
   const adjustedY = clamp(center.y + offsetY, 0.5, BOARD_HEIGHT - 0.5);
   effect.style.left = `${(adjustedX / BOARD_WIDTH) * 100}%`;
   effect.style.top = `${(adjustedY / BOARD_HEIGHT) * 100}%`;
-  if (typeof scale === "number" && Number.isFinite(scale) && scale > 0) {
-    effect.style.setProperty("--effect-scale", String(scale));
+  const clampedScale = clampEffectScale(scale);
+  if (clampedScale !== null) {
+    effect.style.setProperty("--effect-scale", String(clampedScale));
   }
   elements.effectsOverlay.appendChild(effect);
   const remove = () => {
@@ -3040,6 +3130,13 @@ function normaliseAnimationDescriptor(descriptor) {
   }
 
   return { classes, offsetX, offsetY, scale };
+}
+
+function clampEffectScale(scale) {
+  if (!Number.isFinite(scale) || scale <= 0) {
+    return null;
+  }
+  return clamp(scale, EFFECT_SCALE_MIN, EFFECT_SCALE_MAX);
 }
 
 function computeLaserSignature(result) {
@@ -3231,6 +3328,240 @@ function orientationToText(orientation) {
     default:
       return "к западу";
   }
+}
+
+function snapshotSelection(selection) {
+  if (!selection || !selection.skin) {
+    return null;
+  }
+  return { skin: selection.skin, type: selection.type || null };
+}
+
+function summariseLaserForHistory(result) {
+  if (!result) {
+    return null;
+  }
+  return {
+    pathLength: Array.isArray(result.path) ? result.path.length : 0,
+    hit: result.hit
+      ? { x: result.hit.x, y: result.hit.y, piece: result.hit.piece ? clonePiece(result.hit.piece) : null }
+      : null,
+    blocked: result.blocked
+      ? { x: result.blocked.x, y: result.blocked.y, piece: result.blocked.piece ? clonePiece(result.blocked.piece) : null }
+      : null,
+    skin: snapshotSelection(result.skin)
+  };
+}
+
+function recordTurnHistory(player, laserResult, actionOverride = null) {
+  if (!elements.historyList) {
+    pendingAction = null;
+    return;
+  }
+  const entry = {
+    turn: turnCounter,
+    player,
+    action: actionOverride
+      ? actionOverride
+      : pendingAction
+      ? {
+          ...pendingAction,
+          piece: pendingAction.piece ? clonePiece(pendingAction.piece) : null,
+          target: pendingAction.target ? clonePiece(pendingAction.target) : null,
+          skin: snapshotSelection(pendingAction.skin)
+        }
+      : null,
+    laser: summariseLaserForHistory(laserResult)
+  };
+  moveHistory.push(entry);
+  pendingAction = null;
+  renderMoveHistory();
+}
+
+function renderMoveHistory() {
+  if (!elements.historyList || !elements.historyEmpty) return;
+  elements.historyList.replaceChildren();
+  if (!moveHistory.length) {
+    elements.historyEmpty.hidden = false;
+    return;
+  }
+  elements.historyEmpty.hidden = true;
+  moveHistory.forEach((entry) => {
+    const card = createHistoryCard(entry);
+    elements.historyList.appendChild(card);
+  });
+}
+
+function createHistoryCard(entry) {
+  const card = document.createElement("article");
+  card.className = `history-entry history-entry--${entry.player}`;
+  card.setAttribute("role", "listitem");
+
+  const thumb = document.createElement("div");
+  thumb.className = "history-entry__thumb";
+  const badge = document.createElement("span");
+  badge.className = "history-entry__badge";
+  badge.textContent = `${entry.turn}`;
+  thumb.appendChild(badge);
+
+  const type = document.createElement("span");
+  type.className = "history-entry__type";
+  type.textContent = getHistoryGlyph(entry);
+  thumb.appendChild(type);
+
+  const previewImage = document.createElement("img");
+  const previewPiece = entry.action && entry.action.piece ? entry.action.piece : { type: "laser", player: entry.player, orientation: 0 };
+  const previewSkin = entry.action && entry.action.skin ? entry.action.skin : getPlayerSkin(entry.player);
+  previewImage.src = previewSkin ? getSkinAssetPath(previewSkin, previewPiece.type) : getPieceImageUrl(previewPiece);
+  previewImage.alt = "";
+  thumb.appendChild(previewImage);
+
+  const body = document.createElement("div");
+  body.className = "history-entry__body";
+  const title = document.createElement("p");
+  title.className = "history-entry__title";
+  title.textContent = describeHistoryTitle(entry);
+  const meta = document.createElement("p");
+  meta.className = "history-entry__meta";
+  meta.textContent = describeHistoryMeta(entry);
+  body.appendChild(title);
+  body.appendChild(meta);
+
+  card.appendChild(thumb);
+  card.appendChild(body);
+  return card;
+}
+
+function describeHistoryTitle(entry) {
+  const actor = PLAYERS[entry.player].glyph;
+  if (!entry.action) {
+    return `${actor} ход без перемещений`;
+  }
+  const def = PIECE_DEFS[entry.action.piece?.type] || { name: "Фигура" };
+  switch (entry.action.type) {
+    case "rotate":
+      return `${actor} ${def.name} повернул${entry.action.rotation > 0 ? " по" : " против"} часовой стрелки`;
+    case "swap":
+      return `${actor} ${def.name} меняется местами`;
+    case "move":
+    default:
+      return `${actor} ${def.name} делает ход`;
+  }
+}
+
+function describeHistoryMeta(entry) {
+  const parts = [];
+  if (entry.action) {
+    const from = entry.action.from ? toNotation(entry.action.from.x, entry.action.from.y) : null;
+    const to = entry.action.to ? toNotation(entry.action.to.x, entry.action.to.y) : null;
+    if (entry.action.type === "rotate" && from) {
+      parts.push(`Поворот на ${from}`);
+    } else if (from && to) {
+      parts.push(`${from} → ${to}${entry.action.swap ? " (⇄)" : ""}`);
+    }
+  }
+  if (entry.laser) {
+    if (entry.laser.hit && entry.laser.hit.piece) {
+      const def = PIECE_DEFS[entry.laser.hit.piece.type];
+      parts.push(`Попадание: ${def ? def.name : "фигура"} на ${toNotation(entry.laser.hit.x, entry.laser.hit.y)}`);
+    } else if (entry.laser.blocked && entry.laser.blocked.piece) {
+      const def = PIECE_DEFS[entry.laser.blocked.piece.type];
+      parts.push(`Лазер остановлен ${def ? def.name : "фигурой"} на ${toNotation(entry.laser.blocked.x, entry.laser.blocked.y)}`);
+    } else {
+      parts.push("Лазер прошёл без попаданий");
+    }
+  }
+  return parts.join(" • ");
+}
+
+function getHistoryGlyph(entry) {
+  if (!entry.action) return "✦";
+  switch (entry.action.type) {
+    case "rotate":
+      return "↻";
+    case "swap":
+      return "⇄";
+    case "move":
+    default:
+      return "↦";
+  }
+}
+
+function deriveRemoteAction(previousBoard, currentBoard, lastMoveInfo, actor) {
+  if (!previousBoard || !currentBoard || !actor) {
+    return null;
+  }
+  if (lastMoveInfo && lastMoveInfo.from && lastMoveInfo.to) {
+    const from = lastMoveInfo.from;
+    const to = lastMoveInfo.to;
+    const prevFromPiece = previousBoard[from.y] && previousBoard[from.y][from.x];
+    const prevToPiece = previousBoard[to.y] && previousBoard[to.y][to.x];
+    const currFromPiece = currentBoard[from.y] && currentBoard[from.y][from.x];
+    const currToPiece = currentBoard[to.y] && currentBoard[to.y][to.x];
+    if (prevFromPiece && currToPiece && prevFromPiece.player === actor) {
+      const isSwap = prevToPiece && currFromPiece && piecesEqual(currFromPiece, prevToPiece);
+      return {
+        type: isSwap ? "swap" : "move",
+        player: actor,
+        piece: clonePiece(currToPiece),
+        target: isSwap && prevToPiece ? clonePiece(prevToPiece) : null,
+        from: { x: from.x, y: from.y },
+        to: { x: to.x, y: to.y },
+        swap: Boolean(isSwap),
+        skin: getPlayerSkin(actor)
+      };
+    }
+  }
+  for (let y = 0; y < BOARD_HEIGHT; y += 1) {
+    for (let x = 0; x < BOARD_WIDTH; x += 1) {
+      const before = previousBoard[y] && previousBoard[y][x];
+      const after = currentBoard[y] && currentBoard[y][x];
+      if (before && after && before.player === actor && before.type === after.type && before.orientation !== after.orientation) {
+        const rotation = mod4(after.orientation - before.orientation);
+        return {
+          type: "rotate",
+          player: actor,
+          piece: clonePiece(after),
+          from: { x, y },
+          rotation: rotation === 3 ? -1 : rotation,
+          skin: getPlayerSkin(actor)
+        };
+      }
+    }
+  }
+  return null;
+}
+
+function exportMoveHistory() {
+  if (!moveHistory.length) {
+    setStatus("История пока пуста — экспортировать нечего.");
+    return;
+  }
+  const lines = moveHistory.map((entry) => formatHistoryLine(entry));
+  const blob = new Blob([lines.join("\n")], { type: "text/plain" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `laser-history-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-")}.txt`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+  setStatus("История сохранена в файл.");
+}
+
+function clearMoveHistory() {
+  moveHistory = [];
+  pendingAction = null;
+  renderMoveHistory();
+  setStatus("История ходов очищена.");
+}
+
+function formatHistoryLine(entry) {
+  const player = PLAYERS[entry.player].name;
+  const actionTitle = describeHistoryTitle(entry);
+  const meta = describeHistoryMeta(entry);
+  return `${entry.turn}. ${player}: ${actionTitle}${meta ? ` — ${meta}` : ""}`;
 }
 
 function normaliseLaserResult(result) {
@@ -3487,6 +3818,12 @@ function applyRemoteState(state, options = {}) {
     } else {
       clearLaserPath();
     }
+    if (options.fromRemote) {
+      const remoteAction = deriveRemoteAction(previousBoard, board, lastMove, lastMover);
+      if (remoteAction || lastLaserResult) {
+        recordTurnHistory(lastMover, lastLaserResult, remoteAction);
+      }
+    }
   });
   if (lastLaserResult && lastLaserResult.hit) {
     handleLaserImpact(lastLaserResult);
@@ -3616,7 +3953,7 @@ function createMultiplayerController() {
         hideOverlay();
         updatePlayers(payload.players);
         if (payload.state) {
-          applyRemoteState(payload.state, { laser: payload.laser, preservePendingFor: state.role });
+          applyRemoteState(payload.state, { laser: payload.laser, preservePendingFor: state.role, fromRemote: true });
           reconcileLocalSkinSelection();
         } else {
           broadcastGameState("sync");
@@ -3631,7 +3968,7 @@ function createMultiplayerController() {
         break;
       case "state":
         if (payload.state) {
-          applyRemoteState(payload.state, { laser: payload.laser, preservePendingFor: state.role });
+          applyRemoteState(payload.state, { laser: payload.laser, preservePendingFor: state.role, fromRemote: true });
           reconcileLocalSkinSelection();
         } else if (Object.prototype.hasOwnProperty.call(payload, "laser")) {
           lastLaserResult = payload.laser ? normaliseLaserResult(payload.laser) : null;
