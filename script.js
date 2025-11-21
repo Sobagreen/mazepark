@@ -394,13 +394,13 @@ const SKINS = {
     types: {
       Type1: {
         label: "Эфридика",
-        preview: "pieces/skins/Arnuvo/Type1/volhv.png"",
+        preview: "pieces/skins/Arnuvo/Type1/volhv.png",
         description: "Она — воплощённая грация цветка, чья красота скрывает силу, способную менять дыхание самой природы.",
         assetBase: "Arnuvo/Type1"
       },
       Type2: {
         label: "Серсея",
-        preview: "data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%20120%20120%27%3E%0A%20%20%3Crect%20width%3D%27120%27%20height%3D%27120%27%20rx%3D%2722%27%20fill%3D%27%23fbe9f2%27/%3E%0A%20%20%3Ccircle%20cx%3D%2760%27%20cy%3D%2746%27%20r%3D%2730%27%20fill%3D%27%23f3d1ff%27/%3E%0A%20%20%3Cpath%20d%3D%27M34%2074c10%2012%2026%2018%2026%2018s16-6%2026-18c6-8%206-18%200-28-6-10-18-16-26-16s-20%206-26%2016c-6%2010-6%2020%200%2028z%27%20fill%3D%27%23ce93d8%27/%3E%0A%20%20%3Ctext%20x%3D%2760%27%20y%3D%2792%27%20text-anchor%3D%27middle%27%20font-family%3D%27Montserrat%2CArial%27%20font-size%3D%2720%27%20fill%3D%27%236a1b9a%27%3E%D0%A1%D0%B5%3C/text%3E%0A%3C/svg%3E",
+        preview: "pieces/skins/Arnuvo/Type2/volhv.png",
         description: "Она — холодная и величественная хранительница тайны, чьё присутствие заставляет мир склоняться перед её безмолвной мощью.",
         assetBase: "Arnuvo/Type2"
       }
