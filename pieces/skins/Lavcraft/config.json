@@ -1,5 +1,6 @@
 {
   "Type1": {
+    "description": "Сон ужаса, что спит под волнами — и в чьём пробуждении гибнет разум.",
     "laser": {
       "coreColor": "#3fddc2",
       "beamGradient": "linear-gradient(90deg, rgba(8, 20, 16, 0.94) 0%, rgba(26, 82, 70, 0.78) 22%, rgba(74, 214, 180, 0.95) 52%, rgba(42, 120, 102, 0.8) 78%, rgba(6, 14, 12, 0.94) 100%)",
@@ -23,6 +24,45 @@
         ],
         "offset": { "x": 0, "y": 0 },
         "scale": 1.9
+      },
+      "rotation": {
+        "duration": 300,
+        "easing": "cubic-bezier(0.25, 1, 0.3, 1)"
+      }
+    },
+    "hero": {
+      "highlight": {
+        "color": "rgba(82, 226, 198, 0.72)",
+        "idleOpacity": 0.46,
+        "activeOpacity": 0.75,
+        "blur": 30,
+        "scale": 1.08,
+        "inset": 0.12,
+        "glowRadius": 58,
+        "glowSpread": 12
+      }
+    },
+    "board": {
+      "background": "linear-gradient(135deg, rgba(26, 32, 44, 0.95) 0%, rgba(14, 18, 26, 0.9) 100%)",
+      "wrapper": {
+        "background": "radial-gradient(520px circle at 28% 26%, rgba(60, 126, 140, 0.28) 0%, transparent 68%), radial-gradient(520px circle at 72% 72%, rgba(116, 72, 160, 0.32) 0%, transparent 74%)",
+        "shadow": "0 36px 80px rgba(4, 8, 12, 0.6)"
+      },
+      "cell": {
+        "dark": "rgba(18, 26, 32, 0.95)",
+        "light": "rgba(34, 48, 54, 0.9)",
+        "border": "rgba(60, 126, 140, 0.45)",
+        "innerGlow": "rgba(82, 226, 198, 0.2)"
+      },
+      "overlay": {
+        "primary": "rgba(60, 126, 140, 0.3)",
+        "secondary": "rgba(116, 72, 160, 0.24)",
+        "opacity": 0.5,
+        "blendMode": "screen"
+      },
+      "frame": {
+        "border": "1px solid rgba(82, 226, 198, 0.28)",
+        "shadow": "0 36px 82px rgba(2, 6, 10, 0.65)"
       }
     },
     "sounds": {
@@ -32,6 +72,7 @@
     }
   },
   "Type2": {
+    "description": "Голос Безумного Бога на земле — каждый его ритуал рвёт завесу между мирами.",
     "laser": {
       "coreColor": "#8b4bff",
       "beamGradient": "linear-gradient(90deg, rgba(16, 4, 32, 0.94) 0%, rgba(58, 26, 94, 0.82) 26%, rgba(162, 114, 242, 0.96) 52%, rgba(72, 32, 122, 0.82) 78%, rgba(10, 2, 24, 0.94) 100%)",
@@ -55,6 +96,45 @@
         ],
         "offset": { "x": 0, "y": 0 },
         "scale": 1.8
+      },
+      "rotation": {
+        "duration": 300,
+        "easing": "cubic-bezier(0.25, 1, 0.3, 1)"
+      }
+    },
+    "hero": {
+      "highlight": {
+        "color": "rgba(154, 124, 250, 0.75)",
+        "idleOpacity": 0.46,
+        "activeOpacity": 0.75,
+        "blur": 30,
+        "scale": 1.08,
+        "inset": 0.12,
+        "glowRadius": 60,
+        "glowSpread": 14
+      }
+    },
+    "board": {
+      "background": "linear-gradient(135deg, rgba(32, 20, 48, 0.96) 0%, rgba(18, 10, 34, 0.9) 100%)",
+      "wrapper": {
+        "background": "radial-gradient(520px circle at 28% 26%, rgba(116, 72, 160, 0.3) 0%, transparent 70%), radial-gradient(520px circle at 72% 74%, rgba(60, 126, 140, 0.24) 0%, transparent 74%)",
+        "shadow": "0 36px 84px rgba(6, 4, 12, 0.62)"
+      },
+      "cell": {
+        "dark": "rgba(28, 18, 44, 0.95)",
+        "light": "rgba(48, 34, 70, 0.9)",
+        "border": "rgba(154, 124, 250, 0.4)",
+        "innerGlow": "rgba(154, 124, 250, 0.26)"
+      },
+      "overlay": {
+        "primary": "rgba(154, 124, 250, 0.3)",
+        "secondary": "rgba(60, 126, 140, 0.24)",
+        "opacity": 0.48,
+        "blendMode": "screen"
+      },
+      "frame": {
+        "border": "1px solid rgba(154, 124, 250, 0.32)",
+        "shadow": "0 36px 84px rgba(6, 4, 14, 0.6)"
       }
     },
     "sounds": {

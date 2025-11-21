@@ -1,5 +1,6 @@
 {
   "Type1": {
+    "description": "Яд в амбре, шепот в царской ночи — её любовь рушит империи.",
     "laser": {
       "coreColor": "#ffca63",
       "beamGradient": "linear-gradient(90deg, rgba(36, 18, 0, 0.92) 0%, rgba(118, 72, 12, 0.78) 24%, rgba(255, 210, 126, 0.96) 52%, rgba(172, 116, 30, 0.8) 78%, rgba(28, 14, 0, 0.92) 100%)",
@@ -23,6 +24,45 @@
         ],
         "offset": { "x": 0, "y": 0 },
         "scale": 1.7
+      },
+      "rotation": {
+        "duration": 280,
+        "easing": "cubic-bezier(0.22, 1, 0.36, 1)"
+      }
+    },
+    "hero": {
+      "highlight": {
+        "color": "rgba(255, 214, 132, 0.76)",
+        "idleOpacity": 0.44,
+        "activeOpacity": 0.7,
+        "blur": 26,
+        "scale": 1.05,
+        "inset": 0.08,
+        "glowRadius": 52,
+        "glowSpread": 9
+      }
+    },
+    "board": {
+      "background": "linear-gradient(135deg, rgba(240, 222, 188, 0.94) 0%, rgba(214, 188, 140, 0.7) 100%)",
+      "wrapper": {
+        "background": "radial-gradient(600px circle at 28% 24%, rgba(250, 206, 128, 0.32) 0%, transparent 65%), radial-gradient(560px circle at 76% 78%, rgba(116, 180, 176, 0.28) 0%, transparent 72%)",
+        "shadow": "0 34px 74px rgba(86, 60, 16, 0.32)"
+      },
+      "cell": {
+        "dark": "rgba(214, 188, 140, 0.96)",
+        "light": "rgba(244, 228, 188, 0.96)",
+        "border": "rgba(240, 206, 148, 0.55)",
+        "innerGlow": "rgba(255, 224, 168, 0.28)"
+      },
+      "overlay": {
+        "primary": "rgba(244, 206, 138, 0.36)",
+        "secondary": "rgba(116, 180, 176, 0.26)",
+        "opacity": 0.46,
+        "blendMode": "screen"
+      },
+      "frame": {
+        "border": "1px solid rgba(240, 206, 148, 0.48)",
+        "shadow": "0 34px 72px rgba(58, 42, 12, 0.32)"
       }
     },
     "sounds": {
@@ -32,6 +72,7 @@
     }
   },
   "Type2": {
+    "description": "Бог на троне из песка и золота, чей приказ вечен, как сама вечность.",
     "laser": {
       "coreColor": "#63d2ff",
       "beamGradient": "linear-gradient(90deg, rgba(6, 18, 28, 0.94) 0%, rgba(16, 72, 102, 0.78) 26%, rgba(124, 210, 255, 0.96) 54%, rgba(26, 112, 148, 0.82) 78%, rgba(4, 14, 22, 0.94) 100%)",
@@ -55,6 +96,45 @@
         ],
         "offset": { "x": 0, "y": 0 },
         "scale": 1.8
+      },
+      "rotation": {
+        "duration": 280,
+        "easing": "cubic-bezier(0.22, 1, 0.36, 1)"
+      }
+    },
+    "hero": {
+      "highlight": {
+        "color": "rgba(132, 220, 255, 0.76)",
+        "idleOpacity": 0.44,
+        "activeOpacity": 0.7,
+        "blur": 26,
+        "scale": 1.05,
+        "inset": 0.08,
+        "glowRadius": 54,
+        "glowSpread": 10
+      }
+    },
+    "board": {
+      "background": "linear-gradient(135deg, rgba(196, 234, 246, 0.94) 0%, rgba(110, 168, 194, 0.7) 100%)",
+      "wrapper": {
+        "background": "radial-gradient(600px circle at 28% 24%, rgba(132, 220, 255, 0.28) 0%, transparent 65%), radial-gradient(560px circle at 76% 78%, rgba(50, 118, 142, 0.24) 0%, transparent 72%)",
+        "shadow": "0 34px 74px rgba(20, 48, 66, 0.35)"
+      },
+      "cell": {
+        "dark": "rgba(118, 170, 188, 0.94)",
+        "light": "rgba(204, 236, 248, 0.95)",
+        "border": "rgba(116, 180, 176, 0.45)",
+        "innerGlow": "rgba(132, 220, 255, 0.24)"
+      },
+      "overlay": {
+        "primary": "rgba(132, 220, 255, 0.32)",
+        "secondary": "rgba(52, 122, 146, 0.26)",
+        "opacity": 0.44,
+        "blendMode": "screen"
+      },
+      "frame": {
+        "border": "1px solid rgba(132, 220, 255, 0.42)",
+        "shadow": "0 32px 70px rgba(10, 34, 48, 0.34)"
       }
     },
     "sounds": {

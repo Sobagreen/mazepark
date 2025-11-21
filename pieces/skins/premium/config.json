@@ -1,5 +1,6 @@
 {
   "Type1": {
+    "description": "Тот, кто пишет реальность пальцем на воде — и стирает её одним вздохом.",
     "laser": {
       "coreColor": "#f7e3a1",
       "beamGradient": "linear-gradient(90deg, rgba(32, 18, 0, 0.92) 0%, rgba(112, 78, 9, 0.68) 22%, rgba(255, 236, 179, 0.98) 50%, rgba(212, 175, 55, 0.82) 78%, rgba(24, 14, 0, 0.9) 100%)",
@@ -23,6 +24,45 @@
         ],
         "offset": { "x": 0, "y": 0 },
         "scale": 1.8
+      },
+      "rotation": {
+        "duration": 300,
+        "easing": "cubic-bezier(0.24, 1, 0.32, 1)"
+      }
+    },
+    "hero": {
+      "highlight": {
+        "color": "rgba(255, 226, 149, 0.78)",
+        "idleOpacity": 0.46,
+        "activeOpacity": 0.75,
+        "blur": 28,
+        "scale": 1.07,
+        "inset": 0.12,
+        "glowRadius": 58,
+        "glowSpread": 12
+      }
+    },
+    "board": {
+      "background": "linear-gradient(135deg, rgba(18, 28, 42, 0.95) 0%, rgba(26, 38, 58, 0.9) 100%)",
+      "wrapper": {
+        "background": "radial-gradient(560px circle at 28% 26%, rgba(80, 150, 255, 0.32) 0%, transparent 68%), radial-gradient(560px circle at 72% 72%, rgba(220, 180, 96, 0.3) 0%, transparent 72%)",
+        "shadow": "0 36px 80px rgba(10, 14, 22, 0.58)"
+      },
+      "cell": {
+        "dark": "rgba(22, 32, 44, 0.95)",
+        "light": "rgba(32, 44, 58, 0.9)",
+        "border": "rgba(220, 180, 96, 0.5)",
+        "innerGlow": "rgba(220, 180, 96, 0.24)"
+      },
+      "overlay": {
+        "primary": "rgba(220, 180, 96, 0.3)",
+        "secondary": "rgba(80, 150, 255, 0.28)",
+        "opacity": 0.48,
+        "blendMode": "screen"
+      },
+      "frame": {
+        "border": "1px solid rgba(220, 180, 96, 0.44)",
+        "shadow": "0 36px 80px rgba(10, 14, 22, 0.58)"
       }
     },
     "sounds": {
@@ -32,6 +72,7 @@
     }
   },
   "Type2": {
+    "description": "Архитектор космоса из нулей и единиц — его баги становятся законами физики.",
     "laser": {
       "coreColor": "#f4d87e",
       "beamGradient": "linear-gradient(90deg, rgba(24, 12, 0, 0.9) 0%, rgba(143, 97, 20, 0.7) 24%, rgba(255, 237, 196, 0.98) 48%, rgba(218, 180, 72, 0.85) 74%, rgba(30, 16, 0, 0.9) 100%)",
@@ -55,6 +96,45 @@
         ],
         "offset": { "x": 0, "y": 0 },
         "scale": 1.8
+      },
+      "rotation": {
+        "duration": 300,
+        "easing": "cubic-bezier(0.24, 1, 0.32, 1)"
+      }
+    },
+    "hero": {
+      "highlight": {
+        "color": "rgba(255, 216, 138, 0.82)",
+        "idleOpacity": 0.46,
+        "activeOpacity": 0.75,
+        "blur": 28,
+        "scale": 1.07,
+        "inset": 0.12,
+        "glowRadius": 60,
+        "glowSpread": 14
+      }
+    },
+    "board": {
+      "background": "linear-gradient(135deg, rgba(20, 30, 46, 0.96) 0%, rgba(28, 40, 60, 0.9) 100%)",
+      "wrapper": {
+        "background": "radial-gradient(560px circle at 28% 26%, rgba(220, 180, 96, 0.32) 0%, transparent 68%), radial-gradient(560px circle at 72% 72%, rgba(80, 150, 255, 0.3) 0%, transparent 72%)",
+        "shadow": "0 36px 82px rgba(12, 18, 26, 0.6)"
+      },
+      "cell": {
+        "dark": "rgba(24, 34, 48, 0.95)",
+        "light": "rgba(38, 50, 66, 0.9)",
+        "border": "rgba(255, 216, 138, 0.5)",
+        "innerGlow": "rgba(255, 216, 138, 0.26)"
+      },
+      "overlay": {
+        "primary": "rgba(255, 216, 138, 0.32)",
+        "secondary": "rgba(80, 150, 255, 0.26)",
+        "opacity": 0.5,
+        "blendMode": "screen"
+      },
+      "frame": {
+        "border": "1px solid rgba(255, 216, 138, 0.46)",
+        "shadow": "0 36px 82px rgba(12, 18, 26, 0.6)"
       }
     },
     "sounds": {
