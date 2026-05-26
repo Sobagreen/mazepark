@@ -479,15 +479,15 @@ body.theme-light .skin-gallery {
   display: grid;
   justify-items: center;
   gap: 0.3rem;
-  padding: 0.3rem;
-  border-radius: 10px;
+  padding: clamp(0.2rem, 1.1vw, 0.3rem);
+  border-radius: 9px;
   border: 1px solid rgba(255, 255, 255, 0.04);
   background: linear-gradient(160deg, rgba(15, 23, 42, 0.16), rgba(15, 23, 42, 0.05));
   color: inherit;
   cursor: pointer;
   transition: transform 0.18s ease, box-shadow 0.2s ease, border-color 0.2s ease;
   text-align: center;
-  min-height: 78px;
+  min-height: clamp(70px, 13vw, 78px);
 }
 
 body.theme-light .skin-gallery__item {
@@ -507,13 +507,13 @@ body.theme-light .skin-gallery__item {
 
 .skin-gallery__item--selected {
   border-color: rgba(255, 209, 102, 0.6);
-  box-shadow: 0 0 0 1px rgba(255, 209, 102, 0.35), 0 14px 26px rgba(255, 209, 102, 0.2);
+  box-shadow: inset 0 0 0 1px rgba(255, 209, 102, 0.35), 0 8px 16px rgba(255, 209, 102, 0.18);
   background: linear-gradient(160deg, rgba(255, 209, 102, 0.18), rgba(255, 255, 255, 0.08));
 }
 
 body.theme-light .skin-gallery__item--selected {
   background: linear-gradient(160deg, rgba(255, 209, 102, 0.35), rgba(255, 246, 220, 0.85));
-  box-shadow: 0 0 0 1px rgba(255, 209, 102, 0.45), 0 14px 28px rgba(255, 196, 102, 0.25);
+  box-shadow: inset 0 0 0 1px rgba(255, 209, 102, 0.45), 0 8px 16px rgba(255, 196, 102, 0.2);
 }
 
 
@@ -521,7 +521,7 @@ body.theme-light .skin-gallery__item--selected {
   width: 100%;
   max-width: 48px;
   aspect-ratio: 1;
-  border-radius: 10px;
+  border-radius: 9px;
   background: linear-gradient(150deg, rgba(255, 255, 255, 0.1), rgba(0, 0, 0, 0.16));
   display: grid;
   place-items: center;
@@ -700,7 +700,7 @@ body.theme-light .skin-preview {
   justify-content: space-between;
   align-items: center;
   padding: 0.45rem 0.75rem;
-  border-radius: 10px;
+  border-radius: 9px;
   background: rgba(255, 255, 255, 0.05);
 }
 
@@ -1337,7 +1337,7 @@ body.theme-light .board-action {
     0 0 20px rgba(212, 175, 55, 0.55),
     0 0 48px rgba(0, 0, 0, 0.6);
   mix-blend-mode: screen;
-  animation: premium-own-collapse 0.65s ease-out forwards;
+  animation: premium-own-collapse 0.82s cubic-bezier(0.24, 0.74, 0.3, 1) forwards;
 }
 
 .piece-effect--premium-enemy {
@@ -1349,7 +1349,7 @@ body.theme-light .board-action {
     0 0 22px rgba(212, 175, 55, 0.6),
     0 0 64px rgba(0, 0, 0, 0.7);
   mix-blend-mode: lighten;
-  animation: premium-enemy-burst 0.72s cubic-bezier(0.32, 0.05, 0.36, 1) forwards;
+  animation: premium-enemy-burst 0.92s cubic-bezier(0.28, 0.1, 0.32, 1) forwards;
 }
 
 .piece-effect--arnuvo-rose {
@@ -1506,13 +1506,13 @@ body.theme-light .board-action {
     0 0 22px rgba(148, 214, 133, 0.55),
     0 0 48px rgba(42, 102, 52, 0.35);
   mix-blend-mode: screen;
-  animation: japan-own-pulse 0.75s ease-out forwards;
+  animation: japan-own-pulse 0.88s cubic-bezier(0.22, 0.64, 0.3, 1) forwards;
 }
 
 .piece-effect--japan-enemy {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0) 40%, rgba(234, 255, 226, 0.95) 47%, rgba(108, 196, 97, 0.95) 50%, rgba(234, 255, 226, 0.95) 53%, rgba(255, 255, 255, 0) 60%);
   filter: drop-shadow(0 0 22px rgba(132, 214, 122, 0.65));
-  animation: japan-slice-line 0.45s ease-out forwards;
+  animation: japan-slice-line 0.68s cubic-bezier(0.2, 0.62, 0.3, 1) forwards;
 }
 
 .piece-effect--japan-enemy::before,
@@ -1531,11 +1531,11 @@ body.theme-light .board-action {
 }
 
 .piece-effect--japan-enemy::before {
-  animation: japan-slice-left 0.62s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+  animation: japan-slice-left 0.84s cubic-bezier(0.2, 0.62, 0.3, 1) forwards;
 }
 
 .piece-effect--japan-enemy::after {
-  animation: japan-slice-right 0.62s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+  animation: japan-slice-right 0.84s cubic-bezier(0.2, 0.62, 0.3, 1) forwards;
 }
 
 .piece-effect--lavcraft-type1-own {
@@ -1545,7 +1545,7 @@ body.theme-light .board-action {
     0 0 22px rgba(82, 214, 188, 0.6),
     0 0 52px rgba(12, 52, 44, 0.55);
   mix-blend-mode: screen;
-  animation: lavcraft-type1-own 0.82s ease-out forwards;
+  animation: lavcraft-type1-own 0.94s cubic-bezier(0.24, 0.7, 0.3, 1) forwards;
 }
 
 .piece-effect--lavcraft-type1-enemy {
@@ -1553,7 +1553,7 @@ body.theme-light .board-action {
   background:
     conic-gradient(from 45deg, rgba(14, 46, 36, 0.92) 0% 15%, rgba(108, 214, 186, 0.85) 15% 22%, rgba(10, 30, 26, 0.92) 22% 35%, rgba(66, 170, 140, 0.82) 35% 42%, rgba(8, 20, 18, 0.9) 42% 60%, rgba(116, 238, 206, 0.9) 60% 68%, rgba(6, 14, 12, 0.92) 68% 100%);
   filter: drop-shadow(0 0 22px rgba(74, 214, 180, 0.68));
-  animation: lavcraft-type1-enemy 0.72s cubic-bezier(0.25, 0.6, 0.32, 1) forwards;
+  animation: lavcraft-type1-enemy 0.92s cubic-bezier(0.22, 0.62, 0.3, 1) forwards;
 }
 
 .piece-effect--lavcraft-type1-enemy::before,
@@ -1587,7 +1587,7 @@ body.theme-light .board-action {
     0 0 24px rgba(168, 132, 240, 0.65),
     0 0 56px rgba(36, 12, 64, 0.55);
   mix-blend-mode: screen;
-  animation: lavcraft-type2-own 0.78s ease-out forwards;
+  animation: lavcraft-type2-own 0.9s cubic-bezier(0.24, 0.68, 0.3, 1) forwards;
 }
 
 .piece-effect--lavcraft-type2-enemy {
@@ -1595,7 +1595,7 @@ body.theme-light .board-action {
   border-radius: 32% 68% 42% 58% / 58% 42% 68% 32%;
   background: radial-gradient(circle at 48% 45%, rgba(210, 188, 255, 0.92) 0%, rgba(118, 74, 200, 0.78) 52%, rgba(16, 4, 36, 0.92) 100%);
   box-shadow: 0 0 26px rgba(150, 110, 228, 0.6);
-  animation: lavcraft-type2-enemy 0.76s cubic-bezier(0.26, 0.58, 0.32, 1) forwards;
+  animation: lavcraft-type2-enemy 0.92s cubic-bezier(0.24, 0.62, 0.3, 1) forwards;
 }
 
 .piece-effect--lavcraft-type2-enemy::before,
@@ -1623,7 +1623,7 @@ body.theme-light .board-action {
   box-shadow:
     0 0 20px rgba(232, 176, 72, 0.62),
     0 0 48px rgba(64, 28, 0, 0.55);
-  animation: egypt-type1-own 0.78s ease-out forwards;
+  animation: egypt-type1-own 0.92s cubic-bezier(0.2, 0.66, 0.28, 1) forwards;
 }
 
 .piece-effect--egypt-type1-enemy {
@@ -1631,7 +1631,7 @@ body.theme-light .board-action {
   background: linear-gradient(180deg, rgba(255, 220, 140, 0.95) 0%, rgba(214, 136, 38, 0.92) 48%, rgba(46, 20, 0, 0.88) 100%);
   box-shadow: 0 0 26px rgba(232, 172, 62, 0.7);
   transform-origin: 50% 10%;
-  animation: egypt-type1-enemy 0.68s ease-out forwards;
+  animation: egypt-type1-enemy 0.9s cubic-bezier(0.22, 0.62, 0.3, 1) forwards;
 }
 
 .piece-effect--egypt-type2-own {
@@ -1640,7 +1640,7 @@ body.theme-light .board-action {
   box-shadow:
     0 0 22px rgba(132, 206, 238, 0.65),
     0 0 48px rgba(12, 52, 74, 0.52);
-  animation: egypt-type2-own 0.82s ease-out forwards;
+  animation: egypt-type2-own 0.95s cubic-bezier(0.2, 0.66, 0.28, 1) forwards;
 }
 
 .piece-effect--egypt-type2-enemy {
@@ -1648,7 +1648,7 @@ body.theme-light .board-action {
   border-radius: 48% 52% 42% 58%;
   background: linear-gradient(135deg, rgba(8, 28, 42, 0.92) 0%, rgba(38, 122, 168, 0.86) 45%, rgba(140, 220, 255, 0.92) 50%, rgba(34, 108, 152, 0.86) 55%, rgba(4, 18, 28, 0.92) 100%);
   filter: drop-shadow(0 0 22px rgba(102, 188, 226, 0.68));
-  animation: egypt-type2-enemy 0.7s ease-out forwards;
+  animation: egypt-type2-enemy 0.9s cubic-bezier(0.22, 0.62, 0.3, 1) forwards;
 }
 
 .piece-effect--egypt-type2-enemy::before,
@@ -1664,13 +1664,13 @@ body.theme-light .board-action {
 .piece-effect--egypt-type2-enemy::before {
   left: 12%;
   top: -18%;
-  animation: egypt-type2-shard-left 0.7s ease-out forwards;
+  animation: egypt-type2-shard-left 0.9s cubic-bezier(0.22, 0.62, 0.3, 1) forwards;
 }
 
 .piece-effect--egypt-type2-enemy::after {
   right: 12%;
   top: -18%;
-  animation: egypt-type2-shard-right 0.7s ease-out forwards;
+  animation: egypt-type2-shard-right 0.9s cubic-bezier(0.22, 0.62, 0.3, 1) forwards;
 }
 
 .piece-effect--slavic-type1-own {
@@ -1730,14 +1730,14 @@ body.theme-light .board-action {
   box-shadow:
     0 0 22px rgba(142, 190, 238, 0.62),
     0 0 48px rgba(20, 52, 86, 0.55);
-  animation: greece-type1-own 0.8s ease-out forwards;
+  animation: greece-type1-own 0.92s cubic-bezier(0.2, 0.66, 0.3, 1) forwards;
 }
 
 .piece-effect--greece-type1-enemy {
   border-radius: 30% 30% 60% 60%;
   background: linear-gradient(180deg, rgba(196, 226, 255, 0.95) 0%, rgba(80, 136, 200, 0.86) 45%, rgba(18, 46, 78, 0.92) 100%);
   box-shadow: 0 0 26px rgba(128, 182, 238, 0.68);
-  animation: greece-type1-enemy 0.68s ease-out forwards;
+  animation: greece-type1-enemy 0.88s cubic-bezier(0.2, 0.62, 0.3, 1) forwards;
 }
 
 .piece-effect--greece-type1-enemy::before,
@@ -1752,12 +1752,12 @@ body.theme-light .board-action {
 
 .piece-effect--greece-type1-enemy::before {
   left: 18%;
-  animation: greece-type1-spear-left 0.68s ease-out forwards;
+  animation: greece-type1-spear-left 0.88s cubic-bezier(0.2, 0.62, 0.3, 1) forwards;
 }
 
 .piece-effect--greece-type1-enemy::after {
   right: 18%;
-  animation: greece-type1-spear-right 0.68s ease-out forwards;
+  animation: greece-type1-spear-right 0.88s cubic-bezier(0.2, 0.62, 0.3, 1) forwards;
 }
 
 .piece-effect--greece-type2-own {
@@ -1766,14 +1766,14 @@ body.theme-light .board-action {
   box-shadow:
     0 0 24px rgba(242, 204, 116, 0.68),
     0 0 52px rgba(64, 38, 0, 0.55);
-  animation: greece-type2-own 0.78s ease-out forwards;
+  animation: greece-type2-own 0.9s cubic-bezier(0.2, 0.66, 0.3, 1) forwards;
 }
 
 .piece-effect--greece-type2-enemy {
   border-radius: 36% 36% 64% 64%;
   background: linear-gradient(180deg, rgba(255, 236, 178, 0.95) 0%, rgba(214, 164, 68, 0.88) 46%, rgba(54, 28, 0, 0.92) 100%);
   box-shadow: 0 0 28px rgba(232, 188, 96, 0.72);
-  animation: greece-type2-enemy 0.7s ease-out forwards;
+  animation: greece-type2-enemy 0.9s cubic-bezier(0.2, 0.62, 0.3, 1) forwards;
 }
 
 .piece-effect--greece-type2-enemy::before,
@@ -1788,7 +1788,7 @@ body.theme-light .board-action {
 }
 
 .piece-effect--greece-type2-enemy::before {
-  animation: greece-type2-arc 0.7s ease-out forwards;
+  animation: greece-type2-arc 0.9s cubic-bezier(0.2, 0.62, 0.3, 1) forwards;
 }
 
 .piece-effect--greece-type2-enemy::after {
