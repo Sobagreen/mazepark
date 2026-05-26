@@ -2988,11 +2988,14 @@ function resetLaserOverlayTheme() {
 
 function triggerPieceDestructionEffects({ attackerSelection, victimSelection, center }) {
   if (!elements.effectsOverlay || !center) return;
-  if (victimSelection) {
-    spawnEffectForSelection(victimSelection, "ownDestructionClass", center);
-  }
+  // Показываем только анимацию атакующего скина, чтобы не смешивать стили двух героев.
+  // Если данные об атакующем недоступны, используем fallback анимацию жертвы.
   if (attackerSelection) {
     spawnEffectForSelection(attackerSelection, "enemyDestructionClass", center);
+    return;
+  }
+  if (victimSelection) {
+    spawnEffectForSelection(victimSelection, "ownDestructionClass", center);
   }
 }
 
