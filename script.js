@@ -3828,7 +3828,12 @@ function applyRemoteState(state, options = {}) {
       }
     }
   });
-  if (lastLaserResult && lastLaserResult.hit) {
+  const shouldReplayImpact = (
+    lastLaserResult &&
+    lastLaserResult.hit &&
+    buildLaserEffectSignature(lastLaserResult) !== buildLaserEffectSignature(previousLaserResult)
+  );
+  if (shouldReplayImpact) {
     handleLaserImpact(lastLaserResult);
   }
 }
