@@ -2,220 +2,857 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>Mirrors Fight</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="style.css">
-  <link rel="stylesheet" href="pieces/skins/Arnuvo/skin.css">
-  <link rel="stylesheet" href="pieces/skins/Egypt/skin.css">
-  <link rel="stylesheet" href="pieces/skins/Greece/skin.css">
-  <link rel="stylesheet" href="pieces/skins/Japan/skin.css">
-  <link rel="stylesheet" href="pieces/skins/Lavcraft/skin.css">
-  <link rel="stylesheet" href="pieces/skins/Slavic/skin.css">
-  <link rel="stylesheet" href="pieces/skins/premium/skin.css">
+  <title>7-дневный эксперимент: меньше автоматической тяги к шоколаду</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f8f2ea;
+      --bg-soft: #fffaf4;
+      --card: rgba(255, 252, 247, 0.94);
+      --card-strong: #fff8ee;
+      --text: #3e3027;
+      --muted: #7f6d60;
+      --accent: #8f6247;
+      --accent-strong: #6f432f;
+      --accent-soft: #ead6c4;
+      --success: #728b68;
+      --success-soft: #e7efe0;
+      --line: #eadfd3;
+      --shadow: 0 18px 46px rgba(96, 63, 40, 0.12);
+      --radius-lg: 28px;
+      --radius-md: 18px;
+      --radius-sm: 12px;
+      --focus: 0 0 0 4px rgba(143, 98, 71, 0.18);
+      font-family: Inter, "Segoe UI", Roboto, Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at top left, rgba(234, 214, 196, 0.72), transparent 34rem),
+        linear-gradient(135deg, #f8f2ea 0%, #f2e8de 48%, #fbf6ef 100%);
+      color: var(--text);
+      line-height: 1.55;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.36) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.3) 1px, transparent 1px);
+      background-size: 42px 42px;
+      mask-image: linear-gradient(to bottom, rgba(0,0,0,0.35), transparent 62%);
+    }
+
+    button,
+    input,
+    textarea {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    .app {
+      width: min(1120px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 28px 0 56px;
+    }
+
+    .hero {
+      display: grid;
+      gap: 24px;
+      margin-bottom: 24px;
+      padding: clamp(24px, 5vw, 52px);
+      border: 1px solid rgba(234, 223, 211, 0.86);
+      border-radius: var(--radius-lg);
+      background: linear-gradient(135deg, rgba(255, 250, 244, 0.96), rgba(255, 246, 233, 0.86));
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .hero::after {
+      content: "☕";
+      position: absolute;
+      right: clamp(18px, 5vw, 56px);
+      top: clamp(16px, 4vw, 44px);
+      width: clamp(64px, 15vw, 132px);
+      aspect-ratio: 1;
+      display: grid;
+      place-items: center;
+      border-radius: 999px;
+      background: rgba(234, 214, 196, 0.32);
+      color: rgba(111, 67, 47, 0.78);
+      font-size: clamp(2rem, 6vw, 4.7rem);
+      transform: rotate(-8deg);
+    }
+
+    .hero__content {
+      position: relative;
+      z-index: 1;
+      max-width: 780px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0 0 14px;
+      padding: 7px 12px;
+      border-radius: 999px;
+      background: #f2e1d0;
+      color: var(--accent-strong);
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
+
+    h1,
+    h2,
+    h3 {
+      line-height: 1.14;
+      margin: 0;
+    }
+
+    h1 {
+      max-width: 760px;
+      font-size: clamp(2rem, 5vw, 4.6rem);
+      letter-spacing: -0.055em;
+    }
+
+    .subtitle {
+      max-width: 690px;
+      margin: 18px 0 0;
+      color: var(--muted);
+      font-size: clamp(1.02rem, 2vw, 1.25rem);
+    }
+
+    .progress-panel {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      gap: 18px;
+      padding: 18px;
+      border-radius: 22px;
+      background: rgba(255, 255, 255, 0.62);
+      border: 1px solid rgba(234, 223, 211, 0.84);
+      backdrop-filter: blur(10px);
+    }
+
+    .progress-stats {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .stat {
+      padding: 14px;
+      border-radius: 16px;
+      background: var(--bg-soft);
+      border: 1px solid var(--line);
+    }
+
+    .stat__value {
+      display: block;
+      color: var(--accent-strong);
+      font-size: clamp(1.45rem, 4vw, 2rem);
+      font-weight: 800;
+      letter-spacing: -0.04em;
+    }
+
+    .stat__label {
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .progress-track {
+      height: 12px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: #eadfd3;
+    }
+
+    .progress-fill {
+      width: 0;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--success), var(--accent));
+      transition: width 220ms ease;
+    }
+
+    .day-scale {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .day-dot {
+      min-height: 42px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #fffaf4;
+      color: var(--muted);
+      font-weight: 800;
+      transition: transform 160ms ease, background 160ms ease, color 160ms ease;
+    }
+
+    .day-dot:hover {
+      transform: translateY(-1px);
+    }
+
+    .day-dot.is-complete {
+      background: var(--success);
+      border-color: var(--success);
+      color: #fff;
+    }
+
+    .toolbar {
+      position: sticky;
+      top: 0;
+      z-index: 3;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: flex-end;
+      margin: 0 0 20px;
+      padding: 12px 0;
+      background: linear-gradient(to bottom, rgba(248, 242, 234, 0.98), rgba(248, 242, 234, 0.78));
+      backdrop-filter: blur(12px);
+    }
+
+    .button {
+      min-height: 44px;
+      padding: 11px 16px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--card);
+      color: var(--accent-strong);
+      font-weight: 800;
+      box-shadow: 0 8px 22px rgba(96, 63, 40, 0.08);
+      transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
+    }
+
+    .button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 12px 28px rgba(96, 63, 40, 0.12);
+    }
+
+    .button:focus-visible,
+    .day-dot:focus-visible,
+    input:focus-visible,
+    textarea:focus-visible {
+      outline: none;
+      box-shadow: var(--focus);
+    }
+
+    .button--primary {
+      border-color: var(--accent);
+      background: var(--accent);
+      color: #fffaf4;
+    }
+
+    .button--danger {
+      color: #8b453f;
+    }
+
+    .days {
+      display: grid;
+      gap: 18px;
+    }
+
+    .day-card,
+    .summary-card {
+      border: 1px solid rgba(234, 223, 211, 0.94);
+      border-radius: var(--radius-lg);
+      background: var(--card);
+      box-shadow: 0 14px 34px rgba(96, 63, 40, 0.09);
+      overflow: hidden;
+    }
+
+    .day-card.is-complete {
+      border-color: rgba(114, 139, 104, 0.5);
+      background: linear-gradient(135deg, var(--card), var(--success-soft));
+    }
+
+    .day-card__header {
+      display: flex;
+      gap: 18px;
+      justify-content: space-between;
+      align-items: flex-start;
+      padding: 22px 22px 16px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .day-number {
+      display: inline-flex;
+      margin-bottom: 10px;
+      color: var(--accent);
+      font-size: 0.88rem;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+    }
+
+    .day-card h2 {
+      font-size: clamp(1.35rem, 3vw, 2rem);
+      letter-spacing: -0.035em;
+    }
+
+    .task {
+      margin: 8px 0 0;
+      color: var(--muted);
+    }
+
+    .complete-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      min-width: max-content;
+      padding: 9px 12px;
+      border-radius: 999px;
+      background: #fffaf4;
+      border: 1px solid var(--line);
+      color: var(--muted);
+      font-weight: 800;
+      user-select: none;
+    }
+
+    .complete-toggle input,
+    .check-item input {
+      width: 1.15rem;
+      height: 1.15rem;
+      accent-color: var(--success);
+    }
+
+    .day-card__body {
+      display: grid;
+      gap: 18px;
+      padding: 20px 22px 22px;
+    }
+
+    .checklist {
+      display: grid;
+      gap: 10px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .check-item {
+      padding: 12px;
+      border-radius: var(--radius-sm);
+      background: rgba(255, 250, 244, 0.76);
+      border: 1px solid rgba(234, 223, 211, 0.78);
+    }
+
+    .check-item label {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 12px;
+      align-items: flex-start;
+      cursor: pointer;
+    }
+
+    .check-item:has(input:checked) {
+      background: rgba(231, 239, 224, 0.88);
+      border-color: rgba(114, 139, 104, 0.36);
+    }
+
+    .field {
+      display: grid;
+      gap: 8px;
+    }
+
+    .field span,
+    .summary-card label span {
+      color: var(--accent-strong);
+      font-weight: 800;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 112px;
+      resize: vertical;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      background: #fffdf9;
+      color: var(--text);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.8);
+    }
+
+    textarea::placeholder {
+      color: #ad9b8e;
+    }
+
+    .summary-card {
+      margin-top: 24px;
+      padding: 24px;
+      background: linear-gradient(135deg, rgba(255, 252, 247, 0.95), rgba(255, 248, 238, 0.92));
+    }
+
+    .summary-card h2 {
+      font-size: clamp(1.5rem, 4vw, 2.35rem);
+      letter-spacing: -0.04em;
+    }
+
+    .summary-card p {
+      margin: 10px 0 22px;
+      color: var(--muted);
+    }
+
+    .summary-fields {
+      display: grid;
+      gap: 16px;
+    }
+
+    .summary-card label {
+      display: grid;
+      gap: 8px;
+    }
+
+    .save-status {
+      min-height: 1.4em;
+      margin: 4px 0 0;
+      color: var(--success);
+      font-weight: 700;
+      text-align: right;
+    }
+
+    @media (max-width: 760px) {
+      .app {
+        width: min(100% - 20px, 560px);
+        padding-top: 10px;
+      }
+
+      .hero {
+        padding: 22px 18px;
+        border-radius: 24px;
+      }
+
+      .hero::after {
+        opacity: 0.22;
+      }
+
+      .progress-stats {
+        grid-template-columns: 1fr;
+      }
+
+      .day-scale {
+        grid-template-columns: repeat(7, 42px);
+        overflow-x: auto;
+        padding-bottom: 4px;
+      }
+
+      .toolbar {
+        justify-content: stretch;
+      }
+
+      .button {
+        flex: 1 1 150px;
+      }
+
+      .day-card__header {
+        display: grid;
+        padding: 18px 16px 14px;
+      }
+
+      .complete-toggle {
+        justify-content: center;
+        width: 100%;
+      }
+
+      .day-card__body,
+      .summary-card {
+        padding: 16px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        scroll-behavior: auto !important;
+        transition-duration: 0.001ms !important;
+      }
+    }
+  </style>
 </head>
-<body class="theme-dark">
-  <div id="start-screen" class="start-overlay" role="dialog" aria-modal="true" aria-labelledby="start-title">
-    <div class="start-overlay__parallax" aria-hidden="true">
-      <span class="start-overlay__layer start-overlay__layer--back"></span>
-      <span class="start-overlay__layer start-overlay__layer--mid"></span>
-      <span class="start-overlay__layer start-overlay__layer--front"></span>
-    </div>
-    <div class="start-card">
-      <h1 id="start-title" class="start-card__logo">
-        <img src="logo.png" alt="Зеркальная Битва">
-      </h1>
-      <p class="start-card__intro">Выберите режим, чтобы начать дуэль.</p>
-      <div class="start-card__actions">
-        <button type="button" id="start-online" class="button button--primary">Онлайн</button>
-        <button type="button" id="start-offline" class="button">Офлайн</button>
-        <button type="button" id="start-training" class="button button--ghost">Обучение</button>
+<body>
+  <div class="app">
+    <header class="hero">
+      <div class="hero__content">
+        <p class="eyebrow">🍫 мягкий 7-дневный трекер</p>
+        <h1>7-дневный эксперимент: меньше автоматической тяги к шоколаду</h1>
+        <p class="subtitle">Это не марафон запретов. Задача — понять, в каких ситуациях шоколад включается автоматически, и постепенно вернуть себе ощущение выбора.</p>
       </div>
-    </div>
-  </div>
 
-  <div id="training-overlay" class="start-overlay" role="dialog" aria-modal="true" aria-labelledby="training-title" hidden>
-    <div class="start-card">
-      <h2 id="training-title">Обучение</h2>
-      <p class="start-card__intro">Обучение в разработке.</p>
-      <div class="start-card__actions start-card__actions--end">
-        <button type="button" id="training-back" class="button button--ghost">Назад</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="offline-setup" class="start-overlay" role="dialog" aria-modal="true" aria-labelledby="offline-title" hidden>
-    <form id="offline-form" class="start-card start-card--wide" autocomplete="off">
-      <h2 id="offline-title">Офлайн игра</h2>
-      <p class="start-card__intro">Выберите скины и типы для обоих игроков.</p>
-      <label class="connection-field">
-        <span class="connection-field__label">Стартовая позиция</span>
-        <select id="offline-layout" class="connection-field__input"></select>
-      </label>
-      <div class="skin-grid">
-        <section class="skin-card" aria-labelledby="offline-light-title">
-          <h3 id="offline-light-title">☼ Первый Игрок</h3>
-          <div id="offline-light-gallery" class="skin-gallery" role="listbox" aria-label="Выбор персонажа для первого игрока"></div>
-          <div class="skin-preview">
-            <p id="offline-light-preview-description" class="skin-preview__description"></p>
-            <img id="offline-light-preview" src="pieces/skins/Slavic/Type1/laser.png" alt="">
-            <p id="offline-light-preview-label" class="skin-preview__label"></p>
+      <section class="progress-panel" aria-labelledby="progress-title">
+        <h2 id="progress-title">Прогресс эксперимента</h2>
+        <div class="progress-stats" aria-live="polite">
+          <div class="stat">
+            <span class="stat__value" id="progress-percent">0%</span>
+            <span class="stat__label">выполненных задач</span>
           </div>
-          <label class="connection-field" hidden>
-            <span class="connection-field__label">Скин</span>
-            <select id="offline-light-skin" class="connection-field__input"></select>
-          </label>
-          <label class="connection-field" hidden>
-            <span class="connection-field__label">Тип</span>
-            <select id="offline-light-type" class="connection-field__input"></select>
-          </label>
-        </section>
-        <section class="skin-card" aria-labelledby="offline-shadow-title">
-          <h3 id="offline-shadow-title">☽ Второй Игрок</h3>
-          <div id="offline-shadow-gallery" class="skin-gallery" role="listbox" aria-label="Выбор персонажа для второго игрока"></div>
-          <div class="skin-preview">
-            <p id="offline-shadow-preview-description" class="skin-preview__description"></p>
-            <img id="offline-shadow-preview" src="pieces/skins/Slavic/Type2/laser.png" alt="">
-            <p id="offline-shadow-preview-label" class="skin-preview__label"></p>
+          <div class="stat">
+            <span class="stat__value" id="completed-days">0 из 7</span>
+            <span class="stat__label">завершённых дней</span>
           </div>
-          <label class="connection-field" hidden>
-            <span class="connection-field__label">Скин</span>
-            <select id="offline-shadow-skin" class="connection-field__input"></select>
-          </label>
-          <label class="connection-field" hidden>
-            <span class="connection-field__label">Тип</span>
-            <select id="offline-shadow-type" class="connection-field__input"></select>
-          </label>
-        </section>
-      </div>
-      <p id="offline-conflict" class="connection-warning" hidden></p>
-      <div class="start-card__actions start-card__actions--end">
-        <button type="button" id="offline-cancel" class="button button--ghost">Назад</button>
-        <button type="button" id="offline-start" class="button button--primary">Начать игру</button>
-      </div>
-    </form>
-  </div>
-
-  <div id="connection-overlay" class="connection-overlay" role="dialog" aria-modal="true" aria-labelledby="connection-title" hidden>
-    <form id="connection-form" class="connection-card" autocomplete="off">
-      <h1 id="connection-title" class="connection-card__title">Сетевая партия</h1>
-      <p class="connection-card__intro">Укажите комнату и сторону. Второй игрок должен выбрать другой тип скина.</p>
-
-      <input id="server-url" name="server" type="hidden" value="wss://mazepark-1.onrender.com" spellcheck="false">
-
-      <label class="connection-field">
-        <span class="connection-field__label">Комната</span>
-        <input id="room-id" name="room" type="text" class="connection-field__input" required placeholder="Например, perun" maxlength="32" spellcheck="false">
-      </label>
-
-      <fieldset class="connection-fieldset">
-        <legend class="connection-fieldset__legend">Ваша сторона</legend>
-        <label class="connection-role">
-          <input type="radio" name="role" value="light" required>
-          <span class="connection-role__content">
-            <span class="connection-role__glyph">☼</span>
-            <span class="connection-role__label">Первый Игрок</span>
-          </span>
-        </label>
-        <label class="connection-role">
-          <input type="radio" name="role" value="shadow" required>
-          <span class="connection-role__content">
-            <span class="connection-role__glyph">☽</span>
-            <span class="connection-role__label">Второй Игрок</span>
-          </span>
-        </label>
-      </fieldset>
-
-      <label class="connection-field">
-        <span class="connection-field__label">Стартовая позиция</span>
-        <select id="online-layout" class="connection-field__input"></select>
-      </label>
-
-      <label class="connection-field" hidden>
-        <span class="connection-field__label">Скин</span>
-        <select id="online-skin" class="connection-field__input"></select>
-      </label>
-
-      <label class="connection-field" hidden>
-        <span class="connection-field__label">Тип</span>
-        <select id="online-type" class="connection-field__input"></select>
-      </label>
-
-      <div id="online-skin-gallery" class="skin-gallery skin-gallery--wide" role="listbox" aria-label="Выбор персонажа для сетевой игры"></div>
-
-      <div class="skin-preview skin-preview--inline">
-        <p id="online-preview-description" class="skin-preview__description"></p>
-        <img id="online-preview-image" src="pieces/skins/Slavic/Type1/laser.png" alt="">
-        <p id="online-preview-label" class="skin-preview__label"></p>
-      </div>
-
-      <ul id="connection-players" class="connection-players" aria-live="polite">
-        <li class="connection-players__item" data-role="light">
-          <span class="connection-players__name">☼ Перый Игрок</span>
-          <span class="connection-players__status">свободно</span>
-        </li>
-        <li class="connection-players__item" data-role="shadow">
-          <span class="connection-players__name">☽ Второй Игрок</span>
-          <span class="connection-players__status">свободно</span>
-        </li>
-      </ul>
-
-      <p id="online-type-warning" class="connection-warning" role="alert" hidden></p>
-
-      <p id="connection-status" class="connection-status" role="status"></p>
-
-      <div class="connection-actions">
-        <button type="submit" id="connect-button" class="button button--primary">Подключиться</button>
-        <button type="button" id="online-back" class="button button--ghost">Назад</button>
-      </div>
-    </form>
-  </div>
-
-  <main class="game">
-    <section class="board-area">
-      <div class="board-toolbar">
-        <button type="button" id="new-game" class="toolbar-button toolbar-button--primary" title="Начать заново">New</button>
-        <button type="button" id="open-connection" class="toolbar-button" title="Настройки мультиплеера">Сеть</button>
-        <button type="button" id="theme-toggle" class="toolbar-button toolbar-button--icon" aria-pressed="false" aria-label="Переключить тему">
-          <span aria-hidden="true">🌙</span>
-        </button>
-      </div>
-      <div id="endgame" class="endgame" hidden>
-        <div class="endgame__content">
-          <div>
-            <h2 id="endgame-title"></h2>
-            <p id="endgame-subtitle"></p>
+          <div class="stat">
+            <span class="stat__value" id="checked-count">0</span>
+            <span class="stat__label">отмеченных действий</span>
           </div>
-          <button type="button" id="play-again" class="button button--primary">Сыграть ещё раз</button>
         </div>
-      </div>
-      <div class="board-wrapper">
-        <div id="board" class="board" role="grid" aria-label="Поле лучезарной сечи"></div>
-        <div id="effects-overlay" class="effects-overlay" aria-hidden="true"></div>
-        <div id="laser-overlay" class="laser-overlay" aria-hidden="true"></div>
-      </div>
-      <div class="board-actions">
-        <button type="button" id="rotate-left" class="board-action" disabled aria-label="Повернуть против часовой стрелки">↺</button>
-        <button type="button" id="rotate-right" class="board-action" disabled aria-label="Повернуть по часовой стрелке">↻</button>
-      </div>
-      <p id="status" class="status" aria-live="assertive"></p>
-    </section>
-    <aside class="sidebar">
-      <section class="panel panel--piece" aria-live="polite">
-        <h2>Фигура</h2>
-        <p id="piece-name" class="piece-panel__name">—</p>
-        <p id="piece-details" class="piece-panel__details">Коснитесь своей фигуры, чтобы узнать её свойства.</p>
+        <div class="progress-track" aria-hidden="true">
+          <div class="progress-fill" id="progress-fill"></div>
+        </div>
+        <nav class="day-scale" id="day-scale" aria-label="Переход к дню эксперимента"></nav>
       </section>
-    </aside>
-  </main>
+    </header>
 
-  <script src="pieces/skins/common/simple-skin-effects.js"></script>
-  <script src="pieces/skins/Arnuvo/animations.js"></script>
-  <script src="pieces/skins/Egypt/animations.js"></script>
-  <script src="pieces/skins/Greece/animations.js"></script>
-  <script src="pieces/skins/Japan/animations.js"></script>
-  <script src="pieces/skins/Lavcraft/animations.js"></script>
-  <script src="pieces/skins/Slavic/animations.js"></script>
-  <script src="pieces/skins/premium/animations.js"></script>
-  <script src="script.js"></script>
+    <div class="toolbar" aria-label="Действия с прогрессом">
+      <button class="button button--primary" type="button" id="save-button">Сохранить прогресс</button>
+      <button class="button button--danger" type="button" id="reset-button">Сбросить всё</button>
+    </div>
+    <p class="save-status" id="save-status" role="status" aria-live="polite"></p>
+
+    <main>
+      <section class="days" id="days" aria-label="Карточки дней эксперимента"></section>
+
+      <section class="summary-card" aria-labelledby="summary-title">
+        <h2 id="summary-title">Итоги недели</h2>
+        <p>Можно отвечать коротко и спокойно: здесь важны наблюдения, а не идеальный результат.</p>
+        <div class="summary-fields" id="summary-fields"></div>
+      </section>
+    </main>
+  </div>
+
+  <template id="day-template">
+    <article class="day-card">
+      <header class="day-card__header">
+        <div>
+          <span class="day-number"></span>
+          <h2></h2>
+          <p class="task"></p>
+        </div>
+        <label class="complete-toggle">
+          <input type="checkbox" class="complete-checkbox">
+          <span>День завершён</span>
+        </label>
+      </header>
+      <div class="day-card__body">
+        <ul class="checklist"></ul>
+        <label class="field">
+          <span class="note-label"></span>
+          <textarea class="note-field" rows="4"></textarea>
+        </label>
+      </div>
+    </article>
+  </template>
+
+  <script>
+    const STORAGE_KEY = 'chocolateMindfulTracker:v1';
+
+    const days = [
+      {
+        title: 'Карта тяги',
+        task: 'Ничего не менять, только наблюдать.',
+        checks: [
+          'Я фиксировала эпизоды тяги в течение дня',
+          'Я отметила время, место и ситуацию',
+          'Я оценила силу тяги от 1 до 10',
+          'Я отметила, съела шоколад или нет'
+        ],
+        note: 'Что я заметила сегодня?'
+      },
+      {
+        title: 'Пауза перед шоколадом',
+        task: 'Перед каждым кусочком делать паузу на 3 минуты.',
+        checks: [
+          'Я сделала паузу перед шоколадом хотя бы 1 раз',
+          'Я спросила себя: я голодна?',
+          'Я спросила себя: я устала?',
+          'Я спросила себя: мне скучно?',
+          'Я спросила себя: мне тревожно?',
+          'Я спросила себя: мне нужен перерыв?'
+        ],
+        note: 'Какая причина тяги встречалась чаще всего?'
+      },
+      {
+        title: 'Разрыв связки «кофе = шоколад»',
+        task: 'Выпить утренний кофе без шоколада.',
+        checks: [
+          'Я выпила утренний кофе без шоколада',
+          'Я не заменила шоколад печеньем или другим сладким',
+          'Если тяга была сильной, я подождала 30 минут',
+          'Я отметила, изменилась ли сила желания'
+        ],
+        note: 'Как прошёл кофе без привычного сладкого?'
+      },
+      {
+        title: 'Перерыв без шоколада',
+        task: 'Заменить один эпизод тяги другим способом паузы.',
+        checks: [
+          'Я выбрала один момент тяги во время работы/домашних дел',
+          'Я сделала альтернативную паузу',
+          'Я подождала 15 минут',
+          'Я оценила, осталось ли желание шоколада'
+        ],
+        note: 'Какая альтернатива сработала или не сработала?'
+      },
+      {
+        title: 'Шоколад только сидя и осознанно',
+        task: 'Не есть шоколад автоматически.',
+        checks: [
+          'Я не ела шоколад во время работы',
+          'Я не ела шоколад на ходу',
+          'Я не ела шоколад возле компьютера',
+          'Если ела шоколад, то положила его на тарелку',
+          'Я ела без телефона и компьютера'
+        ],
+        note: 'Отличалось ли осознанное поедание от автоматического?'
+      },
+      {
+        title: 'Проверка доступности',
+        task: 'Не держать дома любимый шоколад.',
+        checks: [
+          'Я не покупала любимый шоколад “про запас”',
+          'Я не держала любимый шоколад в зоне доступа',
+          'Я отметила, сколько раз вспоминала о шоколаде',
+          'Я оценила силу желания от 1 до 10'
+        ],
+        note: 'Как доступность влияла на тягу?'
+      },
+      {
+        title: 'День осознанного удовольствия',
+        task: 'Съесть любимый шоколад по заранее выбранному плану.',
+        checks: [
+          'Я заранее выбрала, какой шоколад съем',
+          'Я заранее решила, сколько съем',
+          'Я заранее выбрала время',
+          'Я съела шоколад осознанно',
+          'Я отметила, хотелось ли продолжить'
+        ],
+        note: 'Чем осознанное удовольствие отличалось от автоматического?'
+      }
+    ];
+
+    const summaryQuestions = [
+      'В какие моменты тяга возникала чаще всего?',
+      'Что чаще запускало тягу: усталость, скука, тревога, работа, привычка или доступность?',
+      'Какие ситуации оказались автоматическими?',
+      'Какие альтернативы помогли?',
+      'Что я хочу попробовать на следующей неделе?'
+    ];
+
+    const defaultState = () => ({
+      days: days.map((day) => ({
+        complete: false,
+        checks: day.checks.map(() => false),
+        note: ''
+      })),
+      summary: summaryQuestions.map(() => ''),
+      savedAt: null
+    });
+
+    let state = loadState();
+    let statusTimer;
+
+    const daysContainer = document.querySelector('#days');
+    const dayTemplate = document.querySelector('#day-template');
+    const summaryFields = document.querySelector('#summary-fields');
+    const progressPercent = document.querySelector('#progress-percent');
+    const progressFill = document.querySelector('#progress-fill');
+    const completedDays = document.querySelector('#completed-days');
+    const checkedCount = document.querySelector('#checked-count');
+    const saveStatus = document.querySelector('#save-status');
+    const dayScale = document.querySelector('#day-scale');
+
+    render();
+    updateProgress();
+
+    document.querySelector('#save-button').addEventListener('click', () => {
+      saveState('Прогресс сохранён.');
+    });
+
+    document.querySelector('#reset-button').addEventListener('click', () => {
+      const confirmed = window.confirm('Сбросить все отметки и заметки? Это действие нельзя отменить.');
+      if (!confirmed) return;
+
+      state = defaultState();
+      saveState('Все поля очищены. Можно начать заново.');
+      render();
+      updateProgress();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    function loadState() {
+      try {
+        const rawState = localStorage.getItem(STORAGE_KEY);
+        if (!rawState) return defaultState();
+
+        const parsed = JSON.parse(rawState);
+        const fallback = defaultState();
+
+        return {
+          days: fallback.days.map((fallbackDay, dayIndex) => ({
+            complete: Boolean(parsed.days?.[dayIndex]?.complete),
+            checks: fallbackDay.checks.map((_, checkIndex) => Boolean(parsed.days?.[dayIndex]?.checks?.[checkIndex])),
+            note: typeof parsed.days?.[dayIndex]?.note === 'string' ? parsed.days[dayIndex].note : ''
+          })),
+          summary: fallback.summary.map((_, index) => typeof parsed.summary?.[index] === 'string' ? parsed.summary[index] : ''),
+          savedAt: parsed.savedAt || null
+        };
+      } catch (error) {
+        console.warn('Не удалось прочитать сохранённый прогресс:', error);
+        return defaultState();
+      }
+    }
+
+    function saveState(message = 'Изменения сохранены автоматически.') {
+      state.savedAt = new Date().toISOString();
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      showStatus(message);
+    }
+
+    function showStatus(message) {
+      window.clearTimeout(statusTimer);
+      saveStatus.textContent = message;
+      statusTimer = window.setTimeout(() => {
+        saveStatus.textContent = '';
+      }, 2600);
+    }
+
+    function render() {
+      daysContainer.innerHTML = '';
+      dayScale.innerHTML = '';
+
+      days.forEach((day, dayIndex) => {
+        renderDay(day, dayIndex);
+        renderDayDot(dayIndex);
+      });
+
+      renderSummary();
+    }
+
+    function renderDay(day, dayIndex) {
+      const fragment = dayTemplate.content.cloneNode(true);
+      const card = fragment.querySelector('.day-card');
+      const completeInput = fragment.querySelector('.complete-checkbox');
+      const checklist = fragment.querySelector('.checklist');
+      const noteField = fragment.querySelector('.note-field');
+
+      card.id = `day-${dayIndex + 1}`;
+      card.classList.toggle('is-complete', state.days[dayIndex].complete);
+      fragment.querySelector('.day-number').textContent = `День ${dayIndex + 1}`;
+      fragment.querySelector('h2').textContent = day.title;
+      fragment.querySelector('.task').textContent = `Задача: ${day.task}`;
+
+      completeInput.checked = state.days[dayIndex].complete;
+      completeInput.addEventListener('change', () => {
+        state.days[dayIndex].complete = completeInput.checked;
+        card.classList.toggle('is-complete', completeInput.checked);
+        saveState();
+        updateProgress();
+      });
+
+      day.checks.forEach((text, checkIndex) => {
+        const item = document.createElement('li');
+        const label = document.createElement('label');
+        const input = document.createElement('input');
+        const span = document.createElement('span');
+
+        item.className = 'check-item';
+        input.type = 'checkbox';
+        input.checked = state.days[dayIndex].checks[checkIndex];
+        span.textContent = text;
+
+        input.addEventListener('change', () => {
+          state.days[dayIndex].checks[checkIndex] = input.checked;
+          saveState();
+          updateProgress();
+        });
+
+        label.append(input, span);
+        item.append(label);
+        checklist.append(item);
+      });
+
+      fragment.querySelector('.note-label').textContent = day.note;
+      noteField.placeholder = day.note;
+      noteField.value = state.days[dayIndex].note;
+      noteField.addEventListener('input', () => {
+        state.days[dayIndex].note = noteField.value;
+        saveState();
+      });
+
+      daysContainer.append(fragment);
+    }
+
+    function renderDayDot(dayIndex) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'day-dot';
+      button.textContent = dayIndex + 1;
+      button.setAttribute('aria-label', `Перейти к дню ${dayIndex + 1}`);
+      button.addEventListener('click', () => {
+        document.querySelector(`#day-${dayIndex + 1}`).scrollIntoView({ block: 'start', behavior: 'smooth' });
+      });
+      dayScale.append(button);
+    }
+
+    function renderSummary() {
+      summaryFields.innerHTML = '';
+
+      summaryQuestions.forEach((question, index) => {
+        const label = document.createElement('label');
+        const span = document.createElement('span');
+        const textarea = document.createElement('textarea');
+
+        span.textContent = question;
+        textarea.rows = 3;
+        textarea.value = state.summary[index];
+        textarea.placeholder = 'Моё наблюдение...';
+        textarea.addEventListener('input', () => {
+          state.summary[index] = textarea.value;
+          saveState();
+        });
+
+        label.append(span, textarea);
+        summaryFields.append(label);
+      });
+    }
+
+    function updateProgress() {
+      const allChecks = state.days.flatMap((day) => day.checks);
+      const checked = allChecks.filter(Boolean).length;
+      const total = allChecks.length;
+      const percent = total === 0 ? 0 : Math.round((checked / total) * 100);
+      const completed = state.days.filter((day) => day.complete).length;
+
+      progressPercent.textContent = `${percent}%`;
+      progressFill.style.width = `${percent}%`;
+      completedDays.textContent = `${completed} из 7`;
+      checkedCount.textContent = `${checked} из ${total}`;
+
+      document.querySelectorAll('.day-dot').forEach((dot, index) => {
+        dot.classList.toggle('is-complete', state.days[index].complete);
+      });
+    }
+  </script>
 </body>
 </html>
